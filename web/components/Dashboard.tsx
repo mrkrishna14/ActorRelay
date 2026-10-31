@@ -14,6 +14,7 @@ import { OperatorStrip } from "./OperatorStrip";
 import { Stage } from "./Stage";
 import { StoryCard } from "./StoryCard";
 import { UnderTheHood } from "./UnderTheHood";
+import { Walkthrough } from "./Walkthrough";
 import { ProposalPanel, type EvidenceRef } from "./ProposalPanel";
 import { TimingChart } from "./TimingChart";
 import { TopBar } from "./TopBar";
@@ -55,6 +56,7 @@ export function Dashboard() {
   const glue = useGlue();
   const stage = useStage();
   const [details, setDetails] = useState(false);
+  const [tour, setTour] = useState(false);
   const [view, setView] = useState<View>("plant-a");
   const [selected, setSelected] = useState("plant-a/LV-101");
   const [metricChoice, setMetricChoice] = useState<Record<string, string>>({});
@@ -88,7 +90,7 @@ export function Dashboard() {
     <div className="stage" style={{ transform: `scale(${stage.scale})`, height: stage.height }}>
       <TopBar glue={glue} view={view} onView={changeView} now={Date.now()} />
       {showData ? (
-        <main className={`grid min-h-0 flex-1 ${details ? "grid-cols-[18%_52%_30%] grid-rows-[minmax(0,1fr)_216px]" : "grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)]"} ${glue.conn === "reconnecting" ? "opacity-60" : ""}`}>
+        <main className={`grid min-h-0 flex-1 ${details ? "grid-cols-[18%_52%_30%] grid-rows-[minmax(0,1fr)_216px]" : tour ? "grid-cols-[minmax(0,1fr)_560px] grid-rows-[minmax(0,1fr)]" : "grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)]"} ${glue.conn === "reconnecting" ? "opacity-60" : ""}`}>
           <aside className={`panel min-h-0 flex-col border-r border-hairline ${details ? "flex" : "hidden"}`}>
             <EquipmentTree plants={plants} components={components} view={view} selected={selected} onView={changeView} onSelect={select} />
             {plantView ? <OtherPlantCard view={plantView} plants={plants} components={components} company={company} onView={changeView} now={now} /> : null}
@@ -101,7 +103,7 @@ export function Dashboard() {
                 <div className="min-h-0 flex-1">
                   <Stage plantId={plantView} components={components} outlines={outlines} proposer={activeProposer(plantView, plants)} selected={selected} onSelect={select} caption={caption} now={now} hood={<UnderTheHood plants={PLANT_IDS.flatMap((id) => plants[id] ?? [])} company={company} components={Object.values(components)} audit={audit} />} />
                 </div>
-                <StoryCard view={plantView} plants={plants} components={components} now={now} details={details} onDetails={() => setDetails((value) => !value)} />
+                <StoryCard view={plantView} plants={plants} components={components} now={now} details={details} onDetails={() => setDetails((value) => !value)} onTour={() => { setDetails(false); setTour(true); }} tour={tour} />
               </section>
 
               <aside className={`panel relative min-h-0 flex-col border-l border-hairline ${details ? "flex" : "hidden"}`}>
@@ -115,6 +117,8 @@ export function Dashboard() {
           ) : (
             <CompanyView company={company} plants={plants} components={components} onView={changeView} now={now} />
           )}
+
+          {tour && !details && plantView ? <Walkthrough plants={plants} components={components} view={plantView} now={now} onView={changeView} onClose={() => setTour(false)} /> : null}
 
           <div className={`col-span-3 min-h-0 grid-cols-[60%_40%] border-t border-rule ${details ? "grid" : "hidden"}`}>
             <section className="panel min-h-0 border-r border-hairline">

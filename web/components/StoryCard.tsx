@@ -51,7 +51,7 @@ function tell(proposal: Proposal | undefined, plant: PlantState | undefined, com
   return { step: 2, line: `No decision in time: pump ${change} expired.`, tone: "text-ink-2" };
 }
 
-export function StoryCard({ view, plants, components, now, details, onDetails }: { view: PlantId; plants: Plants; components: Record<string, ComponentView>; now: number; details: boolean; onDetails: () => void }) {
+export function StoryCard({ view, plants, components, now, details, onDetails, onTour, tour }: { view: PlantId; plants: Plants; components: Record<string, ComponentView>; now: number; details: boolean; onDetails: () => void; onTour: () => void; tour: boolean }) {
   const plant = plants[view];
   const proposal = plant ? byTime(plant.proposals).at(-1) : undefined;
   const { step, line, tone } = tell(proposal, plant, components, now);
@@ -61,9 +61,16 @@ export function StoryCard({ view, plants, components, now, details, onDetails }:
     <div className="border-t border-hairline bg-panel px-6 py-4">
       <div className="flex items-start justify-between gap-6">
         <p className={`text-[26px] font-semibold leading-[34px] ${tone}`}>{line}</p>
-        <button onClick={onDetails} className="shrink-0 text-lg font-semibold text-ice hover:underline">
-          {details ? "Hide details" : "Why? See evidence"}
-        </button>
+        <div className="flex shrink-0 items-center gap-5">
+          <button onClick={onDetails} className="text-lg font-semibold text-ice hover:underline">
+            {details ? "Hide details" : "Why? See evidence"}
+          </button>
+          {tour ? null : (
+            <button onClick={onTour} className="rounded-md bg-ice px-4 py-1 text-lg font-semibold text-white">
+              Guided tour
+            </button>
+          )}
+        </div>
       </div>
       <div className="mt-3 flex items-center justify-between gap-6">
         <ol className="flex items-center gap-2 text-lg">
