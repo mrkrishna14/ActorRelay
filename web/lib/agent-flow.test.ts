@@ -62,3 +62,20 @@ test("temperature and steam-flow proposals route reviews back to their actual pr
     expect(agentFlowLinks(voted, state.components, [], DEMO_EPOCH).find((link) => link.kind === "yes")?.to).toBe(`plant-a/${proposerTag}`);
   }
 });
+
+ test("temperature activity identifies the tank controller and retains the reviewer's actual refusal", async () => {
+  const { demoAgentActivities } = await import("./agent-activity");
+  const state = createDemoState();
+  const proposal = { ...state.proposals[0], proposerTag: "TK-101" as const, metric: "tempC", from: 75, to: 79, status: "voting" as const, votes: [], createdAt: DEMO_EPOCH };
+  const activities = demoAgentActivities({ ...state, proposals: [proposal] });
+  const proposer = activities.find((activity) => activity.id === "plant-a/TK-101")!;
+  expect(proposer.task).toContain("TIC-101");
+  expect(proposer.task).toContain("79°C");
+  expect(proposer.state).toBe("thinking");
+  expect(activities.find((activity) => activity.id === "plant-a/P-100")?.task).toContain("Review");
+  const blocked = { ...proposal, status: "blocked" as const, votes: [{ tag: "E-101" as const, plantId: "plant-a" as const, vote: "no" as const, predicted: 1700, reason: "Predicted coil duty exceeds available heating capacity", evidence: ["thermal-capacity-event"] }] };
+  const refusal = demoAgentActivities({ ...state, proposals: [blocked] }).find((activity) => activity.id === "plant-a/E-101")!;
+  expect(refusal.state).toBe("blocked");
+  expect(refusal.summary).toBe(blocked.votes[0].reason);
+  expect(refusal.evidence).toEqual(["thermal-capacity-event"]);
+});

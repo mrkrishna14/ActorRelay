@@ -23,7 +23,8 @@ export function sampleControlEffects(baseline: Equipment[], plantId: PlantId, me
     if (c.tag === "LV-101" && metric === "levelPct") metrics.positionPct = Math.max(0, Math.min(100, outlet.positionPct * Math.sqrt(tank.levelPct / Math.max(1, target))));
     if (c.tag === "E-101") metrics.dutyKw = duty;
     if (c.tag === "TV-101") {
-      Object.assign(metrics, { steamKgH: demand, steamSetpointKgH: demand, positionPct: valve });
+      Object.assign(metrics, { steamKgH: demand, positionPct: valve });
+      if (metric !== "levelPct") metrics.steamSetpointKgH = demand;
       if (metric === "steamKgH") metrics.steamFlowLocal = 1;
       if (metric === "tempC") metrics.steamFlowLocal = 0;
     }
