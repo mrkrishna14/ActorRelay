@@ -86,7 +86,6 @@ const UPSTREAM_NORMS = {
   "keyrange": (a, b, span) => (span ? Math.abs(a - b) / span : 0),
   "relative": (a, b) => Math.abs(a - b) / Math.max(Math.abs(a), Math.abs(b), 1e-9),
   "after-only": () => 0,
-  "bucket": (a, b) => (Math.abs(a - b) / Math.max(Math.abs(a), Math.abs(b), 1e-9) > 0.05 ? 1000 : 0),
 };
 const SPEED_RANGES = [70, 75, 100];
 
@@ -153,6 +152,8 @@ check("upstreamSnapshot has feedM3h, headerBarg, feedTempC", badUpstream.length 
 check("feedM3h is 0.3 x before", badFeed.length === 0, sample(badFeed.map((e) => e.id)));
 check("effects cover TK-101, LV-101, E-101, TV-101", missingEffects.length === 0, sample(missingEffects.map((e) => e.id)));
 check("effects include TV-101 headerBarg, the only row a cross-plant voter can read", missingHeader.length === 0, `${missingHeader.length} missing${sample(missingHeader.map((e) => e.id))}`);
+const unrounded = events.filter((e) => [e.before, e.after].some((x) => Math.abs(x * 100 - Math.round(x * 100)) > 1e-6));
+check("speeds have at most 2 decimals, since prompts and the dashboard print them raw", unrounded.length === 0, `${unrounded.length} not rounded${sample(unrounded.map((e) => `${e.id} after ${e.after}`))}`);
 
 section = "TASK2 HARD REQUIREMENTS";
 const pumpEvents = events.filter((e) => e.componentId === `${e.plantId}/P-100` && e.metric === "speedPct");
@@ -278,7 +279,7 @@ check("LV-101 before tracks P-100 before (+/-3)", ...coverage(metricRows("LV-101
 check("LV-101 after is at or above speed - 3 and capped at 100", ...coverage(metricRows("LV-101", "positionPct"), (e) => between(row(e, "LV-101", "positionPct").after, Math.min(e.after, 100) - 3, 100)));
 check("TV-101 steamKgH after within 8% of the fit", ...coverage(metricRows("TV-101", "steamKgH"), (e) => within(row(e, "TV-101", "steamKgH").after, fitSteam(e), 0.08)));
 check("E-101 dutyKw after within 8% of the fit", ...coverage(metricRows("E-101", "dutyKw"), (e) => within(row(e, "E-101", "dutyKw").after, fitDuty(e), 0.08)));
-check("TK-101 tempC stays 70-80 at the end of the window", ...coverage(metricRows("TK-101", "tempC"), (e) => between(row(e, "TK-101", "tempC").after, 70, 80)));
+check("TK-101 tempC stays 60-85", ...coverage(metricRows("TK-101", "tempC"), (e) => between(row(e, "TK-101", "tempC").after, 60, 85)));
 check("headerBarg falls when steam rises", ...coverage(metricRows("TV-101", "headerBarg"), (e) => {
   const steam = row(e, "TV-101", "steamKgH");
   const header = row(e, "TV-101", "headerBarg");

@@ -9,6 +9,7 @@ Prefer `shared/history.json` as soon as it exists. Do not pin ids or exact value
 | `history.json` | 300 `HistoryEvent`s as a top-level array: 180 plant-a, 120 plant-b |
 | `gen-history.mjs` | Generator. Fixed seed, same bytes on every run |
 | `validate-history.mjs` | Pass/fail list against `shared/types.ts`, `TASK2.MD` and the demo |
+| `compare-history.ts` | Runs the real seed, retrieval, rule, vote and counter code on two files and lists every difference |
 
 ```bash
 node actor/tests/fixtures-gen/gen-history.mjs
@@ -21,6 +22,12 @@ node actor/tests/fixtures-gen/validate-history.mjs
 ```bash
 node actor/tests/fixtures-gen/validate-history.mjs shared/history.json
 ```
+
+```bash
+bun actor/tests/fixtures-gen/compare-history.ts actor/tests/fixtures-gen/history.json shared/history.json
+```
+
+The comparison uses a stub model that says yes and repeats the evidence estimate, so every `no` in its report came from code. Add `--llm` to use the real model router on the demo steps instead. It needs Bun because `agent/vote.ts` does, and it exits 1 on a vote, rule or counter difference.
 
 The validator exits 1 if any check fails. Its compile check uses `actor/tests/contract/node_modules/typescript`, or the path in `TSC`, and prints SKIP if neither exists.
 
@@ -40,6 +47,14 @@ Demo retrieval is checked two ways. `REAL CODE` runs `rankSimilar`, `deriveRules
 - **Overshoot.** It scales with the step, `0.115 x step`, so 50 to 65 lands on 66.7 and 50 to 85 on 89, the demo's numbers. At speed 80 and above it stays in the summary's +3 to +5 range, and LV-101 is held to 85-91 for speeds 80-87.
 - **Feed temperature.** Steam and duty scale by `(75 - feedTempC) / 50`, from the energy balance. This is not in `TASK2.MD`.
 - **Header pressure.** TV-101 opens 3.6 points per bar of header loss. This is derived, not given: the fit implies an equal-percentage slope of 3.65-4.1 per unit of travel, and the header is about 7 bar absolute.
+
+## Where model output disagreed with these decisions
+
+Running model-generated history through `compare-history.ts` showed the fit is off in three places. No demo vote changed. Trust model output over this file on these points:
+
+- `tempC` rows from the model are the trough, about 71.4 °C after a step to 85. This file reads 73.2 °C, so the residual reading above is not what the model reports.
+- LV-101 overshoot from the model is smaller, about +1.9 points at 80-87 against +4.4 here.
+- `headerBarg` rows from the model do not move within a run. Here they do.
 
 ## Keeping the demo retrievable
 
