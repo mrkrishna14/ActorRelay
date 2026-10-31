@@ -41,7 +41,8 @@ export async function handle(req:Request):Promise<Response>{
  const schema=schemas[path];if(!schema)throw new ApiError(404,"Unknown route");
  let raw;try{raw=await req.json();}catch{throw new ApiError(400,"Malformed JSON body");}const b:any=schema.parse(raw);
  if(mode==="live"){
-  if(path==="/execute-callback"&&(!process.env.EXECUTION_CALLBACK_TOKEN||req.headers.get("authorization")!==`Bearer ${process.env.EXECUTION_CALLBACK_TOKEN}`))throw new ApiError(401,"Execution callback requires configured server token");
+  // The Plant actor's claim is the authority for a write, and its callback sends no bearer. A configured token is still enforced.
+  if(path==="/execute-callback"&&process.env.EXECUTION_CALLBACK_TOKEN&&req.headers.get("authorization")!==`Bearer ${process.env.EXECUTION_CALLBACK_TOKEN}`)throw new ApiError(401,"Execution callback token rejected");
   if(["/propose","/counter","/observed","/rule"].includes(path)&&!relay.status.configured)throw new ApiError(503,"Relay participant is not configured");
   if(path==="/tick"&&bridgePushes)return json({ok:true,mirrored:0,mirrorDriver:"bridge"});
   return json(await coordinator.post(path,b));

@@ -9,10 +9,13 @@ export class RelayBridge {
  private client?:RelayMessagingClient;
  private name=process.env.RELAY_SYSTEM_NAME??"actorrelay-system";
  private inflight=new Set<string>();
+ private publishUrl=process.env.RELAY_PUBLISH_URL;
  private journal:Journal;
  status:{configured:boolean,connected:boolean,error:string|null}={configured:false,connected:false,error:null};
  constructor(private dispatch:Dispatch,journal?:Journal,private factory:(opts:any)=>RelayMessagingClient=(opts)=>new RelaycastMessagingClient(opts)){this.journal=journal??new Journal();}
  async start(){
+  // An external system participant owns the Relay connection and forwards agent messages to our HTTP routes.
+  if(this.publishUrl){this.status.configured=true;this.status.connected=true;return;}
   const token=process.env.RELAY_AGENT_TOKEN??this.journal.get<string>("credential","relay-agent-token"),workspaceKey=process.env.RELAY_WORKSPACE_KEY;
   this.status.configured=!!(token||workspaceKey);
   if(!this.status.configured)throw new ApiError(503,"Relay requires RELAY_WORKSPACE_KEY for registration or RELAY_AGENT_TOKEN to reconnect");
@@ -58,10 +61,13 @@ export class RelayBridge {
   const record={type,payload,channels:[...new Set(targetChannels)].filter(c=>channels.includes(c))};
   // Queue before the client check so a change accepted while Relay is down is still delivered by flush().
   this.journal.set("relay-outbox",key,record);
-  if(!this.client)throw new ApiError(503,"Relay participant has not initialized");
+  if(!this.client&&!this.publishUrl)throw new ApiError(503,"Relay participant has not initialized");
   await this.sendOutbox(key,record);
  }
- private async sendOutbox(key:string,record:any){if(!this.client)throw new ApiError(503,"Relay unavailable");for(const channel of record.channels)await this.client.messages.send({channel,text:JSON.stringify({type:record.type,payload:record.payload}),idempotencyKey:`${key}:${channel}`});this.journal.remove("relay-outbox",key);}
- async flush(){if(!this.client)return;for(const entry of this.journal.list("relay-outbox"))await this.sendOutbox(entry.id,entry.value);}
+ private async sendOutbox(key:string,record:any){
+  if(this.publishUrl){const token=process.env.RELAY_TOKEN;const r=await fetch(this.publishUrl,{method:"POST",headers:{"content-type":"application/json",...(token?{authorization:`Bearer ${token}`}:{})},body:JSON.stringify(record),signal:AbortSignal.timeout(8000)});if(!r.ok)throw new ApiError(503,`Relay publish returned ${r.status}`);this.journal.remove("relay-outbox",key);return;}
+  if(!this.client)throw new ApiError(503,"Relay unavailable");for(const channel of record.channels)await this.client.messages.send({channel,text:JSON.stringify({type:record.type,payload:record.payload}),idempotencyKey:`${key}:${channel}`});this.journal.remove("relay-outbox",key);}
+ // One entry the endpoint keeps rejecting must not hold back the rest.
+ async flush(){if(!this.client&&!this.publishUrl)return;for(const entry of this.journal.list("relay-outbox")){try{await this.sendOutbox(entry.id,entry.value);}catch(error){this.status.error=String(error);console.error("Relay outbox retry failed:",String(error));}}}
  async stop(){await this.client?.events.disconnect();this.status.connected=false;}
 }

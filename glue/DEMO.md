@@ -37,8 +37,7 @@ The first command checks state shape, malformed requests, reset, and proposal vi
 3. Start glue with its documented live settings from `glue/HANDOFF.md` and `glue/.env.example`. Set these, with values from the owners; do not invent credentials:
    - `GLUE_MODE=live`
    - `ACTOR_CLIENT_MODULE` or `ACTOR_API_URL` (plus `ACTOR_API_TOKEN` if needed)
-   - `EXECUTION_CALLBACK_TOKEN`, which the Plant actor sends as a bearer token on `/execute-callback`
-   - `RELAY_WORKSPACE_KEY` or `RELAY_AGENT_TOKEN`, plus optional `RELAY_BASE_URL` and `RELAY_SYSTEM_NAME`
+   - `RELAY_PUBLISH_URL=http://127.0.0.1:7201/publish` when using the system participant from `agent/spawn.ts`. Only for direct Relay: `RELAY_WORKSPACE_KEY` or `RELAY_AGENT_TOKEN`, plus optional `RELAY_BASE_URL` and `RELAY_SYSTEM_NAME`
    - `SIM_URL` if the simulation is not on port 7300
    - `BRIDGE_PUSHES_MIRROR=1` if the bridge pushes `/mirror`; otherwise glue polls the simulation every `GLUE_TICK_MS`
    - `GLUE_JOURNAL_PATH`, kept across restarts during a run

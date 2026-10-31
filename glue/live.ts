@@ -7,6 +7,8 @@ const plants=["plant-a","plant-b"];
 // HistoryEvent.upstreamSnapshot is flat; these are the keys history.json records and Plant.similar compares.
 const upstreamKeys=["feedM3h","headerBarg","feedTempC"];
 const upstreamOf=(snapshot:Record<string,Record<string,number>>)=>{const out:Record<string,number>={};for(const metrics of Object.values(snapshot))for(const key of upstreamKeys)if(key in metrics)out[key]??=metrics[key]!;return out;};
+const SIM_TOLERANCE=0.5;
+const claimSchema=z.discriminatedUnion("dispatch",[z.object({dispatch:z.literal(true),proposalId:z.string(),componentId:z.string(),metric:z.string(),value:z.number(),token:z.string().min(1)}),z.object({dispatch:z.literal(false),proposalId:z.string(),state:z.string()})]);
 export interface Publisher {publish(type:string,payload:any,channels:string[]):Promise<void>;}
 /** Polls /tick without overlapping itself. Repeated identical failures log once. Returns a stop function. */
 export function startMirrorDriver(tick:()=>Promise<unknown>,intervalMs:number,log:(message:string)=>void=console.error){
@@ -29,18 +31,18 @@ export class LiveCoordinator {
   case "/vote":{const p=await this.findProposal(b.vote.proposalId);return this.actors.call("Plant",p.plantId,"vote",[b.vote]);}
   case "/veto":{const p=await this.findProposal(b.proposalId);return this.actors.call("Plant",p.plantId,"veto",[b.proposalId,b.by]);}
   case "/execute-callback":return this.execute(b.proposalId);
-  case "/observed":{const p=await this.findProposal(b.proposalId);const command=this.journal.get("command",b.proposalId);if(command?.status==="observed")return command.observedResult;if(command?.status!=="accepted")throw new ApiError(409,"No accepted command exists for observation");const event={id:`observed:${p.id}`,at:new Date().toISOString(),plantId:p.plantId,componentId:p.proposerComponentId,metric:p.metric,before:p.from,after:p.to,upstreamSnapshot:command.upstreamSnapshot??{},effects:b.effects,incident:null,approvedBy:p.votes.filter((v:any)=>v.vote==="yes").map((v:any)=>v.componentId),operator:null,proposalId:p.id};const result=await this.actors.call("Plant",p.plantId,"recordEvent",[event]);this.journal.set("command",p.id,{...command,status:"observed",eventId:event.id,observedResult:result});await this.publishAccepted("executed",{proposalId:p.id,event},[p.plantId,"company"],{proposalId:p.id,eventId:event.id});return result;}
+  case "/observed":{const p=await this.findProposal(b.proposalId);const command=this.journal.get("command",b.proposalId);if(command?.status==="observed")return command.observedResult;if(command?.status!=="accepted")throw new ApiError(409,"No accepted command exists for observation");const event={id:`observed:${p.id}`,at:new Date().toISOString(),plantId:p.plantId,componentId:p.proposerComponentId,metric:p.metric,before:p.from,after:p.to,upstreamSnapshot:command.upstreamSnapshot??{},effects:b.effects,incident:null,approvedBy:p.votes.filter((v:any)=>v.vote==="yes").map((v:any)=>v.componentId),operator:null,proposalId:p.id};const result=await this.actors.call("Plant",p.plantId,"recordEvent",[event]);const recorded=result?.event??result;const stored=recorded?.id?recorded:event;this.journal.set("command",p.id,{...command,status:"observed",eventId:stored.id,observedResult:result});await this.publishAccepted("executed",{proposalId:p.id,event:stored},[p.plantId,"company"],{proposalId:p.id,eventId:stored.id});return result;}
   case "/calibration":return this.actors.call("Component",b.componentId,"addCalibration",[b.entry]);
-  case "/rule":{const plant=b.rule.condition.componentId?this.plantOf(b.rule.condition.componentId):null;if(!plant)throw new ApiError(400,"Rule needs originating componentId");const result=await this.actors.call("Plant",plant,"promoteRule",[b.rule]);await this.publishAccepted("rule",{rule:b.rule},b.rule.scope==="company"?["company"]:[plant],{ruleId:b.rule.id});return result;}
+  case "/rule":{const origin=b.rule.condition.componentId??b.rule.consequence.componentId;const plant=origin?this.plantOf(origin):null;if(!plant)throw new ApiError(400,"Rule needs originating componentId");const result=await this.actors.call("Plant",plant,"promoteRule",[b.rule]);const returned=result?.rule??result;const rule=returned?.id?returned:b.rule;await this.publishAccepted("rule",{rule},rule.scope==="company"?["company"]:[plant],{ruleId:rule.id});return result;}
   case "/reset":{if(this.resetting)throw new ApiError(409,"Reset already in progress");if(this.executing.size)throw new ApiError(409,"Execution in progress; wait before reset");this.resetting=true;try{let seed:any,history:any;try{seed=await Bun.file(new URL("../shared/plants.json",import.meta.url)).json();history=await Bun.file(new URL("../shared/history.json",import.meta.url)).json();}catch{throw new ApiError(503,"Reset needs shared/plants.json and shared/history.json");}await this.ticking?.catch(()=>{});await this.sim.reset();for(const plant of seed.plants){for(const c of plant.components)await this.actors.call("Component",c.id,"loadSeed",[c]);await this.actors.call("Plant",plant.id,"loadSeed",[plant,history.filter((e:any)=>e.plantId===plant.id)]);}await this.actors.call("Company","company","loadSeed",[seed.company]);}finally{this.resetting=false;}await this.post("/tick",{});return {ok:true,mode:"live"};}
  }throw new ApiError(404,"Unknown mutation route");}
  private async mirrorOnce(){let count=0;for(const plant of plants){const snapshot=await this.sim.snapshot(plant);for(const [id,values] of Object.entries(snapshot)){await this.actors.call("Component",id,"mirror",[values]);count++;}}return {ok:true as const,mirrored:count};}
  // The actor change already committed, so a Relay failure must not read as a rejected request.
  private async publishAccepted(type:string,payload:any,channels:string[],details:Record<string,unknown>){try{await this.relay.publish(type,payload,channels);}catch(error){throw new ApiError(502,"Actor accepted the change but Relay publish failed; the message stays queued for retry. Do not resubmit.",{accepted:true,...details,cause:String(error)});}}
  private async findProposal(id:string){for(const plantId of plants){const state=await this.actors.read("Plant",plantId);const p=state.proposals.find((p:any)=>p.id===id);if(p)return p;}throw new ApiError(404,"Unknown proposal");}
- // The first attempt always calls setMetric: a mirror tick can already have written the new value. Only a retry may skip it.
- private async syncActor(proposalId:string,entry:any,firstAttempt=false){
-  try{const c=firstAttempt?null:await this.actors.read("Component",entry.command.componentId);if(!c||c.metrics[entry.command.metric]!==entry.command.value)await this.actors.call("Component",entry.command.componentId,"setMetric",[entry.command.metric,entry.command.value,proposalId,entry.token]);
+ // setMetric always runs, because it is what moves the Plant's execution from claimed to applied. A mirror tick writing the same value does not. A retry that finds the token spent already succeeded.
+ private async syncActor(proposalId:string,entry:any){
+  try{await this.actors.call("Component",entry.command.componentId,"setMetric",[entry.command.metric,entry.command.value,proposalId,entry.token]).catch(error=>{if(!String(error?.message??error).includes("token_already_used"))throw error;});
    const {token:_token,...kept}=entry;this.journal.set("command",proposalId,{...kept,status:"accepted"});return entry.result;
   }catch(error){throw new ApiError(502,"Simulation accepted command; actor synchronization is pending. Retry callback to reconcile without redispatch.",{accepted:true,proposalId,cause:String(error)});}
  }
@@ -48,24 +50,29 @@ export class LiveCoordinator {
   const existing=this.journal.get("command",proposalId);if(existing){if(existing.status==="actor_sync_pending")return this.syncActor(proposalId,existing);if(["accepted","observed"].includes(existing.status))return existing.result;throw new ApiError(409,"Command outcome requires reconciliation; refusing duplicate dispatch",{status:existing.status});}
   if(this.resetting)throw new ApiError(409,"Reset in progress; fresh review required");if(this.executing.has(proposalId))throw new ApiError(409,"Command already in progress");this.executing.add(proposalId);
   try{
+   // The Plant actor owns approval: execute() checks votes and the veto deadline, then flips the proposal to executed and calls back here.
    const proposal=await this.findProposal(proposalId);
-   if(proposal.status!=="veto_window"||!proposal.vetoDeadline||!Number.isFinite(Date.parse(proposal.vetoDeadline))||Date.parse(proposal.vetoDeadline)>Date.now()||!proposal.requiredVoters?.length||new Set(proposal.requiredVoters).size!==proposal.requiredVoters.length||proposal.votes.length!==proposal.requiredVoters.length||new Set(proposal.votes.map((v:any)=>v.componentId)).size!==proposal.votes.length||proposal.requiredVoters.some((id:string)=>!proposal.votes.some((v:any)=>v.componentId===id&&v.vote==="yes")))throw new ApiError(409,"Proposal lacks unanimous approval or elapsed veto window");
+   if(proposal.status!=="executed")throw new ApiError(409,"Proposal has not been accepted for execution by the Plant actor");
    if(!/^plant-[ab]\/P-100$/.test(proposal.proposerComponentId)||proposal.metric!=="speedPct")throw new ApiError(403,"Simulation write target is not allowlisted");
-   const current=await this.actors.read("Component",proposal.proposerComponentId),limit=current.limits[proposal.metric];
-   if(current.metrics[proposal.metric]!==proposal.from||!limit||proposal.to<limit.min||proposal.to>=limit.critical*(1-current.marginPct/100))throw new ApiError(409,"Stale proposal or current hard limit violation");
-   const auth=z.object({authorized:z.literal(true),token:z.string().min(1),expiresAt:z.string().datetime(),proposalId:z.literal(proposalId)}).parse(await this.actors.call("Plant",proposal.plantId,"authorizeExecution",[proposalId]));
+   const refuse=async(status:number,reason:string):Promise<never>=>{await this.actors.call("Plant",proposal.plantId,"reportDispatchFailure",[proposalId,reason]).catch(()=>{});throw new ApiError(status,reason);};
+   const claim=claimSchema.parse(await this.actors.call("Plant",proposal.plantId,"claimDispatch",[proposalId]));
+   // Exactly one caller wins the claim. Losing means another attempt owns it, so this one must not write.
+   if(!claim.dispatch)return {proposalId,dispatch:false,state:claim.state,observed:false};
+   if(claim.componentId!==proposal.proposerComponentId||claim.metric!==proposal.metric||claim.value!==proposal.to)return refuse(409,"Actor claim does not match the proposal");
+   const current=await this.actors.read("Component",claim.componentId),limit=current.limits[claim.metric];
+   if(!limit||claim.value<limit.min||claim.value>=limit.critical*(1-current.marginPct/100))return refuse(409,"Target violates the current hard limit");
    const snapshot=await this.sim.snapshot(proposal.plantId);
-   if(snapshot[proposal.proposerComponentId]?.[proposal.metric]!==proposal.from)throw new ApiError(409,"Simulation changed after proposal; fresh review required");
-   if(Date.parse(auth.expiresAt)<=Date.now())throw new ApiError(409,"Actor execution token expired");
-   const command={componentId:proposal.proposerComponentId,metric:proposal.metric,value:proposal.to,proposalId,commandId:`proposal:${proposalId}`},upstreamSnapshot=upstreamOf(snapshot);
+   const measured=snapshot[claim.componentId]?.[claim.metric];
+   if(measured===undefined||Math.abs(measured-proposal.from)>SIM_TOLERANCE)return refuse(409,"Simulation changed after proposal; fresh review required");
+   const command={componentId:claim.componentId,metric:claim.metric,value:claim.value,proposalId,commandId:`proposal:${proposalId}`},upstreamSnapshot=upstreamOf(snapshot);
    this.journal.set("command",proposalId,{status:"dispatching",command,upstreamSnapshot,startedAt:new Date().toISOString()});
-   let applied:any;try{applied=await this.sim.setpoint(command);}catch(error){this.journal.set("command",proposalId,{status:"unknown",command,upstreamSnapshot,error:String(error)});throw error;}
+   let applied:any;try{applied=await this.sim.setpoint(command);}catch(error){this.journal.set("command",proposalId,{status:"unknown",command,upstreamSnapshot,error:String(error)});await this.actors.call("Plant",proposal.plantId,"reportDispatchFailure",[proposalId,`Simulator outcome unknown: ${String(error)}`]).catch(()=>{});throw error;}
    // Acceptance is not observed recovery. Do not mark recovered here.
    const appliedValue=typeof applied==="number"?applied:applied?.valueApplied??applied?.appliedValue??applied?.applied??applied?.value;
-   if(appliedValue!==command.value){this.journal.set("command",proposalId,{status:"unknown",command,upstreamSnapshot,result:applied});throw new ApiError(502,"Simulation acknowledgment did not confirm requested value; reconcile command journal");}
+   if(typeof appliedValue!=="number"||Math.abs(appliedValue-command.value)>SIM_TOLERANCE){this.journal.set("command",proposalId,{status:"unknown",command,upstreamSnapshot,result:applied});return refuse(502,"Simulation acknowledgment did not confirm requested value; reconcile command journal");}
    const result={proposalId,commandId:command.commandId,acceptance:applied,observed:false};
-   const pending={status:"actor_sync_pending",command,upstreamSnapshot,result,token:auth.token};this.journal.set("command",proposalId,pending);
-   return this.syncActor(proposalId,pending,true);
+   const pending={status:"actor_sync_pending",command,upstreamSnapshot,result,token:claim.token};this.journal.set("command",proposalId,pending);
+   return this.syncActor(proposalId,pending);
   }finally{this.executing.delete(proposalId);}
  }
 }

@@ -7,7 +7,7 @@ import {Journal} from "../journal";
 import {LiveCoordinator} from "../live";
 import {RelayBridge} from "../relay";
 import {schemas} from "../schemas";
-import {FakeActors,FakePublisher,FakeRelayClient,FakeSim,fakeHistory,type FakeOpts} from "./fakes";
+import {FakeActors,FakePublisher,FakeRelayClient,FakeSim,fakeHistory,fakePublishEndpoint,type FakeOpts} from "./fakes";
 
 const results:{section:string,name:string,pass:boolean,detail:string}[]=[];
 let section="";
@@ -16,7 +16,7 @@ const attempt=async(name:string,run:()=>Promise<void>)=>{try{await run();}catch(
 const caught=async(run:()=>Promise<unknown>)=>{try{await run();return null;}catch(error){return error as any;}};
 const statusOf=(e:any)=>e?.status??(e?"non-ApiError "+e.constructor?.name:"no error");
 
-// Real plants.json from origin/zubair (read-only git). history.json has no branch yet, so it is FAKE.
+// Real plants.json from origin/zubair (read-only git). origin/zubair has no shared/history.json, so history is FAKE.
 const plantsProc=Bun.spawnSync(["git","show","origin/zubair:shared/plants.json"],{cwd:import.meta.dir});
 if(plantsProc.exitCode!==0)throw new Error("Could not read origin/zubair:shared/plants.json");
 const plantsJson=JSON.parse(plantsProc.stdout.toString());
@@ -55,7 +55,7 @@ async function scriptedVotes(w:World,proposalId:string){
   const pumpNow:any=await w.live.get(`/component/${p.proposerComponentId}`,url("/x"));
   const similar:any=await w.live.get("/similar",url("/similar",{componentId:p.proposerComponentId,metric:p.metric,to:p.to,upstreamSnapshot:JSON.stringify({feedM3h:pumpNow.metrics.feedM3h,headerBarg:6}),k:5}));
   const rules:any=await w.live.get("/rules",url("/rules",{componentId:voter,model:c.model}));
-  let predicted=Object.fromEntries(Object.keys(c.limits).slice(0,1).map(m=>[m,c.metrics[m]])),vote="yes";
+  let predicted:Record<string,number>=Object.fromEntries(Object.keys(c.limits).map(m=>[m,c.metrics[m]])),vote="yes";
   if(c.tag==="LV-101"){
    const position=p.to+(p.to>=80?4:1.5),threshold=c.limits.positionPct.critical*(1-c.marginPct/100);
    predicted={positionPct:position};if(position>threshold)vote="no";
@@ -66,11 +66,16 @@ async function scriptedVotes(w:World,proposalId:string){
  return w.actors.proposal(proposalId);
 }
 const voteOf=(p:any,tag:string)=>p.votes.find((v:any)=>v.componentId.endsWith(`/${tag}`));
-const waitVeto=async(w:World,p:any)=>{await Bun.sleep(Math.max(0,Date.parse(w.actors.proposal(p.id).vetoDeadline)-Date.now())+5);};
+// Takes the proposal as voted: a veto clears vetoDeadline on the actor's copy.
+const waitVeto=async(p:any)=>{await Bun.sleep(Math.max(0,Date.parse(p.vetoDeadline)-Date.now())+5);};
 const newProposal=async(w:World,plantId:string,to:number)=>((await api(w,"/propose",proposeBody(plantId,to))) as any).proposal;
-/** Drives a fresh proposal to the point the Plant alarm would fire the execute callback. */
-const readyToExecute=async(w:World,to=65,plantId="plant-a")=>{const p=await newProposal(w,plantId,to);const voted=await scriptedVotes(w,p.id);if(voted.status!=="veto_window")throw new Error(`setup: expected veto_window, got ${voted.status}`);await waitVeto(w,voted);return voted;};
+/** Drives a fresh proposal through the FAKE sweep: Plant.execute has accepted it and the callback is due. Tests deliver the callback themselves. */
+const readyToExecute=async(w:World,to=65,plantId="plant-a")=>{const p=await newProposal(w,plantId,to);const voted=await scriptedVotes(w,p.id);if(voted.status!=="veto_window")throw new Error(`setup: expected veto_window, got ${voted.status}`);await waitVeto(voted);w.actors.sweep(plantId);if(voted.status!=="executed")throw new Error(`setup: expected executed, got ${voted.status}`);return voted;};
+const COMPANY_RULE_ID="company-rule:outlet-valve-A:speedPct:positionPct:high";
 const rule={id:"fake-rule-lv-high",scope:"company",model:"outlet-valve-A",text:"FAKE rule: P-100 speedPct >= 80 leads to LV-101 positionPct >= 85 within 3 ticks",condition:{componentId:"plant-a/P-100",metric:"speedPct",op:">=",value:80},consequence:{componentId:"plant-a/LV-101",metric:"positionPct",op:">=",value:85,withinTicks:3},supportEventIds:["fake-hist-a-85-1"],timesSeen:3,createdAt:new Date().toISOString(),lastSeenAt:new Date().toISOString()};
+
+const predictedFor=(componentId:string)=>(({"P-100":{speedPct:50},"TK-101":{levelPct:50,tempC:75},"LV-101":{positionPct:50},"E-101":{dutyKw:898.5},"TV-101":{positionPct:50.5,steamKgH:1533}}) as Record<string,Record<string,number>>)[componentId.split("/")[1]!]!;
+const vote=(componentId:string,agentId:string,proposalId:string,similarCount=0)=>({proposalId,componentId,agentId,vote:"yes",reason:"FAKE",predicted:predictedFor(componentId),marginPct:10,evidenceEventIds:[],evidenceRuleIds:[],similarCount});
 
 section="Preflight";
 await attempt("real /reset fails closed while shared/ is absent",async()=>{
@@ -111,9 +116,15 @@ await attempt("journey",async()=>{
  const approved=await scriptedVotes(J,counter.id);
  check("step 4: unanimous yes opens the veto window",approved.status==="veto_window"&&!!approved.vetoDeadline&&approved.votes.every((v:any)=>v.vote==="yes")&&approved.votes.length===5,`status=${approved.status}`);
  const early=await caught(()=>api(J,"/execute-callback",{proposalId:counter.id}));
- check("step 4: execute inside the veto window is rejected without dispatch",early?.status===409&&J.sim.setpoints.length===0&&J.actors.count("authorizeExecution")===0,`status ${statusOf(early)}`);
- await waitVeto(J,approved);
- const executed:any=await api(J,"/execute-callback",{proposalId:counter.id});
+ const earlyPlant=await caught(()=>J.actors.call("Plant","plant-a","execute",[counter.id]));
+ check("step 4: Plant.execute inside the veto window is refused",earlyPlant?.status===409&&String(earlyPlant.message).includes("veto_window_open")&&approved.status==="veto_window",`status ${statusOf(earlyPlant)}`);
+ check("step 4: execute callback inside the veto window is rejected without dispatch",early?.status===409&&J.sim.setpoints.length===0&&J.actors.count("claimDispatch")===0,`status ${statusOf(early)}`);
+ await waitVeto(approved);
+ let executed:any;J.actors.onCallback=async id=>{executed=await api(J,"/execute-callback",{proposalId:id});};
+ J.actors.sweep("plant-a");J.actors.onCallback=undefined;
+ check("step 4: after the deadline the sweep sets executed, then the callback runs",J.actors.proposal(counter.id).status==="executed"&&JSON.stringify(J.actors.callbacks)===JSON.stringify([counter.id]));
+ const delivered=await J.actors.lastCallback;
+ if(!delivered?.ok)throw new Error(`callback failed: ${delivered?.error}`);
  check("step 4: execute dispatches once and does not claim observation",J.sim.setpoints.length===1&&J.sim.setpoints[0].value===65&&executed.observed===false&&executed.commandId===`proposal:${counter.id}`);
  const entry=J.journal.get("command",counter.id);
  check("step 4: journal shows accepted with no token retained",entry?.status==="accepted"&&entry.token===undefined,`status=${entry?.status}`);
@@ -128,13 +139,14 @@ await attempt("journey",async()=>{
  repeatEventId=event?.id;
  const hasKeys=event&&["id","at","plantId","componentId","metric","before","after","upstreamSnapshot","effects","incident","approvedBy","operator","proposalId"].every(k=>k in event);
  check("step 4: observed writes a complete HistoryEvent with the pre-dispatch snapshot",!!hasKeys&&event.before===50&&event.after===65&&event.upstreamSnapshot.feedM3h===15&&event.approvedBy.length===5,JSON.stringify(event?.upstreamSnapshot));
- check("step 4: proposal reaches executed after recordEvent",J.actors.proposal(counter.id).status==="executed");
+ check("step 4: the stored event has the actor's own id and the journal keeps that id",event?.id===`event-${counter.id}`&&J.journal.get("command",counter.id)?.eventId===event?.id,`id=${event?.id}`);
+ check("step 4: the execution reaches observed after recordEvent",(await J.actors.call("Plant","plant-a","getExecution",[counter.id]))?.state==="observed");
  const executedMsg=J.pub.published.find(m=>m.type==="executed");
  check("step 4: executed published to plant-a and company",JSON.stringify(executedMsg?.channels)===JSON.stringify(["plant-a","company"])&&executedMsg?.payload.event.id===event?.id);
  await J.bridge.receive(inbound("agent:plant-a/LV-101","calibration",{componentId:"plant-a/LV-101",entry:{at:new Date().toISOString(),proposalId:counter.id,metric:"positionPct",predicted:66.5,observed:66.5,absError:0}}));
  check("step 4: calibration from the LV-101 sender is stored",J.actors.components.get("plant-a/LV-101").calibration.length===1);
  await J.bridge.receive(inbound("agent:plant-a/P-100","rule",{rule},"company"));
- check("step 4: company rule reaches the company library and channel",J.actors.company.rules.some((r:any)=>r.id===rule.id)&&J.pub.published.some(m=>m.type==="rule"&&m.channels[0]==="company"));
+ check("step 4: company rule reaches the company library under the actor's company id, and the channel",J.actors.company.rules.some((r:any)=>r.id===COMPANY_RULE_ID)&&J.pub.published.some(m=>m.type==="rule"&&m.channels[0]==="company"),JSON.stringify(J.actors.company.rules.map((r:any)=>r.id)));
  // Step 5: repeat 85.
  const again=await newProposal(J,"plant-a",85);
  check("step 5: repeat 85 starts from the executed value",again.from===65,`from=${again.from}`);
@@ -144,10 +156,43 @@ await attempt("journey",async()=>{
  const b=await newProposal(J,"plant-b",85);
  check("step 6: plant-b proposal requires plant-a TV-101",b.from===50&&b.crossPlant===true&&b.requiredVoters.includes("plant-a/TV-101"));
  const blockedB=await scriptedVotes(J,b.id),lvB=voteOf(blockedB,"LV-101");
- check("step 6: plant-b blocked citing the company rule",blockedB.status==="blocked"&&lvB.vote==="no"&&lvB.evidenceRuleIds.includes(rule.id),`rules=${JSON.stringify(lvB?.evidenceRuleIds)}`);
+ check("step 6: plant-b blocked citing the company rule",blockedB.status==="blocked"&&lvB.vote==="no"&&lvB.evidenceRuleIds.includes(COMPANY_RULE_ID),`rules=${JSON.stringify(lvB?.evidenceRuleIds)}`);
  const plantARules:any=await J.live.get("/rules",url("/rules",{componentId:"plant-a/LV-101"}));
  check("GET /rules lists a company rule once for its originating plant",new Set(plantARules.map((r:any)=>r.id)).size===plantARules.length,`ids=${JSON.stringify(plantARules.map((r:any)=>r.id))}`);
  check("step 6: plant-b never received a dispatch",J.sim.setpoints.every(s=>s.componentId==="plant-a/P-100")&&J.sim.speed["plant-b"]===50);
+});
+
+section="Fake actor contract (checks the FAKE matches actor.ts)";
+await attempt("contract",async()=>{
+ const w=world();await api(w,"/reset",{});
+ const gone=await caught(()=>w.actors.call("Plant","plant-a","authorizeExecution",["x"]));
+ check("authorizeExecution no longer exists",gone?.status===404,`status ${statusOf(gone)}`);
+ const p=await newProposal(w,"plant-a",65);
+ const notAccepted=await caught(()=>w.actors.call("Plant","plant-a","claimDispatch",[p.id]));
+ const noVotes=await caught(()=>w.actors.call("Plant","plant-a","execute",[p.id]));
+ check("claimDispatch and execute both refuse a proposal without approval",String(notAccepted?.message).includes("not_accepted")&&String(noVotes?.message).includes("not_approved"));
+ const voted=await scriptedVotes(w,p.id);await waitVeto(voted);w.actors.sweep("plant-a");
+ const [c1,c2]=[await w.actors.call("Plant","plant-a","claimDispatch",[p.id]),await w.actors.call("Plant","plant-a","claimDispatch",[p.id])];
+ check("claimDispatch gives one dispatch:true with a token, then dispatch:false",c1.dispatch===true&&!!c1.token&&c2.dispatch===false&&c2.state==="claimed"&&c2.token===undefined,JSON.stringify({first:c1.dispatch,second:c2}));
+ const set=(token:string,value=65)=>w.actors.call("Component","plant-a/P-100","setMetric",["speedPct",value,p.id,token]);
+ const wrong=await caught(()=>set("FAKE-wrong"));
+ check("wrong token is refused and does not burn the real one",String(wrong?.message).includes("invalid_token")&&w.actors.components.get("plant-a/P-100").metrics.speedPct===50);
+ const wrongValue=await caught(()=>set(c1.token,70));
+ check("token bound to another value is refused",String(wrongValue?.message).includes("invalid_token"));
+ await set(c1.token);
+ const again=await caught(()=>set(c1.token));
+ check("setMetric redeems through the plant, and a second redeem fails with token_already_used",w.actors.count("redeemToken")===4&&(await w.actors.call("Plant","plant-a","getExecution",[p.id])).state==="applied"&&String(again?.message).includes("token_already_used"),String(again?.message));
+ const late=await caught(()=>w.actors.call("Plant","plant-a","reportDispatchFailure",[p.id,"FAKE"]));
+ check("reportDispatchFailure refuses an applied execution",String(late?.message).includes("already_applied"),String(late?.message));
+ const e1=await w.actors.call("Plant","plant-a","recordEvent",[{id:"caller-id",proposalId:p.id,effects:[],before:1,after:2}]),e2=await w.actors.call("Plant","plant-a","recordEvent",[{id:"other-id",proposalId:p.id,effects:[]}]);
+ check("recordEvent returns the stored event with the actor's own id, and repeats return it",e1.id===`event-${p.id}`&&e1.before===50&&e1.after===65&&e2.id===e1.id,`id=${e1.id}`);
+ const w2=world();await api(w2,"/reset",{});const q=await readyToExecute(w2);
+ const notDispatched=await caught(()=>w2.actors.call("Plant","plant-a","recordEvent",[{proposalId:q.id,effects:[]}]));
+ check("recordEvent refuses an execution that was accepted but never claimed",String(notDispatched?.message).includes("not_dispatched"));
+ await w2.actors.call("Plant","plant-a","claimDispatch",[q.id]);const failed=await w2.actors.call("Plant","plant-a","reportDispatchFailure",[q.id,"FAKE reason"]);
+ check("reportDispatchFailure fails the execution, expires the proposal and restores the setpoint",failed.state==="failed"&&failed.failure==="FAKE reason"&&w2.actors.proposal(q.id).status==="expired"&&(await newProposal(w2,"plant-a",70)).from===50);
+ const unsafe=await caught(async()=>{const r=await newProposal(w2,"plant-b",65);await w2.actors.call("Plant","plant-b","vote",[{...vote("plant-b/LV-101","agent:plant-b/LV-101",r.id),predicted:{}}]);});
+ check("a yes vote that predicts nothing is refused",String(unsafe?.message).includes("must predict"),String(unsafe?.message));
 });
 
 section="No double dispatch";
@@ -171,20 +216,60 @@ await attempt("sync-fail",async()=>{
  await api(w,"/execute-callback",{proposalId:p.id});
  check("retry reconciles the actor with no second dispatch",w.sim.setpoints.length===1&&w.journal.get("command",p.id).status==="accepted"&&w.actors.components.get("plant-a/P-100").metrics.speedPct===65);
 });
-await attempt("expired-token",async()=>{
- const w=world({tokenTtlMs:40});await api(w,"/reset",{});const p=await readyToExecute(w);
- w.actors.failNext.setMetric=1;await caught(()=>api(w,"/execute-callback",{proposalId:p.id}));await Bun.sleep(60);
- const noTick=await caught(()=>api(w,"/execute-callback",{proposalId:p.id}));await api(w,"/tick",{});
- const afterTick=await caught(()=>api(w,"/execute-callback",{proposalId:p.id}));
- check("retry with an expired token recovers once a mirror tick lands",noTick?.status===502&&afterTick===null&&w.sim.setpoints.length===1&&w.journal.get("command",p.id).status==="accepted",`before tick ${statusOf(noTick)}, after tick ${statusOf(afterTick)}`);
+await attempt("lost-reply",async()=>{
+ const w=world();await api(w,"/reset",{});const p=await readyToExecute(w);
+ w.actors.loseReply.setMetric=1;
+ const e=await caught(()=>api(w,"/execute-callback",{proposalId:p.id}));
+ const retry=await caught(()=>api(w,"/execute-callback",{proposalId:p.id}));
+ check("setMetric applied but reply lost: retry treats token_already_used as success, no second dispatch",e?.status===502&&retry===null&&w.sim.setpoints.length===1&&w.journal.get("command",p.id).status==="accepted"&&w.journal.get("command",p.id).token===undefined,`first ${statusOf(e)}, retry ${retry?retry.message:"ok"}`);
+ const w2=world({plainErrors:true});await api(w2,"/reset",{});const q=await readyToExecute(w2);
+ w2.actors.loseReply.setMetric=1;await caught(()=>api(w2,"/execute-callback",{proposalId:q.id}));
+ const plain=await caught(()=>api(w2,"/execute-callback",{proposalId:q.id}));
+ check("token_already_used is still recognized as the actor's plain Error, with no HTTP status",plain===null&&w2.journal.get("command",q.id).status==="accepted",plain?String(plain.message):"");
+});
+await attempt("claim-loser",async()=>{
+ const w=world();await api(w,"/reset",{});const p=await readyToExecute(w);
+ await api(w,"/execute-callback",{proposalId:p.id});
+ // A second glue process, or one with a lost journal: only the actor's claim stands between it and a second write.
+ const fresh=new LiveCoordinator(w.actors,w.sim,w.pub,new Journal(":memory:"));
+ const lost:any=await fresh.post("/execute-callback",{proposalId:p.id});
+ check("a glue with an empty journal loses the claim and does not write",lost.dispatch===false&&w.sim.setpoints.length===1,JSON.stringify(lost));
+});
+await attempt("claim-timeout",async()=>{
+ const w=world({claimTimeoutMs:40});await api(w,"/reset",{});const p=await readyToExecute(w);
+ w.actors.failNext.setMetric=1;await caught(()=>api(w,"/execute-callback",{proposalId:p.id}));await Bun.sleep(60);w.actors.sweep("plant-a");
+ const retry=await caught(()=>api(w,"/execute-callback",{proposalId:p.id}));
+ check("retry after the actor timed out the claim reports 502 accepted:true with no second dispatch",retry?.status===502&&retry.details?.accepted===true&&w.sim.setpoints.length===1,`status ${statusOf(retry)}: ${retry?.details?.cause??""}`);
+ const next=await newProposal(w,"plant-a",70);
+ check("after a timed-out claim on a write the simulator accepted, a new proposal starts from the simulator's value",next.from===w.sim.speed["plant-a"],`from=${next.from} sim=${w.sim.speed["plant-a"]}: every later execute is refused as drift until /reset`);
 });
 await attempt("unknown",async()=>{
  const w=world();await api(w,"/reset",{});const p=await readyToExecute(w);
  w.sim.onSetpoint=()=>{throw new ApiError(503,"FAKE sim down");};
  const a=await caught(()=>api(w,"/execute-callback",{proposalId:p.id})),b=await caught(()=>api(w,"/execute-callback",{proposalId:p.id}));
  check("sim failure leaves unknown and refuses redispatch",a?.status===503&&b?.status===409&&w.sim.setpoints.length===1&&w.journal.get("command",p.id).status==="unknown");
+ check("sim failure is reported to the Plant",w.actors.count("reportDispatchFailure")===1&&w.actors.proposal(p.id).status==="expired");
  const o=await caught(()=>api(w,"/observed",{proposalId:p.id,effects:[]}));
  check("observed is refused for an unknown command",o?.status===409&&w.actors.count("recordEvent")===0);
+});
+await attempt("bad-ack",async()=>{
+ const w=world();await api(w,"/reset",{});const p=await readyToExecute(w);
+ w.sim.onSetpoint=()=>({valueApplied:p.to+5});
+ const e=await caught(()=>api(w,"/execute-callback",{proposalId:p.id}));
+ check("a simulator ack for another value is unknown, reported, and not synced to the actor",e?.status===502&&w.journal.get("command",p.id).status==="unknown"&&w.actors.count("setMetric")===0&&w.actors.count("reportDispatchFailure")===1,`status ${statusOf(e)}`);
+});
+await attempt("bad-claim",async()=>{
+ const w=world();await api(w,"/reset",{});const p=await readyToExecute(w);
+ const call=w.actors.call.bind(w.actors);
+ w.actors.call=async(kind,id,method,args)=>{const r=await call(kind,id,method,args);return method==="claimDispatch"&&r.dispatch?{...r,value:r.value+5}:r;};
+ const e=await caught(()=>api(w,"/execute-callback",{proposalId:p.id}));
+ check("a claim that does not match the proposal is refused without dispatch",e?.status===409&&w.sim.setpoints.length===0&&w.actors.count("reportDispatchFailure")===1,`status ${statusOf(e)}`);
+});
+await attempt("margin-limit",async()=>{
+ const w=world();await api(w,"/reset",{});const p=await readyToExecute(w);
+ w.actors.components.get("plant-a/P-100").marginPct=50;
+ const e=await caught(()=>api(w,"/execute-callback",{proposalId:p.id}));
+ check("target past the component's current margin is refused at dispatch",e?.status===409&&w.sim.setpoints.length===0&&w.actors.count("reportDispatchFailure")===1,`status ${statusOf(e)}`);
 });
 
 section="Unapproved execute";
@@ -199,15 +284,21 @@ await attempt("unapproved",async()=>{
  const e3=await caught(()=>api(w,"/execute-callback",{proposalId:"fake-does-not-exist"}));
  check("unknown proposal rejected",e3?.status===404,`status ${statusOf(e3)}`);
  const w2=world();await api(w2,"/reset",{});const v=await newProposal(w2,"plant-a",65);await scriptedVotes(w2,v.id);
- await api(w2,"/veto",{proposalId:v.id,by:"fake-operator"});await waitVeto(w2,v);
+ const votedV={...w2.actors.proposal(v.id)};await api(w2,"/veto",{proposalId:v.id,by:"fake-operator"});await waitVeto(votedV);w2.actors.sweep("plant-a");
  const e4=await caught(()=>api(w2,"/execute-callback",{proposalId:v.id}));
+ check("the sweep does not execute a vetoed proposal",w2.actors.proposal(v.id).status==="vetoed"&&w2.actors.callbacks.length===0);
  const late=await (async()=>{const w3=world();await api(w3,"/reset",{});const p=await readyToExecute(w3);return caught(()=>api(w3,"/veto",{proposalId:p.id,by:"fake-operator"}));})();
  check("vetoed proposal rejected",e4?.status===409,`status ${statusOf(e4)}`);
  check("veto after the deadline rejected",late?.status===409,`status ${statusOf(late)}`);
- check("no dispatch or authorization on any rejected execute",w.sim.setpoints.length===0&&w2.sim.setpoints.length===0&&w.actors.count("authorizeExecution")===0&&w2.actors.count("authorizeExecution")===0);
+ check("no dispatch or claim on any rejected execute",w.sim.setpoints.length===0&&w2.sim.setpoints.length===0&&w.actors.count("claimDispatch")===0&&w2.actors.count("claimDispatch")===0);
+ const blockedExecute=await caught(()=>w.actors.call("Plant","plant-a","execute",[bad.id]));
+ check("Plant.execute refuses a blocked proposal",String(blockedExecute?.message).includes("not_approved"),String(blockedExecute?.message));
+ const staleSetpoint=await (async()=>{const w5=world();await api(w5,"/reset",{});const a=await newProposal(w5,"plant-a",65),b=await newProposal(w5,"plant-a",70);const voted=await scriptedVotes(w5,a.id);await waitVeto(voted);w5.actors.sweep("plant-a");await scriptedVotes(w5,b.id);return w5.actors.proposal(b.id).status;})();
+ check("a proposal overtaken by another execution expires as stale",staleSetpoint==="expired",`status ${staleSetpoint}`);
  const w4=world();await api(w4,"/reset",{});const stale=await readyToExecute(w4);w4.sim.speed["plant-a"]=55;
  const e5=await caught(()=>api(w4,"/execute-callback",{proposalId:stale.id}));
  check("sim drift after approval rejected without dispatch or journal entry",e5?.status===409&&w4.sim.setpoints.length===0&&w4.journal.get("command",stale.id)===undefined,`status ${statusOf(e5)}`);
+ check("sim drift is reported to the Plant, which expires the proposal",w4.actors.count("reportDispatchFailure")===1&&w4.actors.proposal(stale.id).status==="expired");
 });
 
 section="Bug hunt: reset";
@@ -218,8 +309,8 @@ await attempt("id-reuse",async()=>{
  const p2=await newProposal(w,"plant-a",65);
  const take2=await scriptedVotes(w,p2.id);
  check("second take after reset: votes count when the actor reuses a proposal id",take2.votes.length===5,`id=${p2.id} reused=${p1.id===p2.id} votes=${take2.votes.length} (relay-inbound journal not cleared)`);
- for(const c of take2.requiredVoters)if(!take2.votes.some((v:any)=>v.componentId===c))await w.actors.call("Plant","plant-a","vote",[{proposalId:p2.id,componentId:c,agentId:`agent:${c}`,vote:"yes",reason:"FAKE direct vote to reach execute",predicted:{},marginPct:10,evidenceEventIds:[],evidenceRuleIds:[],similarCount:0}]);
- w.actors.sweep("plant-a");await waitVeto(w,p2);
+ for(const c of take2.requiredVoters)if(!take2.votes.some((v:any)=>v.componentId===c))await w.actors.call("Plant","plant-a","vote",[vote(c,`agent:${c}`,p2.id,1)]);
+ w.actors.sweep("plant-a");await waitVeto(w.actors.proposal(p2.id));w.actors.sweep("plant-a");
  const r:any=await caught(()=>api(w,"/execute-callback",{proposalId:p2.id}));
  check("second take after reset: execute dispatches when the actor reuses a proposal id",w.sim.setpoints.length===before+1,`setpoints added=${w.sim.setpoints.length-before}, sim speed=${w.sim.speed["plant-a"]}, error=${r?.message??"none (stale success returned)"}`);
 });
@@ -255,7 +346,6 @@ await attempt("mirror-race",async()=>{
 });
 
 section="Bug hunt: relay inbound";
-const vote=(componentId:string,agentId:string,proposalId:string)=>({proposalId,componentId,agentId,vote:"yes",reason:"FAKE",predicted:{},marginPct:10,evidenceEventIds:[],evidenceRuleIds:[],similarCount:0});
 await attempt("dedupe",async()=>{
  const w=world();await api(w,"/reset",{});const p=await newProposal(w,"plant-a",65);
  const m=inbound("agent:plant-a/LV-101","vote",{vote:vote("plant-a/LV-101","agent:plant-a/LV-101",p.id)});
@@ -307,13 +397,67 @@ await attempt("replay",async()=>{
  check("counter accepted before a Relay failure is not re-proposed by backfill",made===1,`first ${statusOf(e)} accepted=${e?.details?.accepted}, second ${replay?statusOf(replay):"ok"}, Plant.propose calls=${made}`);
 });
 
+await attempt("rule-merge",async()=>{
+ const w=world();await api(w,"/reset",{});
+ await api(w,"/rule",{rule:{...rule,id:"fake-rule-first",scope:"plant"}});
+ await api(w,"/rule",{rule:{...rule,id:"fake-rule-second",scope:"plant"}});
+ const published=w.pub.published.filter(m=>m.type==="rule").at(-1)?.payload.rule.id,stored=w.actors.plants.get("plant-a").rules.map((r:any)=>r.id);
+ check("/rule publishes the rule the actor stored, so cited ids exist",stored.includes(published),`published=${published} stored=${JSON.stringify(stored)}`);
+});
+
+section="RELAY_PUBLISH_URL mode (FAKE endpoint, not Relay delivery)";
+const publishWorld=async(publishUrl:string)=>{
+ const actors=new FakeActors(),sim=new FakeSim(),journal=new Journal(":memory:");
+ process.env.RELAY_PUBLISH_URL=publishUrl;
+ const bridge=new RelayBridge((path,body)=>live.post(path,body),journal);
+ delete process.env.RELAY_PUBLISH_URL;
+ const live=new LiveCoordinator(actors,sim,bridge,journal);
+ await bridge.start();await live.post("/reset",{});
+ return {actors,sim,journal,live,bridge,outbox:()=>journal.list("relay-outbox")};
+};
+await attempt("publish-url",async()=>{
+ const endpoint=fakePublishEndpoint(),w=await publishWorld(endpoint.server.url.href);
+ try{
+  check("start() in publish mode needs no Relay credentials and reports configured",w.bridge.status.configured&&w.bridge.status.connected);
+  const {proposal}:any=await w.live.post("/propose",proposeBody("plant-a",65)),got=endpoint.received[0]?.body;
+  check("publish posts {type,payload,channels}",JSON.stringify(Object.keys(got??{}).sort())===JSON.stringify(["channels","payload","type"])&&got.type==="proposal"&&got.payload.proposal.id===proposal.id&&JSON.stringify(got.channels)===JSON.stringify(["plant-a","company"]),JSON.stringify(got)?.slice(0,160));
+  check("a delivered publish leaves the outbox empty",w.outbox().length===0);
+  check("no bearer header is sent while RELAY_TOKEN is unset",endpoint.received[0]?.authorization===null);
+  process.env.RELAY_TOKEN="FAKE-relay-token";
+  await w.bridge.publish("rule",{rule:{id:"fake-bearer"}},["company"]);
+  delete process.env.RELAY_TOKEN;
+  check("RELAY_TOKEN is sent as a bearer",endpoint.received.at(-1)?.authorization==="Bearer FAKE-relay-token");
+  await w.bridge.publish("rule",{rule:{id:"fake-channels"}},["company","not-a-channel"]);
+  check("channels outside the Relay set are dropped",JSON.stringify(endpoint.received.at(-1)!.body.channels)===JSON.stringify(["company"]));
+
+  endpoint.status=500;const before=endpoint.received.length,proposes=w.actors.count("propose");
+  const failed=await caught(()=>w.live.post("/propose",proposeBody("plant-a",70)));
+  check("failed publish reports 502 accepted:true and stays queued",failed?.status===502&&failed.details?.accepted===true&&w.outbox().length===1&&w.outbox()[0]!.value.type==="proposal",`status ${statusOf(failed)} outbox=${w.outbox().length}`);
+  const stillDown=await caught(()=>w.bridge.flush());
+  check("flush while the endpoint is down keeps the message and records the error",!stillDown&&w.outbox().length===1&&/503/.test(w.bridge.status.error??""),`error ${w.bridge.status.error} outbox=${w.outbox().length}`);
+  endpoint.status=200;await w.bridge.flush();
+  const sent=endpoint.received.slice(before);
+  check("flush delivers the queued message once and empties the outbox, with no new proposal",sent.length===1&&sent[0]!.body.payload.proposal.id===failed?.details?.proposal?.id&&w.outbox().length===0&&w.actors.count("propose")===proposes+1,`sent=${sent.length} outbox=${w.outbox().length}`);
+  await w.bridge.flush();
+  check("a second flush sends nothing",endpoint.received.length===before+1);
+
+  endpoint.rejectType="fake-poison";
+  await caught(()=>w.bridge.publish("fake-poison",{id:"a"},["company"]));
+  endpoint.status=500;await caught(()=>w.bridge.publish("fake-z-later",{id:"b"},["company"]));endpoint.status=200;
+  await caught(()=>w.bridge.flush());
+  check("one message the endpoint keeps rejecting does not block later ones in flush",endpoint.received.some(r=>r.body.type==="fake-z-later"),`outbox=${JSON.stringify(w.outbox().map(e=>e.id))}`);
+ }finally{endpoint.server.stop(true);}
+ const down=await caught(()=>w.bridge.publish("rule",{rule:{id:"fake-unreachable"}},["company"]));
+ check("an unreachable endpoint also leaves the message queued",down!==null&&w.outbox().some(e=>e.id==="rule:fake-unreachable"),String(down));
+});
+
 section="Contract probe";
 await attempt("literal",async()=>{
  const w=world({similar:"contract-literal"});await api(w,"/reset",{});
  const p=await readyToExecute(w);await api(w,"/execute-callback",{proposalId:p.id});await api(w,"/tick",{});
  await api(w,"/observed",{proposalId:p.id,effects:[{componentId:"plant-a/LV-101",metric:"positionPct",before:50,after:66.5,ticksToSettle:3}]});
  const again=await newProposal(w,"plant-a",85),blocked=await scriptedVotes(w,again.id),lv=voteOf(blocked,"LV-101");
- check("similar() ranked literally per CLAUDE.md still returns the new event first",lv.evidenceEventIds[0]===`observed:${p.id}`,`evidence=${JSON.stringify(lv.evidenceEventIds)}`);
+ check("similar() ranked literally per CLAUDE.md still returns the new event first",lv.evidenceEventIds[0]===`event-${p.id}`,`evidence=${JSON.stringify(lv.evidenceEventIds)}`);
 });
 
 await attempt("nearest",async()=>{
@@ -321,7 +465,7 @@ await attempt("nearest",async()=>{
  const p=await readyToExecute(w);await api(w,"/execute-callback",{proposalId:p.id});await api(w,"/tick",{});
  await api(w,"/observed",{proposalId:p.id,effects:[]});
  const again=await newProposal(w,"plant-a",85),blocked=await scriptedVotes(w,again.id),lv=voteOf(blocked,"LV-101");
- check("similar() ranked by nearest `after` alone, k=5, retrieves the new event at all",lv.evidenceEventIds.includes(`observed:${p.id}`),`evidence=${JSON.stringify(lv.evidenceEventIds)}`);
+ check("similar() ranked by nearest `after` alone, k=5, retrieves the new event at all",lv.evidenceEventIds.includes(`event-${p.id}`),`evidence=${JSON.stringify(lv.evidenceEventIds)}`);
 });
 
 section="HTTP via server.ts";
@@ -334,7 +478,7 @@ await attempt("http",async()=>{
   return new Response("{}",{status:404});}});
  (globalThis as any).__fakeHarnessActors=new FakeActors();
  Object.assign(process.env,{GLUE_MODE:"live",GLUE_JOURNAL_PATH:":memory:",ACTOR_CLIENT_MODULE:fileURLToPath(new URL("./fakes.ts",import.meta.url)),SIM_URL:simServer.url.origin,EXECUTION_CALLBACK_TOKEN:"FAKE-harness-only"});
- for(const k of ["ACTOR_API_URL","ACTOR_API_TOKEN","RELAY_WORKSPACE_KEY","RELAY_AGENT_TOKEN","BRIDGE_PUSHES_MIRROR"])delete process.env[k];
+ for(const k of ["ACTOR_API_URL","ACTOR_API_TOKEN","RELAY_WORKSPACE_KEY","RELAY_AGENT_TOKEN","RELAY_PUBLISH_URL","RELAY_TOKEN","BRIDGE_PUSHES_MIRROR"])delete process.env[k];
  const {handle}=await import("../server");
  const call=(path:string,body?:unknown,headers:Record<string,string>={})=>handle(new Request(`http://fake-harness${path}`,body===undefined?{headers}:{method:"POST",headers:{"content-type":"application/json",...headers},body:JSON.stringify(body)}));
  const reset=await call("/reset",{});
@@ -345,6 +489,19 @@ await attempt("http",async()=>{
  check("POST /tick mirrors ten components over HTTP sim",tick.mirrored===10,JSON.stringify(tick));
  check("execute-callback without the bearer token is 401",(await call("/execute-callback",{proposalId:"x"})).status===401);
  check("execute-callback with the token reaches the coordinator",(await call("/execute-callback",{proposalId:"x"},{authorization:"Bearer FAKE-harness-only"})).status===404);
+ // Approves through the FAKE actor port directly, because /propose needs Relay and that is checked below.
+ const actors:FakeActors=(globalThis as any).__fakeHarnessActors;
+ const accepted=async(to:number)=>{const p=await actors.call("Plant","plant-a","propose",[proposeBody("plant-a",to)]);for(const c of p.requiredVoters)await actors.call("Plant","plant-a","vote",[vote(c,`agent:${c}`,p.id,1)]);actors.sweep("plant-a");await waitVeto(actors.proposal(p.id));actors.sweep("plant-a");return p.id as string;};
+ const noToken=await accepted(65);
+ delete process.env.EXECUTION_CALLBACK_TOKEN;
+ const open=await call("/execute-callback",{proposalId:noToken});
+ process.env.EXECUTION_CALLBACK_TOKEN="FAKE-harness-only";
+ check("execute-callback with no bearer succeeds when EXECUTION_CALLBACK_TOKEN is unset, as the actor sends it",open.status===200&&sim.setpoints.length===1&&sim.setpoints[0].value===65,`status ${open.status} setpoints=${sim.setpoints.length}`);
+ const guarded=await accepted(70);
+ const wrong=await call("/execute-callback",{proposalId:guarded},{authorization:"Bearer FAKE-wrong"}),none=await call("/execute-callback",{proposalId:guarded});
+ check("execute-callback with a wrong or missing bearer fails when the token is set, with no dispatch",wrong.status===401&&none.status===401&&sim.setpoints.length===1,`wrong ${wrong.status}, none ${none.status}, setpoints=${sim.setpoints.length}`);
+ const right=await call("/execute-callback",{proposalId:guarded},{authorization:"Bearer FAKE-harness-only"});
+ check("execute-callback with the right bearer dispatches",right.status===200&&sim.setpoints.length===2,`status ${right.status} setpoints=${sim.setpoints.length}`);
  check("/propose fails closed when Relay is not configured",(await call("/propose",proposeBody("plant-a",65))).status===503);
  check("malformed vote is 400",(await call("/vote",{vote:{proposalId:"x"}})).status===400);
  const errorLog=console.error;console.error=()=>{};
