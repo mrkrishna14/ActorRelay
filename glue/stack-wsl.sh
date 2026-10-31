@@ -79,6 +79,11 @@ for _ in $(seq 1 240); do
 done
 grep "^ready:" "$RUN/logs/agents.log" || { echo "agents did not become ready"; tail -20 "$RUN/logs/agents.log" | cut -c1-240; exit 4; }
 
+echo "[stack] warm-up reset: the first call to each actor starts its host process"
+curl -s -m 60 -X POST -H 'content-type: application/json' -d '{}' "$GLUE_URL/reset" | cut -c1-200
+echo
+sleep 3
+
 echo "[stack] e2e"
 cd "$ROOT/glue-run/glue"
 GLUE_URL="$GLUE_URL" BRIDGE_URL="$BRIDGE_URL" E2E_REPORT="${E2E_REPORT:-$RUN/e2e.md}" bun run e2e.ts

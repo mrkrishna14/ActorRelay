@@ -2,7 +2,7 @@
 // after a timeout the write may have landed, so the only honest answer is "unknown".
 import { z } from "zod";
 import type { ComponentId, PlantId } from "../shared/types";
-import { metricsSchema } from "./schemas";
+import { metricsSchema } from "./contract";
 
 export type SetpointBody = { componentId: ComponentId; metric: string; value: number; proposalId: string };
 export type Snapshot = Record<ComponentId, Record<string, number>>;

@@ -7,7 +7,7 @@ import { Dispatcher } from "./dispatch";
 import { MirrorPump } from "./mirror";
 import { compactPlant, Reads } from "./reads";
 import type { Inbound, RelayPort } from "./relay";
-import { plantIdSchema, routeSchemas, rulesQuerySchema, similarQuerySchema, type ProposalInput, type Route, type RouteBody } from "./schemas";
+import { plantIdSchema, routeSchemas, rulesQuerySchema, similarQuerySchema, type ProposalInput, type Route, type RouteBody } from "./contract";
 import { loadSeed, type SeedInfo } from "./seed";
 
 export type GlueDeps = {

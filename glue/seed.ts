@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import type { HistoryEvent } from "../shared/types";
-import { historyEventSchema, plantsFileSchema, type PlantsFile } from "./schemas";
+import { historyEventSchema, plantsFileSchema, type PlantsFile } from "./contract";
 
 export const REAL_HISTORY = "shared/history.json";
 export const STAND_IN_HISTORY = "actor/tests/fixtures-gen/history.json";
