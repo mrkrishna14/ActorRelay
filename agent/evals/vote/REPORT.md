@@ -1,14 +1,31 @@
 # Vote pipeline accuracy
 
-**Verdict, 2026-10-31 13:00.** The four demo steps that must never be faked passed every repeat, on all three models tested. No unsafe proposal reached unanimous yes on `gpt-6.1-terra` or `gpt-6.1-sol`. Single-vote accuracy is 92-93%, not 100%, and most of the gap is code policy rather than model error.
+**Verdict, 2026-10-31 13:05.** The four demo steps that must never be faked passed all 530 replay runs. No unsafe proposal reached unanimous yes on `gpt-6.1-terra` or `gpt-6.1-sol` on the current vote pipeline. Single-vote accuracy is 92%, not 100%, and most of the gap is code policy rather than model error: both models agree with a perfect model on over 99% of votes.
 
-Use `AGENT_OPENAI_MODEL=gpt-6.1-terra` and `AGENT_OPENAI_EFFORT=low` for every role.
+Use `AGENT_OPENAI_MODEL=gpt-6.1-terra` and `AGENT_OPENAI_EFFORT=low` for every role. The default in code is still `gpt-6-luna`, which leaked 2 unsafe proposals of 159 at 720ea5c.
 
-**Scale:** 61,686 real OpenAI votes, 92.8M tokens, plus fake-model controls. Raw results stay in `results/`, which git ignores.
+**Scale:** 66,186 real OpenAI votes across sweeps, 98.7M tokens, plus 2,650 demo replay votes and fake-model controls. Raw results stay in `results/`, which git ignores.
 
-## Final numbers
+## After the fixes landed
 
-Unmodified `agent/vote.ts` at 720ea5c through the real `castVote`, with fake glue and real models. 300 proposals, 1,500 votes per model, seed 41, 40 concurrent per model. "Plus fixes" adds the three candidate changes below, applied in memory.
+Same 300 proposals and seed, real models, unmodified `agent/` at each commit.
+
+| | terra 720ea5c | terra ea9fb48 | terra d9a8265 | sol 720ea5c | sol ea9fb48 |
+|---|---|---|---|---|---|
+| Unsafe proposals reaching unanimous yes, of 159 | 0 | 0 | 0 | 0 | 0 |
+| Unsafe yes after code | 9 | 3 | 3 | 4 | 0 |
+| Of those, physically past a limit | 0 | 0 | 0 | 0 | 0 |
+| False no | 112 | 115 | 118 | 111 | 117 |
+| Safe proposals falsely blocked, of 95 | 10 | 10 | 11 | 10 | 10 |
+| Final accuracy against the oracle | 91.9 | 92.1 | 91.9 | 92.3 | 92.2 |
+| Agreement with a perfect model | 99.1 | 99.5 | 99.3 | 99.5 | 99.5 |
+| Malformed after retry | 0 | 0 | 0 | 0 | 0 |
+
+`agent/` moved again to 731b03a after this table, and that commit is not measured.
+
+## Candidate comparison at 720ea5c
+
+Unmodified `agent/vote.ts` through the real `castVote`, with fake glue and real models. 300 proposals, 1,500 votes per model, seed 41, 40 concurrent per model. "Plus fixes" adds the three candidate changes below, applied in memory.
 
 | | luna none | sol low | terra low |
 |---|---|---|---|
@@ -55,7 +72,7 @@ Real `rankSimilar`, `deriveRules` and `castVote` on 720ea5c with real models. Hi
 | sol low | 10/10 | 10/10 | 10/10 | 10/10 | 10/10 |
 | luna none | 10/10 | 10/10 | 10/10 | 10/10 | 10/10 |
 
-An earlier code version also passed 20/20 on every step and model.
+An earlier code version also passed 20/20 on every step and model. Terra passed 8/8 on every step at ea9fb48 with simulated history in place of the stand-in, read-only and not committed, and 8/8 at d9a8265 on the stand-in.
 
 ## Model comparison
 
@@ -78,7 +95,7 @@ Accuracy is lower in the final table because 720ea5c added stricter history rule
 |---|---|---|
 | `contradicted()` makes a model retract a correct extrapolation | P-100 65->94: luna predicted 2840 kg/h (truth 2839.8), was told runs peaked at 2665, changed to 2665, final yes. 18 non-artifact unsafe votes in 14.9k, 6 clear | Fixed in ea9fb48 |
 | `decide()` ignores evidence estimates in the thin-history check | P-100 70->78, 1 event at about 79, low prediction, final yes | Fixed in ea9fb48 |
-| `evidenceEstimates` ignores speed differences between runs | Target 74, runs at 79-84: estimate 84, false block | **Open.** Sent, with slopes |
+| `evidenceEstimates` ignores speed differences between runs | Target 74, runs at 79-84: estimate 84, false block | **Open.** Sent, with slopes. In memory it cut false blocks from 10 to 6 of 95 |
 | `callOpenAi` does not retry on 429 | A rate limit becomes a safe no and can block the counter step | **Open.** ar-learning sent the fix |
 | Default model is still luna | `agent/llm.ts:22` and `agent/HANDOFF.md:75` | **Open.** Sent |
 | Cross-plant TV-101 took the other plant's steam as its own | Steam error 800 kg/h | Fixed by ar-agents |
@@ -90,7 +107,7 @@ With a fake model that always votes yes at current values, code alone stops all 
 
 - **False no is the main cost.** A perfect model scores only 92.8% through the current code, 93.3% with the fixes. `vote.ts` is deliberately stricter than TASK1: a near-critical target needs 3 close runs, and any increase with zero history is a no.
 - **TK-101 blocks when its margin widens.** Past margin 11, `85 × (1 − m/100)` falls below the normal 75 °C. That blocked 46 of 300 proposals that were otherwise safe, helped by a scenario mix with 24% of margins above 10. The actors floor this at `limit.max`; `vote.ts` does not.
-- **Truth is a fit, not the plant.** Expected values come from the CLAUDE.MD summary and the TASK2.MD fit, because `bridge/` has not landed. Temperature on a downward step is unknown to the oracle, so a predicted rise past 76.5 °C counts as a false no. Re-run once `shared/history.json` and `bridge/HANDOFF.md` exist.
+- **Truth is a fit, checked against simulation.** Expected values come from the CLAUDE.MD summary and the TASK2.MD fit. Read-only against 300 simulated history events, its mean error is 0.85 points on LV-101, 0.8 on level, 0.6 °C on temperature, 41 kW on duty and 70 kg/h on steam, and it reaches the same decision on 96.5% of 3,600 voter checks. The main gap: on large downward steps the simulated temperature rises to 78 °C, past the 76.5 line, while the oracle holds 75. A TK-101 yes on those steps is therefore unscored. Near the steam and duty limits the oracle is the more cautious of the two. The live plant itself has not been measured.
 - **No Claude role was measured.** The Claude CLI login is down, so all results are OpenAI, which is also what runs today.
 - **Latency is load-dependent.** Figures are at 40 concurrent per model on a shared key that other sessions were also using.
 - **Harness differences.** `vote.ts` runs under Node through `node-ts.mjs`, one token rewritten, not under Bun. The final run uses `fastNoMs` 600 s, so the fast-no race is not exercised.

@@ -21,7 +21,7 @@ function parseArgs(argv: string[]) {
 }
 
 const opts = parseArgs(process.argv.slice(2));
-const historyPath = [join(root, "shared", "history.json"), join(root, "actor", "tests", "fixtures-gen", "history.json")].find(existsSync)!;
+const historyPath = [opts.history, join(root, "shared", "history.json"), join(root, "actor", "tests", "fixtures-gen", "history.json")].filter(Boolean).find(existsSync)!;
 const seedHistory = JSON.parse(readFileSync(historyPath, "utf8"));
 const allComponents = plantSeed.plants.flatMap((p: any) => p.components);
 const topology = Object.fromEntries(allComponents.map((c: any) => [c.id, c]));
