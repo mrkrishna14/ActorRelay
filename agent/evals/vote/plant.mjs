@@ -9,6 +9,8 @@ export const plantSeed = JSON.parse(readFileSync(join(root, "shared", "plants.js
 export const physicsSummary = readFileSync(join(root, "CLAUDE.MD"), "utf8").match(/### Physics summary[^\n]*\n([^\n]+)/)[1];
 
 export const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+// critical minus margin, never below limit.max: main's 13:15 ruling, matching vote.ts and the actors.
+export const thresholdFor = (limit, margin) => Math.max(limit.critical * (1 - margin / 100), limit.max);
 export const round = (x, d = 1) => Number(x.toFixed(d));
 
 export const steamAt = (s) => Math.min(3000, 29.7 * s + 48);
@@ -93,7 +95,7 @@ function ruleBinds(rule, proposal, component) {
   const { condition, consequence } = rule;
   if (condition.metric !== proposal.metric || proposal.to < condition.value) return false;
   const limit = component.limits[consequence.metric];
-  if (!limit || consequence.value < limit.critical * (1 - component.marginPct / 100)) return false;
+  if (!limit || consequence.value < thresholdFor(limit, component.marginPct)) return false;
   if (consequence.componentId) return consequence.componentId === component.id;
   return rule.model === component.model;
 }
@@ -110,7 +112,7 @@ export function expectedVote(component, truth, similarCount, { changeNearCritica
   for (const [metric, limit] of Object.entries(component.limits)) {
     const t = truth[metric];
     if (!t) continue;
-    const threshold = limit.critical * (1 - margin / 100);
+    const threshold = thresholdFor(limit, margin);
     const thin = limit.critical * 0.85;
     const before = component.metrics[metric];
     const unchanged = t.ceil <= before;

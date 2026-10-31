@@ -82,6 +82,13 @@ console.log(table(["candidate", "should block", "unsafe executions", "should pas
   return [k, p.blocks, p.unsafeExec, p.passes, p.falseBlock, p.staticOnly];
 })));
 
+console.log("\n## Per family, safe proposals falsely blocked / safe proposals\n");
+const proposalFamilies = [...new Set(rows.map((r) => r.family))].sort();
+console.log(table(["candidate", ...proposalFamilies], [...byCandidate].map(([k, xs]) => [k, ...proposalFamilies.map((f) => {
+  const p = proposalLevel(xs.filter((r) => r.family === f));
+  return `${p.falseBlock} / ${p.passes}`;
+})])));
+
 console.log("\n## Prediction error, mean absolute (LV-101 % / kg/h / kW / % / degC)\n");
 console.log(table(["candidate", ...METRICS.map(([t, m]) => `${t} ${m}`)], [...byCandidate].map(([k, xs]) => [k, ...METRICS.map(([t, m]) => {
   const errs = xs.filter((r) => r.tag === t && r.errors[m] !== undefined).map((r) => r.errors[m]);

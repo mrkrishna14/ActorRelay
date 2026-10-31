@@ -1,10 +1,21 @@
 # Vote pipeline accuracy
 
-**Verdict, corrected 2026-10-31 13:13.** The four demo steps that must never be faked passed all 530 replay runs. No throughput increase with `gpt-6.1-terra` or `gpt-6.1-sol` got an unsafe change to unanimous yes, and on simulated history feed reductions are handled too (see the correction below, which replaces the 13:05 claim). Single-vote accuracy is 91%, not 100%, and most of the gap is code policy rather than model error.
+**Verdict, 2026-10-31 13:30, on 69dfe6b with `shared/history.json`.** With `gpt-6.1-terra` at effort low, the default in code, no unsafe proposal reached unanimous yes and the demo steps that must never be faked all passed. 8 of 74 safe proposals are blocked, and 5 of those would block with a perfect model too.
 
-Use `AGENT_OPENAI_MODEL=gpt-6.1-terra` and `AGENT_OPENAI_EFFORT=low` for every role. The default in code is still `gpt-6-luna`, which leaked 2 unsafe proposals of 159 at 720ea5c.
+| Terra on the project's history, 104 proposals, 520 votes, 4 concurrent | |
+|---|---|
+| Unsafe proposals reaching unanimous yes | 0 of 30 |
+| Safe proposals blocked | 8 of 74 (perfect model 5) |
+| Malformed after retry | 0 |
+| Rate-limit retries | 0 |
+| Latency p50 / p95 / worst | 2.4 s / 3.2 s / 6.7 s |
+| Demo steps 3, 4, 5, 6, 6a | 5/5 each |
 
-**Scale:** 66,186 real OpenAI votes across sweeps, 98.7M tokens, plus 2,650 demo replay votes and fake-model controls. Raw results stay in `results/`, which git ignores.
+The 3 blocks a perfect model avoids are feed reductions of 39-42 points, predicted at 80.1-80.9 °C against a true 79.5-79.9 °C and an 80 line. This run covers every third target from 20 to 98, from speeds 50 and 65, in both plants. `targets.ts` reproduces it.
+
+**Scale:** 69,513 real OpenAI votes, 99.5M tokens on the sweeps, plus fake-model controls. All 555 demo replay runs passed. Raw results stay in `results/`, which git ignores.
+
+The sections below are the earlier history of this eval. They predate the `limit.max` threshold floor and the close-run rule unless they say otherwise.
 
 ## Correction: tank temperature on feed reductions
 
@@ -108,15 +119,15 @@ An earlier code version also passed 20/20 on every step and model. Terra passed 
 
 Accuracy is lower in the final table because 720ea5c added stricter history rules. `gpt-5.3-codex` is ruled out: its p95 exceeds the 8 s timeout. Per role, terra and sol are within noise of each other, so one model is enough. On an early prompt, explicit prediction guidance raised accuracy 8-31 points on every model but nano. A strict JSON schema added nothing further. The current prompts already contain most of that guidance.
 
-## Open defects
+## Defects found
 
 | Defect | Scenario | Status |
 |---|---|---|
-| `contradicted()` makes a model retract a correct extrapolation | P-100 65->94: luna predicted 2840 kg/h (truth 2839.8), was told runs peaked at 2665, changed to 2665, final yes. 18 non-artifact unsafe votes in 14.9k, 6 clear | Fixed in ea9fb48 |
+| `contradicted()` makes a model retract a correct extrapolation | P-100 65->94: luna predicted 2840 kg/h (truth 2839.8), was told runs peaked at 2665, changed to 2665, final yes. 18 non-artifact unsafe votes in 14.9k, 6 clear | Fixed in ea9fb48, narrowed further in 69dfe6b |
 | `decide()` ignores evidence estimates in the thin-history check | P-100 70->78, 1 event at about 79, low prediction, final yes | Fixed in ea9fb48 |
-| `evidenceEstimates` ignores speed differences between runs | Target 74, runs at 79-84: estimate 84, false block | **Open.** Sent, with slopes. In memory it cut false blocks from 10 to 6 of 95 |
-| `callOpenAi` does not retry on 429 | A rate limit becomes a safe no and can block the counter step | **Open.** ar-learning sent the fix |
-| Default model is still luna | `agent/llm.ts:22` and `agent/HANDOFF.md:75` | **Open.** Sent |
+| `evidenceEstimates` ignores speed differences between runs | Target 74, runs at 79-84: estimate 84, false block | Fixed in 69dfe6b |
+| `callOpenAi` does not retry on 429 | A rate limit becomes a safe no and can block the counter step | Fixed in 69dfe6b: waits, then falls back to luna |
+| Default model was luna | Leaked 2 unsafe proposals of 159 at 720ea5c | Fixed in 69dfe6b |
 | Cross-plant TV-101 took the other plant's steam as its own | Steam error 800 kg/h | Fixed by ar-agents |
 | A limit metric missing from `predicted` skipped enforcement | Models returned `peakPositionPct` | Fixed by ar-agents |
 
@@ -124,9 +135,10 @@ With a fake model that always votes yes at current values, code alone stops all 
 
 ## Where it falls short
 
-- **False no is the main cost.** A perfect model scores only 92.8% through the current code, 93.3% with the fixes. `vote.ts` is deliberately stricter than TASK1: a near-critical target needs 3 close runs, and any increase with zero history is a no.
-- **TK-101 blocks when its margin widens.** Past margin 11, `85 × (1 − m/100)` falls below the normal 75 °C. That blocked 46 of 300 proposals that were otherwise safe, helped by a scenario mix with 24% of margins above 10. The actors floor this at `limit.max`; `vote.ts` does not.
-- **Truth is a fit, checked against simulation.** Expected values come from the CLAUDE.MD summary and the TASK2.MD fit. Read-only against 300 simulated history events, its mean error is 0.85 points on LV-101, 0.8 on level, 0.6 °C on temperature, 41 kW on duty and 70 kg/h on steam, and it reached the same decision on 96.5% of 3,600 voter checks before the temperature correction above. Near the steam and duty limits the oracle is the more cautious of the two. The live plant itself has not been measured.
+- **False no comes from history gaps.** With a perfect fake model, 10 of about 320 safe targets on the project's history are blocked: plant-a 77-79 on LV-101 evidence, plant-b 68 and 76-79 on insufficient history. An increase now needs 3 close runs, so generated scenarios with sparser history score only 82.5% through 69dfe6b, even with a perfect model. That figure measures the generator, not the plant.
+- **Calibration can no longer tighten a vote past margin 12.5.** The `limit.max` floor removed a real problem, where TK-101 blocked 46 of 300 otherwise safe proposals once its margin widened. Its cost is that a margin above about 12.5 changes no threshold, so CLAUDE.MD's widening rule has little effect on votes.
+- **Feed reductions sit close to the 80 line.** Terra predicted 80.1-80.9 °C on 39-42 point reductions. `tempRise` is fitted to steps of at most 30 points, so those truths are extrapolated.
+- **Truth is a fit, checked against simulation.** Expected values come from the CLAUDE.MD summary and the TASK2.MD fit. Read-only against 300 simulated history events, its mean error is 0.85 points on LV-101, 0.8 on level, 0.6 °C on temperature, 41 kW on duty and 70 kg/h on steam, and it reached the same decision on 96.5% of 3,600 voter checks before the temperature correction above. Near the steam and duty limits the oracle is the more cautious of the two. Against the running plant, as measured by ar-bridge at speeds 65, 85 and 100, it is within 1.0 point on LV-101 peak, 2 kg/h on steam, 1.4 kW on duty and 0.6 °C on the temperature dip. These votes used `shared/history.json` and that plant's numbers, not a live end-to-end run.
 - **No Claude role was measured.** The Claude CLI login is down, so all results are OpenAI, which is also what runs today.
 - **Latency is load-dependent.** Figures are at 40 concurrent per model on a shared key that other sessions were also using.
 - **Harness differences.** `vote.ts` runs under Node through `node-ts.mjs`, one token rewritten, not under Bun. The final run uses `fastNoMs` 600 s, so the fast-no race is not exercised.

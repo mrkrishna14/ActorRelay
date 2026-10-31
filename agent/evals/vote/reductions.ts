@@ -8,7 +8,7 @@ import { castVote } from "../../vote";
 import { RetrievalCache } from "../../retrieval";
 import { asker, pool } from "./llm.mjs";
 import { PATCHES } from "./patches.mjs";
-import { plantSeed, steadyMetrics, tempRise } from "./plant.mjs";
+import { plantSeed, steadyMetrics, tempRise, thresholdFor } from "./plant.mjs";
 
 function parseArgs(argv: string[]) {
   const o: Record<string, string> = { models: "gpt-6.1-terra:low", patches: "none", repeats: "2", concurrency: "2", margin: "10", history: "" };
@@ -69,7 +69,7 @@ async function run(spec: string, patchName: string) {
     rows.push({ step: `${from}->${to}`, want: 75 + tempRise(from - to), raw: rawTemp, final: vote.predicted.tempC, vote: vote.vote, similar: vote.similarCount, reason: vote.reason.slice(0, 110) });
   })));
   rows.sort((a, b) => a.step.localeCompare(b.step));
-  const line = 85 * (1 - margin / 100);
+  const line = thresholdFor(topology["plant-a/TK-101"].limits.tempC, margin);
   const should = rows.filter((x) => x.want >= line);
   const caught = should.filter((x) => x.vote === "no").length;
   const errs = rows.filter((x) => typeof x.raw === "number").map((x) => Math.abs(x.raw - x.want));

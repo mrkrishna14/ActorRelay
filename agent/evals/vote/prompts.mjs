@@ -1,7 +1,7 @@
 // Prompt variants under test. "baseline" follows TASK1.MD step 4 literally; "roles" swaps in agent/roles/<role>.md once it lands.
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { physicsSummary, root } from "./plant.mjs";
+import { physicsSummary, root, thresholdFor } from "./plant.mjs";
 
 const PRIORITIES = {
   mechanic: "throughput, valve travel and wear, keeping control headroom on LV-101",
@@ -76,7 +76,7 @@ export function voteFormat(s) {
 function thresholdLines(s) {
   const c = s.component;
   return Object.entries(c.limits).map(([m, l]) => {
-    const line = `- ${m}: currently ${c.metrics[m]}; vote no at or above ${(l.critical * (1 - c.marginPct / 100)).toFixed(1)}`;
+    const line = `- ${m}: currently ${c.metrics[m]}; vote no at or above ${thresholdFor(l, c.marginPct).toFixed(1)}`;
     return s.events.length < 3 ? `${line}; with fewer than 3 events also vote no at or above ${(l.critical * 0.85).toFixed(1)}` : line;
   }).join("\n");
 }

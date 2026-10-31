@@ -1,7 +1,7 @@
 // Checks the expected-outcome functions against the published plant numbers. Run: node --test agent/evals/vote/oracle.test.mjs
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { dutyAt, expectedVote, headerAt, lvPeak, lvSteady, plantSeed, stepEffects, steamAt, tempDip, tempRise, voterTruth } from "./plant.mjs";
+import { dutyAt, expectedVote, headerAt, lvPeak, lvSteady, plantSeed, stepEffects, steamAt, tempDip, tempRise, thresholdFor, voterTruth } from "./plant.mjs";
 import { generate } from "./scenarios.mjs";
 
 const near = (actual, want, tol) => assert.ok(Math.abs(actual - want) <= tol, `${actual} not within ${tol} of ${want}`);
@@ -34,8 +34,16 @@ test("temperature rises on a downward step, as the simulated history shows", () 
   near(75 + tempRise(26), 78.05, 0.1);
   assert.equal(tempRise(-10), 0);
   const fx = stepEffects({ from: 70, to: 45, otherSpeed: 50 });
-  const component = { ...seeded("TK-101"), marginPct: 10 };
-  assert.equal(expectedVote(component, voterTruth({ tag: "TK-101", otherSpeed: 50, fx }), 5).vote, "no");
+  near(voterTruth({ tag: "TK-101", otherSpeed: 50, fx }).tempC.ceil, 77.9, 0.1);
+});
+
+test("thresholds floor at limit.max", () => {
+  const { tempC } = seeded("TK-101").limits;
+  const { positionPct } = seeded("LV-101").limits;
+  assert.equal(thresholdFor(tempC, 10), 80);
+  assert.equal(thresholdFor(tempC, 25), 80);
+  near(thresholdFor(positionPct, 10), 81, 1e-9);
+  assert.equal(thresholdFor(positionPct, 25), 80);
 });
 
 test("demo verdicts", () => {

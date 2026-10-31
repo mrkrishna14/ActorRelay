@@ -1,4 +1,6 @@
 // Mirrors TASK1.MD steps 5 and 6 so a model is scored on what the vote pipeline would post, not on its raw reply.
+import { thresholdFor } from "./plant.mjs";
+
 const asNumberRecord = (x) =>
   x && typeof x === "object" && !Array.isArray(x) && Object.values(x).every((v) => typeof v === "number" && Number.isFinite(v));
 const asStrings = (x) => Array.isArray(x) && x.every((v) => typeof v === "string");
@@ -30,7 +32,7 @@ export function enforce(vote, s) {
     const p = vote.predicted[metric];
     if (typeof p !== "number") continue;
     if (similarCount < 3 && p >= limit.critical * 0.85) forced.push({ rule: "thin", metric });
-    if (p >= limit.critical * (1 - margin / 100)) forced.push({ rule: "threshold", metric });
+    if (p >= thresholdFor(limit, margin)) forced.push({ rule: "threshold", metric });
   }
   const eventIds = new Set(s.events.map((e) => e.id));
   const ruleIds = new Set(s.rules.map((r) => r.id));
