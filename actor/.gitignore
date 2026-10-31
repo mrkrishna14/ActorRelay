@@ -1,0 +1,8 @@
+node_modules/
+dist/
+generated/
+.durable-actors/
+.env
+.env.*
+!.env.example
+.durable-actors-test/
