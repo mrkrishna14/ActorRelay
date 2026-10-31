@@ -1,0 +1,32 @@
+{
+  "id": "p5-alarm-interval",
+  "title": "does a 1000ms alarm re-armed inside onAlarm really fire once a second",
+  "target": "real Terse dev server, throwaway probe actor, fake glue",
+  "startedAt": "2026-10-31T20:08:19.555Z",
+  "durationMs": 59527,
+  "status": "fail",
+  "checks": [
+    {
+      "name": "armInside=false: alarm interval is about 1000ms",
+      "pass": true,
+      "detail": "{\"median\":846,\"fires\":11}"
+    },
+    {
+      "name": "armInside=true: alarm interval is about 1000ms",
+      "pass": false,
+      "detail": "{\"median\":1526,\"fires\":7}"
+    }
+  ],
+  "restarts": [],
+  "metrics": {
+    "firstStartMs": 35249.5,
+    "armInside=false.medianGapMs": 846,
+    "armInside=false.fires": 11,
+    "armInside=true.medianGapMs": 1526,
+    "armInside=true.fires": 7
+  },
+  "notes": [
+    "armInside=false gaps [265,846,380,300,728,693,883,969,1671,1499]",
+    "armInside=true gaps [1444,1526,945,1552,2172,1406]"
+  ]
+}

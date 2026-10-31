@@ -1,0 +1,49 @@
+{
+  "id": "c3f-ack-lost-observed-late",
+  "title": "kill -9 after the simulator took the command, down 25s so the claim times out first",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T20:11:03.904Z",
+  "durationMs": 243442,
+  "status": "fail",
+  "checks": [
+    {
+      "name": "reached the point after the setpoint",
+      "pass": true
+    },
+    {
+      "name": "setMetric failed because the server was down",
+      "pass": true,
+      "detail": "[{\"proposalId\":\"plant-a-p00001-469335a7\",\"ok\":false,\"error\":\"Component(plant-a.P-100).setMetric: {\\\"kind\\\":\\\"refused\\\",\\\"ms\\\":0.6326580000459217}\"}]"
+    },
+    {
+      "name": "no second simulation command",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "observed effects of a command the simulator took are recorded",
+      "pass": false,
+      "detail": "{\"kind\":\"failed\",\"code\":\"actor_error\",\"message\":\"not_executed: plant-a-p00001-469335a7 is expired\",\"ms\":98.7179270000197}"
+    },
+    {
+      "name": "a command that landed does not read as expired",
+      "pass": false,
+      "detail": "expired"
+    },
+    {
+      "name": "next proposal starts from the value the simulator really holds",
+      "pass": false,
+      "detail": "{\"from\":50,\"simulatorAt\":65}"
+    }
+  ],
+  "restarts": [],
+  "metrics": {
+    "firstStartMs": 33579.5,
+    "seedMs": 55817.3,
+    "ackloss.firstPlantReadAfterKillMs": 81263
+  },
+  "notes": [
+    "simulator is at 65. status=expired execution=failed failure=claimed dispatch never confirmed; simulator outcome unknown",
+    "recordEvent: {\"kind\":\"failed\",\"code\":\"actor_error\",\"message\":\"not_executed: plant-a-p00001-469335a7 is expired\",\"ms\":98.7179270000197}"
+  ]
+}

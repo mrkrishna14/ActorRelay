@@ -1,0 +1,72 @@
+{
+  "id": "c2b-veto-down-past-deadline",
+  "title": "kill -9 in the veto window, stay down past the deadline: what happens to the human veto",
+  "target": "real Terse dev server, fake glue and bridge",
+  "startedAt": "2026-10-31T20:00:07.759Z",
+  "durationMs": 162242,
+  "status": "fail",
+  "checks": [
+    {
+      "name": "window does not stay open forever",
+      "pass": true,
+      "detail": "executed"
+    },
+    {
+      "name": "at most one simulation command",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "operator gets a live veto window after the outage (a lapsed window must not execute unseen)",
+      "pass": false,
+      "detail": "simulation command 2600ms after restart"
+    }
+  ],
+  "restarts": [
+    {
+      "label": "lateveto",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793476897286,
+        "runtimePid": 54522,
+        "groupBefore": [
+          54304,
+          54445,
+          54522,
+          56660,
+          56679,
+          57357,
+          57381,
+          58943,
+          59066,
+          59085,
+          59197,
+          59216,
+          59592,
+          59611,
+          59661,
+          59680,
+          59816,
+          59837
+        ],
+        "portClosedMs": 154.94258800003445,
+        "hostsGoneMs": 283.49136700003874,
+        "survivors": []
+      },
+      "downMs": 12859,
+      "healthzMs": 58750,
+      "firstCallMs": 57580
+    }
+  ],
+  "metrics": {
+    "firstStartMs": 32917.3,
+    "seedMs": 60785,
+    "lateveto.restartReadyMs": 47804,
+    "lateveto.firstPlantReadAfterKillMs": 57580,
+    "lateveto.healthyAfterKillMs": 58750,
+    "lateveto.commandAfterRestartMs": 2600
+  },
+  "notes": [
+    "after restart status=executed vetoDeadline=2026-10-31T20:01:47.007Z (was 2026-10-31T20:01:47.007Z)"
+  ]
+}

@@ -1,0 +1,171 @@
+{
+  "id": "h1-kill-plant-host",
+  "title": "kill -9 of only the Plant's host process: the runtime stays up, so no rebuild and no alarm loss",
+  "target": "real Terse dev server, fake glue and bridge",
+  "startedAt": "2026-10-31T19:57:08.897Z",
+  "durationMs": 111786,
+  "status": "error",
+  "checks": [
+    {
+      "name": "found the Plant host",
+      "pass": true,
+      "detail": "44185"
+    },
+    {
+      "name": "alarm brings the Plant back with no outside call",
+      "pass": false,
+      "detail": "94 -> 94"
+    },
+    {
+      "name": "found the Plant host",
+      "pass": true,
+      "detail": "47565"
+    },
+    {
+      "name": "Plant answers after its host was killed",
+      "pass": true
+    },
+    {
+      "name": "hostkill: plant-a history intact",
+      "pass": true,
+      "detail": "2 -> 2"
+    },
+    {
+      "name": "hostkill: plant-a rules intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "hostkill: plant-a audit intact",
+      "pass": true,
+      "detail": "3 -> 3"
+    },
+    {
+      "name": "hostkill: plant-a proposal plant-a-p00001-3d7418a6 present",
+      "pass": true
+    },
+    {
+      "name": "hostkill: plant-a plant-a-p00001-3d7418a6 acknowledged votes intact",
+      "pass": true,
+      "detail": "2 -> 2"
+    },
+    {
+      "name": "hostkill: plant-a plant-a-p00001-3d7418a6 no duplicate voter",
+      "pass": true,
+      "detail": "2"
+    },
+    {
+      "name": "hostkill: plant-a plant-a-p00001-3d7418a6 vetoDeadline preserved",
+      "pass": true,
+      "detail": "null -> null"
+    },
+    {
+      "name": "hostkill: plant-a no duplicate history ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "hostkill: plant-a no duplicate rule ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "hostkill: plant-b history intact",
+      "pass": true,
+      "detail": "2 -> 2"
+    },
+    {
+      "name": "hostkill: plant-b rules intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "hostkill: plant-b audit intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "hostkill: plant-b no duplicate history ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "hostkill: plant-b no duplicate rule ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "hostkill: plant-a/P-100 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "hostkill: plant-a/TK-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "hostkill: plant-a/LV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "hostkill: plant-a/E-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "hostkill: plant-a/TV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "hostkill: plant-b/P-100 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "hostkill: plant-b/TK-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "hostkill: plant-b/LV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "hostkill: plant-b/E-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "hostkill: plant-b/TV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "hostkill: company rules intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "hostkill: company audit intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "hostkill: no duplicate company rule ids",
+      "pass": true,
+      "detail": "[]"
+    }
+  ],
+  "restarts": [],
+  "metrics": {
+    "firstStartMs": 49703.4,
+    "seedMs": 19611,
+    "hostkill.firstReadAfterKillMs": 3755.1
+  },
+  "notes": [],
+  "error": "Error: Plant(plant-a).vote: {\"kind\":\"failed\",\"code\":\"actor_error\",\"message\":\"stale_proposal: plant-a-p00001-3d7418a6 is expired\",\"ms\":748.7381400000013}\n    at call (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/client.ts:72:15)\n    at async castVote (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/world.ts:155:34)\n    at async castVotes (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/world.ts:159:44)\n    at async <anonymous> (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/scenarios/restart.ts:208:17)\n    at async runScenario (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/scenario.ts:124:20)"
+}

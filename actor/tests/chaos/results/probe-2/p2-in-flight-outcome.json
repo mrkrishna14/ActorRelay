@@ -1,0 +1,37 @@
+{
+  "id": "p2-in-flight-outcome",
+  "title": "what a caller sees when the server dies mid-call, and whether a host outlives the runtime",
+  "target": "real Terse dev server, throwaway probe actor, fake glue",
+  "startedAt": "2026-10-31T20:06:04.317Z",
+  "durationMs": 108562,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "call reached step one",
+      "pass": true
+    },
+    {
+      "name": "a killed runtime's host sends nothing further",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "nothing past the crash point was recorded",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "the call is not replayed after restart",
+      "pass": true,
+      "detail": "1"
+    }
+  ],
+  "restarts": [],
+  "metrics": {
+    "firstStartMs": 57481
+  },
+  "notes": [
+    "host gone 5705ms after runtime kill; survivors []",
+    "RUNTIME FACT: in-flight caller saw {\"kind\":\"transport\",\"message\":\"ECONNRESET\",\"ms\":8535.599002999996}"
+  ]
+}

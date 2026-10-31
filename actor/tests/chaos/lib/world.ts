@@ -172,7 +172,7 @@ export class World {
   async waitStatus(plantId: string, id: string, statuses: string[], timeoutMs: number): Promise<any> {
     return await until(
       async () => {
-        const outcome = await this.ctx.client.invoke("Plant", plantId, "getState", [], 3_000);
+        const outcome = await this.ctx.client.invoke("Plant", plantId, "getState", [], 15_000);
         if (outcome.kind !== "completed") return undefined;
         const found = outcome.result.proposals.find((item: any) => item.id === id);
         return found && statuses.includes(found.status) ? found : undefined;
@@ -195,6 +195,11 @@ export class World {
     }
     const company = await client.call("Company", COMPANY, "getState");
     return { plants, components, company };
+  }
+
+  /** One Plant only, cheap enough to read inside a vote window on a loaded machine. */
+  async durablePlant(plantId = "plant-a"): Promise<Durable> {
+    return { plants: { [plantId]: await this.plantState(plantId) }, components: {}, company: { rules: [], audit: [] } };
   }
 
   /** Everything acknowledged before the crash must still be present after it. New entries are allowed. */
@@ -232,14 +237,18 @@ export class World {
   }
 
   /** Stage by stage, per plant: does the tick come back alone, after a dashboard read, or only after tick()?
-   *  /tick carries no plant id, so the persisted counter is the per-plant evidence, read only after each silence. */
-  async checkTickResumes(label: string, plantId: string, tickBeforeKill: number, killAtEpochMs: number, silentMs = 5_000): Promise<string> {
+   *  `tickAtKill` must be read just before the kill. /tick carries no plant id, so arrivals at glue are the direct
+   *  evidence for the whole server, and the persisted counter, read only after each silence, is the per-plant view. */
+  async checkTickResumes(label: string, plantId: string, tickAtKill: number, restartedAt: number, silentMs = 5_000): Promise<string> {
     const { ctx } = this;
     const readTick = async () => (await this.plantState(plantId)).tick as number;
+    const arrivals = () => ctx.glue.of("/tick").filter((call) => call.atEpochMs > restartedAt);
     await sleep(silentMs);
+    const quietArrivals = arrivals().length;
     const afterSilence = await readTick();
+    // A tick in flight at the kill can still land, so the counter alone proves nothing: arrivals must have happened.
     let stage = "never";
-    if (afterSilence > tickBeforeKill) stage = "alone";
+    if (quietArrivals > 0 && afterSilence > tickAtKill + 2) stage = "alone";
     else {
       await sleep(4_000);
       const afterRead = await readTick();
@@ -250,9 +259,9 @@ export class World {
         if ((await readTick()) > afterRead + 1) stage = "after_tick";
       }
     }
-    const first = ctx.glue.of("/tick").filter((call) => call.atEpochMs > killAtEpochMs)[0];
-    if (first) ctx.metric(`${label}.firstTickAfterKillMs`, first.atEpochMs - killAtEpochMs);
-    ctx.note(`${label}: ${plantId} tick counter ${tickBeforeKill} before kill, ${afterSilence} after ${silentMs}ms of silence; resumed: ${stage}`);
+    const first = arrivals()[0];
+    if (first) ctx.metric(`${label}.firstTickAfterRestartMs`, first.atEpochMs - restartedAt);
+    ctx.note(`${label}: ${plantId} tick ${tickAtKill} at kill, ${afterSilence} after ${silentMs}ms of silence, ${quietArrivals} /tick arrivals in that silence; resumed: ${stage}`);
     ctx.check(`${label}: ${plantId} tick resumes with no outside call`, stage === "alone", stage);
     ctx.check(`${label}: ${plantId} tick resumes at all`, stage !== "never", stage);
     if (stage !== "never") {

@@ -1,0 +1,51 @@
+{
+  "id": "c4b-kill-mid-promotion",
+  "title": "kill -9 mid recordEvent with the Plant parked on a frozen Company host",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T20:08:54.917Z",
+  "durationMs": 210858,
+  "status": "error",
+  "checks": [
+    {
+      "name": "found the Company host process",
+      "pass": true,
+      "detail": "88414"
+    }
+  ],
+  "restarts": [
+    {
+      "label": "midpromo",
+      "kill": {
+        "mode": "group",
+        "atEpochMs": 1793477498410,
+        "runtimePid": 80530,
+        "groupBefore": [
+          80318,
+          80475,
+          80530,
+          83142,
+          83162,
+          83279,
+          83298,
+          88389,
+          88414
+        ],
+        "portClosedMs": 193.34017999999924,
+        "hostsGoneMs": 196.51580900000408,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 28215
+    }
+  ],
+  "metrics": {
+    "firstStartMs": 57359.2,
+    "seedMs": 44566.8,
+    "midpromo.restartReadyMs": 30452
+  },
+  "notes": [
+    "recordEvent parked on Company, killing mid-call",
+    "in-flight recordEvent outcome: {\"kind\":\"transport\",\"message\":\"ECONNRESET\",\"ms\":1823.5413369999733}"
+  ],
+  "error": "Error: Plant(plant-a).getState: {\"kind\":\"http\",\"status\":503,\"body\":\"{\\\"error\\\":{\\\"code\\\":\\\"unavailable\\\",\\\"message\\\":\\\"actor host is unavailable: local actor host exited with exit status: 1; check its logs above\\\"}}\",\"ms\":1179.043842999963}\n    at call (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/client.ts:72:15)\n    at async durable (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/world.ts:189:72)\n    at async rulesSummary (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/scenarios/learning.ts:20:31)\n    at async <anonymous> (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/scenarios/learning.ts:84:30)\n    at async runScenario (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/scenario.ts:124:20)"
+}

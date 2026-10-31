@@ -1,0 +1,216 @@
+{
+  "id": "c1-voting-restart",
+  "title": "kill -9 during voting after 2 of 5 acknowledged votes, then finish voting",
+  "target": "real Terse dev server, fake glue and bridge",
+  "startedAt": "2026-10-31T20:01:16.686Z",
+  "durationMs": 165754,
+  "status": "error",
+  "checks": [
+    {
+      "name": "five required voters",
+      "pass": true,
+      "detail": "[\"plant-a/E-101\",\"plant-a/LV-101\",\"plant-a/TK-101\",\"plant-a/TV-101\",\"plant-b/TV-101\"]"
+    },
+    {
+      "name": "voting: plant-a history intact",
+      "pass": true,
+      "detail": "2 -> 2"
+    },
+    {
+      "name": "voting: plant-a rules intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "voting: plant-a audit intact",
+      "pass": true,
+      "detail": "3 -> 3"
+    },
+    {
+      "name": "voting: plant-a proposal plant-a-p00001-af5e7693 present",
+      "pass": true
+    },
+    {
+      "name": "voting: plant-a plant-a-p00001-af5e7693 acknowledged votes intact",
+      "pass": true,
+      "detail": "2 -> 2"
+    },
+    {
+      "name": "voting: plant-a plant-a-p00001-af5e7693 no duplicate voter",
+      "pass": true,
+      "detail": "2"
+    },
+    {
+      "name": "voting: plant-a plant-a-p00001-af5e7693 vetoDeadline preserved",
+      "pass": true,
+      "detail": "null -> null"
+    },
+    {
+      "name": "voting: plant-a no duplicate history ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "voting: plant-a no duplicate rule ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "voting: plant-b history intact",
+      "pass": true,
+      "detail": "2 -> 2"
+    },
+    {
+      "name": "voting: plant-b rules intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "voting: plant-b audit intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "voting: plant-b no duplicate history ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "voting: plant-b no duplicate rule ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "voting: plant-a/P-100 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "voting: plant-a/TK-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "voting: plant-a/LV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "voting: plant-a/E-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "voting: plant-a/TV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "voting: plant-b/P-100 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "voting: plant-b/TK-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "voting: plant-b/LV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "voting: plant-b/E-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "voting: plant-b/TV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "voting: company rules intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "voting: company audit intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "voting: no duplicate company rule ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "status still voting",
+      "pass": true,
+      "detail": "\"voting\""
+    },
+    {
+      "name": "exactly the 2 acknowledged votes",
+      "pass": true,
+      "detail": "2"
+    },
+    {
+      "name": "replayed vote rejected after restart",
+      "pass": true,
+      "detail": "{\"kind\":\"failed\",\"code\":\"actor_error\",\"message\":\"duplicate_vote: plant-a/TK-101 already voted on plant-a-p00001-af5e7693\",\"ms\":1297.5702100000344}"
+    }
+  ],
+  "restarts": [
+    {
+      "label": "voting",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793476960770,
+        "runtimePid": 58795,
+        "groupBefore": [
+          58563,
+          58715,
+          58795,
+          60689,
+          60708,
+          60768,
+          60787,
+          62730,
+          62749,
+          62815,
+          62835,
+          62879,
+          62901,
+          63003,
+          63035,
+          63095,
+          63115,
+          63149,
+          63169,
+          63202,
+          63223,
+          63288,
+          63308,
+          63406,
+          63426
+        ],
+        "portClosedMs": 168.4384849999915,
+        "hostsGoneMs": 478.9513549999683,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 42379,
+      "firstCallMs": 44573
+    }
+  ],
+  "metrics": {
+    "firstStartMs": 37885.3,
+    "seedMs": 32905,
+    "voting.restartReadyMs": 44316,
+    "voting.firstPlantReadAfterKillMs": 44573,
+    "voting.healthyAfterKillMs": 42379
+  },
+  "notes": [],
+  "error": "Error: Plant(plant-a).vote: {\"kind\":\"failed\",\"code\":\"actor_error\",\"message\":\"stale_proposal: plant-a-p00001-af5e7693 is expired\",\"ms\":485.2092859999975}\n    at call (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/client.ts:72:15)\n    at async castVote (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/world.ts:155:34)\n    at async castVotes (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/world.ts:159:44)\n    at async <anonymous> (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/scenarios/restart.ts:73:17)\n    at async runScenario (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/scenario.ts:124:20)"
+}

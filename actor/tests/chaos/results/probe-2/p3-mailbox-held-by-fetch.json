@@ -1,0 +1,27 @@
+{
+  "id": "p3-mailbox-held-by-fetch",
+  "title": "a method awaiting fetch closes the mailbox, and a held call blocks reads",
+  "target": "real Terse dev server, throwaway probe actor, fake glue",
+  "startedAt": "2026-10-31T20:07:42.945Z",
+  "durationMs": 39080,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "mailbox is closed during an awaited fetch",
+      "pass": true,
+      "detail": "{\"kind\":\"timeout\",\"ms\":3001.816418000002}"
+    },
+    {
+      "name": "mailbox reopens after the fetch returns",
+      "pass": true,
+      "detail": "\"completed\""
+    }
+  ],
+  "restarts": [],
+  "metrics": {
+    "firstStartMs": 34812.5
+  },
+  "notes": [
+    "RUNTIME FACT: read during a held fetch: timeout after 3002ms"
+  ]
+}

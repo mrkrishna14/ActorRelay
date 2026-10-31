@@ -1,30 +1,11 @@
 // Glue slow or down, and re-entrant calls, must not wedge the Plant mailbox. Every read below goes through the
 // mailbox, so a wedge shows up as a slow or timed-out call rather than being inferred from code.
 import type { Behaviour } from "../lib/fakeGlue";
+import { ACTOR_CALL_BOUND_MS, probeMailbox } from "../lib/mailbox";
 import { sleep, until } from "../lib/server";
 import type { Ctx, Scenario } from "../lib/scenario";
 import { boot, crashAndRead, intoVetoWindow, VOTERS } from "./restart";
 import { COMPANY } from "../lib/world";
-
-const MAILBOX_BOUND_MS = 2_000; // Published glue fetch timeout is 1.5s; a call waiting on one tick stays under this.
-
-/** Sample mailbox latency for `ms`, one read at a time, and fail on any read over the bound. */
-async function probeMailbox(ctx: Ctx, label: string, ms: number, plantId = "plant-a"): Promise<void> {
-  const samples: number[] = [];
-  const failures: unknown[] = [];
-  const deadline = performance.now() + ms;
-  while (performance.now() < deadline) {
-    const outcome = await ctx.client.invoke("Plant", plantId, "getState", [], 10_000);
-    samples.push(outcome.ms);
-    if (outcome.kind !== "completed") failures.push(outcome);
-    await sleep(100);
-  }
-  samples.sort((a, b) => a - b);
-  ctx.metric(`${label}.mailboxP50Ms`, samples[Math.floor(samples.length / 2)] ?? -1);
-  ctx.metric(`${label}.mailboxMaxMs`, samples.at(-1) ?? -1);
-  ctx.equal(`${label}: every mailbox read succeeded`, failures.length, 0);
-  ctx.check(`${label}: mailbox stays under ${MAILBOX_BOUND_MS}ms`, (samples.at(-1) ?? Infinity) < MAILBOX_BOUND_MS, { max: samples.at(-1), n: samples.length });
-}
 
 async function ticksRunning(ctx: Ctx): Promise<void> {
   const ok = await ctx.glue.waitFor("/tick", 3, 8_000);
@@ -38,6 +19,7 @@ function tickFault(id: string, title: string, behaviour: Behaviour): Scenario {
     run: async (ctx) => {
       const world = await boot(ctx);
       await ticksRunning(ctx);
+      await probeMailbox(ctx, `${id}.baseline`, 3_000); // Load on the machine shows here, before any fault.
       ctx.glue.on("/tick", behaviour);
       const mark = (await world.plantState("plant-a")).tick;
       await probeMailbox(ctx, id, 8_000);
@@ -149,7 +131,7 @@ export const executeDownForever: Scenario = {
 
 export const reentrantTick: Scenario = {
   id: "d8-reentrant-tick",
-  title: "glue calls back into Plant while handling /tick, like real glue forwarding into the actor adapter",
+  title: "glue calls back into Plant while handling /tick",
   run: async (ctx) => {
     const world = await boot(ctx);
     await ticksRunning(ctx);
@@ -158,7 +140,7 @@ export const reentrantTick: Scenario = {
       kind: "fn",
       fn: async (call) => {
         const plantId = (call.body as any)?.plantId ?? "plant-a";
-        const outcome = await ctx.client.invoke("Plant", plantId, "getState", [], 8_000); // Real glue's adapter timeout.
+        const outcome = await ctx.client.invoke("Plant", plantId, "getState", [], 8_000); // Bound the callback the way a glue HTTP client would.
         latencies.push(outcome.ms);
         return Response.json({ ok: outcome.kind === "completed" });
       },
@@ -197,8 +179,6 @@ export const companyFrozen: Scenario = {
   title: "Company host frozen (SIGSTOP): does the Plant mailbox wedge on the cross-actor call",
   run: async (ctx) => {
     const world = await boot(ctx);
-    await sleep(11_000);
-    await ctx.client.call("Plant", "plant-a", "getState");
     const company = await world.hostOf("Company", COMPANY);
     ctx.check("found the Company host process", company != null, company);
     if (company == null) return;
@@ -208,7 +188,7 @@ export const companyFrozen: Scenario = {
         { proposerComponentId: "plant-a/P-100", metric: "speedPct", to: 65, rationale: "chaos: company frozen" },
       ], 12_000);
       await sleep(500);
-      await probeMailbox(ctx, "frozen", 6_000);
+      await probeMailbox(ctx, "frozen", 6_000, ACTOR_CALL_BOUND_MS);
       ctx.note(`propose with Company frozen: ${JSON.stringify(await inFlight).slice(0, 300)}`);
     } finally {
       process.kill(company, "SIGCONT");

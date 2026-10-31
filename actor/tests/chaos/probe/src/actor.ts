@@ -7,6 +7,8 @@ export class Probe extends Actor {
   @Persisted alarmEveryMs = 0;
   @Persisted alarmFires = 0;
   @Persisted lastAlarmAt = 0;
+  @Persisted alarmTimes: number[] = [];
+  @Persisted armInsideMethod = false;
 
   async write(mark: string): Promise<number> {
     this.marks = [...this.marks, mark];
@@ -41,7 +43,22 @@ export class Probe extends Actor {
   async onAlarm(): Promise<void> {
     this.alarmFires = this.alarmFires + 1;
     this.lastAlarmAt = Date.now();
+    this.alarmTimes = [...this.alarmTimes.slice(-40), this.lastAlarmAt];
     if (this.alarmEveryMs > 0) this.alarm.set(Date.now() + this.alarmEveryMs);
+    // Same pattern as Plant: re-arm first, then a second check inside the tick when the alarm reads as overdue.
+    if (this.armInsideMethod) {
+      const scheduled = this.alarm.get();
+      if (scheduled === null || scheduled <= Date.now()) this.alarm.set(Date.now() + this.alarmEveryMs);
+    }
+  }
+
+  async timing(armInsideMethod: boolean): Promise<void> {
+    this.armInsideMethod = armInsideMethod;
+    this.alarmTimes = [];
+  }
+
+  async times(): Promise<number[]> {
+    return this.alarmTimes;
   }
 
   /** Awaits two glue calls in sequence, with a durable mark in between, to catch hosts that outlive the runtime. */

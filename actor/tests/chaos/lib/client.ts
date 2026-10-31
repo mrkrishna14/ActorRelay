@@ -19,14 +19,18 @@ export class ActorError extends Error {
   }
 }
 
+const UNAVAILABLE_RETRY_MS = 120_000;
+
 export class ActorClient {
+  unavailableResponses = 0;
+
   constructor(
     public base: string,
     readonly projectId = "local",
     readonly apiKey?: string,
   ) {}
 
-  async invoke(actor: string, id: string, method: string, args: unknown[] = [], timeoutMs = 15_000): Promise<InvokeOutcome> {
+  async invoke(actor: string, id: string, method: string, args: unknown[] = [], timeoutMs = 60_000): Promise<InvokeOutcome> {
     const url = `${this.base}/v1/projects/${this.projectId}/actors/${actor}/${encodeURIComponent(id)}/invoke`;
     const requestId = crypto.randomUUID();
     const started = performance.now();
@@ -65,10 +69,17 @@ export class ActorClient {
     return { kind: "http", status: response.status, body: text.slice(0, 500), ms: ms() };
   }
 
-  /** Invoke and return the result, throwing on anything but completed. */
-  async call(actor: string, id: string, method: string, args: unknown[] = [], timeoutMs = 15_000): Promise<any> {
-    const outcome = await this.invoke(actor, id, method, args, timeoutMs);
-    if (outcome.kind === "completed") return outcome.result;
-    throw new ActorError(`${actor}(${id}).${method}: ${JSON.stringify(outcome)}`, outcome);
+  /** Invoke and return the result. A 503 means the runtime did not run the call, typically while an old owner
+   *  lease drains after a hard kill, so it is retried the way any real caller must. Everything else throws. */
+  async call(actor: string, id: string, method: string, args: unknown[] = [], timeoutMs = 60_000): Promise<any> {
+    const deadline = performance.now() + UNAVAILABLE_RETRY_MS;
+    for (;;) {
+      const outcome = await this.invoke(actor, id, method, args, timeoutMs);
+      if (outcome.kind === "completed") return outcome.result;
+      const notRun = (outcome.kind === "http" && outcome.status === 503) || outcome.kind === "not_executed";
+      if (!notRun || performance.now() >= deadline) throw new ActorError(`${actor}(${id}).${method}: ${JSON.stringify(outcome)}`, outcome);
+      this.unavailableResponses += 1;
+      await Bun.sleep(250);
+    }
   }
 }

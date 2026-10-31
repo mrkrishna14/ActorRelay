@@ -1,0 +1,72 @@
+{
+  "id": "c3b-kill-after-claim",
+  "title": "runtime kill between claimDispatch and the setpoint, glue alive and about to send it",
+  "target": "real Terse dev server, fake glue and bridge",
+  "startedAt": "2026-10-31T19:57:08.805Z",
+  "durationMs": 163130,
+  "status": "fail",
+  "checks": [
+    {
+      "name": "reached the point between claim and setpoint",
+      "pass": true
+    },
+    {
+      "name": "exactly one simulation command",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "only one claim said dispatch",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "setMetric redeemed",
+      "pass": false,
+      "detail": "[{\"proposalId\":\"plant-a-p00001-894b030b\",\"ok\":false,\"error\":\"Component(plant-a.P-100).setMetric: {\\\"kind\\\":\\\"failed\\\",\\\"code\\\":\\\"actor_error\\\",\\\"message\\\":\\\"invalid_token: execution is failed\\\",\\\"ms\\\":5235.805588999996}\"}]"
+    },
+    {
+      "name": "metric carries the new value",
+      "pass": false,
+      "detail": "got 50, expected 65"
+    },
+    {
+      "name": "execution reached applied",
+      "pass": false,
+      "detail": "got \"failed\", expected \"applied\""
+    }
+  ],
+  "restarts": [
+    {
+      "label": "postclaim",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793476707076,
+        "runtimePid": 42048,
+        "groupBefore": [
+          41701,
+          41950,
+          42048,
+          43967,
+          43992,
+          44188,
+          44207
+        ],
+        "portClosedMs": 443.01831599998695,
+        "hostsGoneMs": 614.3973509999923,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 56516,
+      "firstCallMs": 60681
+    }
+  ],
+  "metrics": {
+    "firstStartMs": 48335.4,
+    "seedMs": 20043.2,
+    "postclaim.restartReadyMs": 60557,
+    "postclaim.firstPlantReadAfterKillMs": 60681,
+    "postclaim.healthyAfterKillMs": 56516
+  },
+  "notes": []
+}

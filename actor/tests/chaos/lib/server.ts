@@ -108,7 +108,8 @@ export class DevServer {
   async start(timeoutMs = 300_000): Promise<{ readyMs: number }> {
     const { projectDir, dataDir, port, logFile, env, command } = this.options;
     if (this.proc) throw new Error("server already running");
-    if (portListening(port)) throw new Error(`port ${port} is already in use; refusing to start`);
+    // A previous server can take a few seconds to die on a loaded machine.
+    if (!(await until(() => !portListening(port), 20_000, 100))) throw new Error(`port ${port} is already in use; refusing to start`);
     mkdirSync(dataDir, { recursive: true });
     mkdirSync(dirname(logFile), { recursive: true });
     const log = openSync(logFile, "a");

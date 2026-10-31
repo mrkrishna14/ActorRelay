@@ -1,0 +1,22 @@
+{
+  "id": "h1-kill-plant-host",
+  "title": "kill -9 of only the Plant's host process: the runtime stays up, so no rebuild and no alarm loss",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T20:05:20.905Z",
+  "durationMs": 173034,
+  "status": "error",
+  "checks": [
+    {
+      "name": "found the Plant host",
+      "pass": true,
+      "detail": "73523"
+    }
+  ],
+  "restarts": [],
+  "metrics": {
+    "firstStartMs": 79250.5,
+    "seedMs": 70652.2
+  },
+  "notes": [],
+  "error": "Error: Plant(plant-a).getState: {\"kind\":\"http\",\"status\":503,\"body\":\"{\\\"error\\\":{\\\"code\\\":\\\"unavailable\\\",\\\"message\\\":\\\"actor host is unavailable: local actor host exited with exit status: 1; check its logs above\\\"}}\",\"ms\":7724.720627000002}\n    at call (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/client.ts:72:15)\n    at async plantState (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/world.ts:163:34)\n    at async <anonymous> (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/scenarios/restart.ts:223:36)\n    at async runScenario (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/scenario.ts:124:20)"
+}

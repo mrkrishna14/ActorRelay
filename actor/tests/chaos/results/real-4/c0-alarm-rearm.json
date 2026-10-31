@@ -1,0 +1,228 @@
+{
+  "id": "c0-alarm-rearm",
+  "title": "kill -9 while idle: do tick and sweep alarms come back, and who has to call what",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T20:08:01.524Z",
+  "durationMs": 199735,
+  "status": "fail",
+  "checks": [
+    {
+      "name": "ticks reach glue before the crash",
+      "pass": true,
+      "detail": "{\"ticks\":177}"
+    },
+    {
+      "name": "tick rate is about 1 per second",
+      "pass": false,
+      "detail": "5.411566886304571"
+    },
+    {
+      "name": "idle: plant-a tick resumes with no outside call",
+      "pass": true,
+      "detail": "alone"
+    },
+    {
+      "name": "idle: plant-a tick resumes at all",
+      "pass": true,
+      "detail": "alone"
+    },
+    {
+      "name": "idle: plant-a tick counter keeps advancing",
+      "pass": true,
+      "detail": "170 -> 173"
+    },
+    {
+      "name": "idle: plant-b tick resumes with no outside call",
+      "pass": false,
+      "detail": "after_read"
+    },
+    {
+      "name": "idle: plant-b tick resumes at all",
+      "pass": true,
+      "detail": "after_read"
+    },
+    {
+      "name": "idle: plant-b tick counter keeps advancing",
+      "pass": true,
+      "detail": "167 -> 177"
+    },
+    {
+      "name": "idle: plant-a history intact",
+      "pass": true,
+      "detail": "2 -> 2"
+    },
+    {
+      "name": "idle: plant-a rules intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-a audit intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-a no duplicate history ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "idle: plant-a no duplicate rule ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "idle: plant-b history intact",
+      "pass": true,
+      "detail": "2 -> 2"
+    },
+    {
+      "name": "idle: plant-b rules intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-b audit intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-b no duplicate history ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "idle: plant-b no duplicate rule ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "idle: plant-a/P-100 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-a/TK-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-a/LV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-a/E-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-a/TV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-b/P-100 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-b/TK-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-b/LV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-b/E-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-b/TV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: company rules intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: company audit intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: no duplicate company rule ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "postRestart: every mailbox read succeeded",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "postRestart: mailbox stays under 2000ms",
+      "pass": true,
+      "detail": "{\"max\":754.2409820000175,\"n\":12}"
+    }
+  ],
+  "restarts": [
+    {
+      "label": "idle",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793477398847,
+        "runtimePid": 78665,
+        "groupBefore": [
+          78503,
+          78634,
+          78665,
+          80876,
+          80895,
+          81073,
+          81093,
+          82579,
+          82598,
+          82714,
+          82733,
+          83107,
+          83127,
+          83188,
+          83208,
+          83229,
+          83249,
+          83348,
+          83368,
+          83395,
+          83417
+        ],
+        "portClosedMs": 148.05771600001026,
+        "hostsGoneMs": 664.2032539999927,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 25078
+    }
+  ],
+  "metrics": {
+    "firstStartMs": 64373.7,
+    "seedMs": 47560.5,
+    "ticksPerSecondPerPlant": 5.4,
+    "idle.restartReadyMs": 26829,
+    "idle.ticksBetweenKillAndRestart": 2,
+    "idle.healthyAfterKillMs": 25078,
+    "idle.firstTickAfterRestartMs": 7295,
+    "postRestart.mailboxP50Ms": 288.7,
+    "postRestart.mailboxMaxMs": 754.2
+  },
+  "notes": [
+    "idle: plant-a tick 168 at kill, 170 after 5000ms of silence, 0 /tick arrivals in that silence; resumed: alone",
+    "idle: plant-b tick 159 at kill, 160 after 5000ms of silence, 0 /tick arrivals in that silence; resumed: after_read"
+  ]
+}

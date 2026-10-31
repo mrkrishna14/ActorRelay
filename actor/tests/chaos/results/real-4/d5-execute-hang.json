@@ -1,0 +1,16 @@
+{
+  "id": "d5-execute-hang",
+  "title": "glue never answers /execute-callback: Plant stays live and the retries are bounded",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T20:09:46.311Z",
+  "durationMs": 130082,
+  "status": "error",
+  "checks": [],
+  "restarts": [],
+  "metrics": {
+    "firstStartMs": 34093,
+    "seedMs": 55605.3
+  },
+  "notes": [],
+  "error": "Error: Plant(plant-a).vote: {\"kind\":\"failed\",\"code\":\"actor_error\",\"message\":\"stale_proposal: plant-a-p00001-e4f3bd9e is expired\",\"ms\":31933.874112999998}\n    at call (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/client.ts:72:15)\n    at async castVote (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/world.ts:155:34)\n    at async castVotes (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/world.ts:159:44)\n    at async intoVetoWindow (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/scenarios/restart.ts:34:15)\n    at async <anonymous> (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/scenarios/deadlock.ts:68:24)\n    at async runScenario (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/scenario.ts:124:20)"
+}

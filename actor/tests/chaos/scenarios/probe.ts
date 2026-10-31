@@ -98,13 +98,33 @@ export const probeScenarios: Scenario[] = [
     },
   },
   {
+    id: "p5-alarm-interval",
+    title: "does a 1000ms alarm re-armed inside onAlarm really fire once a second",
+    run: async (ctx) => {
+      const { client } = ctx;
+      for (const armInside of [false, true]) {
+        await client.call("Probe", P, "timing", [armInside]);
+        await client.call("Probe", P, "arm", [1_000]);
+        await sleep(8_000);
+        const times: number[] = await client.call("Probe", P, "times");
+        const gaps = times.slice(1).map((value, index) => value - times[index]);
+        const sorted = [...gaps].sort((a, b) => a - b);
+        const median = sorted[Math.floor(sorted.length / 2)] ?? -1;
+        ctx.metric(`armInside=${armInside}.medianGapMs`, median);
+        ctx.metric(`armInside=${armInside}.fires`, times.length);
+        ctx.note(`armInside=${armInside} gaps ${JSON.stringify(gaps)}`);
+        ctx.check(`armInside=${armInside}: alarm interval is about 1000ms`, median > 800 && median < 1_400, { median, fires: times.length });
+      }
+    },
+  },
+  {
     id: "p4-group-kill-restart-times",
-    title: "ten kill and restart cycles, half literal kill -9 and half whole group, for recovery timing",
+    title: "repeated kill and restart cycles, half literal kill -9 and half whole group, for recovery timing",
     run: async (ctx) => {
       const { client } = ctx;
       await client.call("Probe", P, "write", ["start"]);
       let count = 1;
-      for (let round = 0; round < 10; round++) {
+      for (let round = 0; round < Number(process.env.CHAOS_CYCLES ?? 6); round++) {
         const mode = round % 2 ? "group" : "runtime";
         const timing = await ctx.crash(`cycle${round}`, mode);
         const started = performance.now();

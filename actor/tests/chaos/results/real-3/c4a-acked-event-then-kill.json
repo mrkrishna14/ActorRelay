@@ -1,0 +1,235 @@
+{
+  "id": "c4a-acked-event-then-kill",
+  "title": "recordEvent and rule promotion acknowledged, kill -9, replay everything",
+  "target": "real Terse dev server, fake glue and bridge",
+  "startedAt": "2026-10-31T20:02:37.301Z",
+  "durationMs": 312884,
+  "status": "fail",
+  "checks": [
+    {
+      "name": "rule promoted on the third sighting",
+      "pass": true,
+      "detail": "{\"plant\":[{\"id\":\"rule:plant-a/P-100:speedPct:plant-a/LV-101:positionPct:high\",\"timesSeen\":3,\"support\":[\"event-plant-a-p00001-14d5f46e\",\"chaos-seed-plant-a-1\",\"chaos-seed-plant-a-0\"]}],\"company\":[{\"id\":\"company-rule:outlet-valve-A:speedPct:positionPct:high\",\"timesSeen\":3,\"support\":[\"event-plant-a-p00001-14d5f46e\",\"chaos-seed-plant-a-1\",\"chaos-seed-plant-a-0\"]}],\"events\":[\"event-plant-a-p00001-14d5f46e\"]}"
+    },
+    {
+      "name": "learned: plant-a history intact",
+      "pass": true,
+      "detail": "3 -> 3"
+    },
+    {
+      "name": "learned: plant-a rules intact",
+      "pass": true,
+      "detail": "1 -> 1"
+    },
+    {
+      "name": "learned: plant-a audit intact",
+      "pass": true,
+      "detail": "11 -> 11"
+    },
+    {
+      "name": "learned: plant-a proposal plant-a-p00001-14d5f46e present",
+      "pass": true
+    },
+    {
+      "name": "learned: plant-a plant-a-p00001-14d5f46e acknowledged votes intact",
+      "pass": true,
+      "detail": "5 -> 5"
+    },
+    {
+      "name": "learned: plant-a plant-a-p00001-14d5f46e no duplicate voter",
+      "pass": true,
+      "detail": "5"
+    },
+    {
+      "name": "learned: plant-a plant-a-p00001-14d5f46e vetoDeadline preserved",
+      "pass": true,
+      "detail": "2026-10-31T20:04:25.850Z -> 2026-10-31T20:04:25.850Z"
+    },
+    {
+      "name": "learned: plant-a no duplicate history ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "learned: plant-a no duplicate rule ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "learned: plant-b history intact",
+      "pass": true,
+      "detail": "2 -> 2"
+    },
+    {
+      "name": "learned: plant-b rules intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "learned: plant-b audit intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "learned: plant-b no duplicate history ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "learned: plant-b no duplicate rule ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "learned: plant-a/P-100 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "learned: plant-a/TK-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "learned: plant-a/LV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "learned: plant-a/E-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "learned: plant-a/TV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "learned: plant-b/P-100 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "learned: plant-b/TK-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "learned: plant-b/LV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "learned: plant-b/E-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "learned: plant-b/TV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "learned: company rules intact",
+      "pass": true,
+      "detail": "1 -> 1"
+    },
+    {
+      "name": "learned: company audit intact",
+      "pass": true,
+      "detail": "1 -> 1"
+    },
+    {
+      "name": "learned: no duplicate company rule ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "replayed recordEvent returns the same event",
+      "pass": true,
+      "detail": "{\"kind\":\"completed\",\"result\":{\"after\":85,\"approvedBy\":[\"agent:plant-a/TK-101\",\"agent:plant-a/LV-101\",\"agent:plant-a/E-101\",\"agent:plant-a/TV-101\",\"agent:plant-b/TV-101\"],\"at\":\"2026-10-31T20:04:42.216Z\",\"before\":50,\"componentId\":\"plant-a/P-100\",\"effects\":[{\"after\":92,\"before\":50,\"componentId\":\"plant-a/LV-101\",\"metric\":\"positionPct\",\"ticksToSettle\":3}],\"id\":\"event-plant-a-p00001-14d5f46e\",\"incident\":null,\"metric\":\"speedPct\",\"operator\":null,\"plantId\":\"plant-a\",\"proposalId\":\"plant-a-p00001-14d5f46e\",\"upstreamSnapshot\":{}},\"ms\":606.2984250000445}"
+    },
+    {
+      "name": "one live event after replay",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "rule count unchanged by replay",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "timesSeen unchanged by replay",
+      "pass": true,
+      "detail": "[3]"
+    },
+    {
+      "name": "company timesSeen unchanged by replay",
+      "pass": false,
+      "detail": "got [4], expected [3]"
+    },
+    {
+      "name": "after replay: plant rule signatures unique",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "after replay: company rule signatures unique",
+      "pass": true,
+      "detail": "[]"
+    }
+  ],
+  "restarts": [
+    {
+      "label": "learned",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793477109102,
+        "runtimePid": 63508,
+        "groupBefore": [
+          63203,
+          63439,
+          63508,
+          65372,
+          65391,
+          65711,
+          65730,
+          69489,
+          69509,
+          69540,
+          69560,
+          69577,
+          69597,
+          69659,
+          69678,
+          69695,
+          69715,
+          69798,
+          69821,
+          69860,
+          69879,
+          69920,
+          69941
+        ],
+        "portClosedMs": 52.55265500000678,
+        "hostsGoneMs": 1154.474618999986,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 71558,
+      "firstCallMs": 73324
+    }
+  ],
+  "metrics": {
+    "firstStartMs": 48602.6,
+    "seedMs": 54232.9,
+    "learned.restartReadyMs": 75324,
+    "learned.firstPlantReadAfterKillMs": 73324,
+    "learned.healthyAfterKillMs": 71558
+  },
+  "notes": [
+    "replayed promoteRule: {\"kind\":\"completed\",\"result\":{\"condition\":{\"componentId\":\"plant-a/P-100\",\"metric\":\"speedPct\",\"op\":\">=\",\"value\":85},\"consequence\":{\"componentId\":\"plant-a/LV-101\",\"metric\":\"positionPct\",\"op\":\">=\",\"value"
+  ]
+}

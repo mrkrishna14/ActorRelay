@@ -1,7 +1,6 @@
 // FAKE glue. It lives in the harness process so its call log survives the server kill, which is what
-// lets a scenario count simulation commands across a crash. Real glue semantics it copies from
-// glue/server.ts at f4384ab: JSON POST routes, and /execute-callback forwarded into the actor adapter
-// with an 8s timeout, which is the re-entrant path the deadlock scenarios need.
+// lets a scenario count simulation commands across a crash. Behaviours model a glue that is slow, down,
+// or that calls back into the same actor while handling a Plant callback (the re-entrant deadlock case).
 
 export type GlueCall = {
   seq: number;

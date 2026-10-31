@@ -1,0 +1,70 @@
+{
+  "id": "c2c-veto-then-kill",
+  "title": "veto acknowledged, kill -9 at once: the veto holds through the deadline",
+  "target": "real Terse dev server, fake glue and bridge",
+  "startedAt": "2026-10-31T20:02:37.607Z",
+  "durationMs": 148720,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "status vetoed after restart",
+      "pass": true,
+      "detail": "\"vetoed\""
+    },
+    {
+      "name": "still vetoed after the deadline",
+      "pass": true,
+      "detail": "\"vetoed\""
+    },
+    {
+      "name": "no callback sent",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "no simulation command",
+      "pass": true,
+      "detail": "0"
+    }
+  ],
+  "restarts": [
+    {
+      "label": "vetoed",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793477056287,
+        "runtimePid": 63533,
+        "groupBefore": [
+          63261,
+          63472,
+          63533,
+          65414,
+          65439,
+          65746,
+          65765,
+          67345,
+          67538,
+          67558,
+          67651,
+          67670,
+          67742,
+          67762
+        ],
+        "portClosedMs": 320.64156399999047,
+        "hostsGoneMs": 553.8790729999891,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 33063,
+      "firstCallMs": 34508
+    }
+  ],
+  "metrics": {
+    "firstStartMs": 49117.2,
+    "seedMs": 53159.5,
+    "vetoed.restartReadyMs": 34950,
+    "vetoed.firstPlantReadAfterKillMs": 34508,
+    "vetoed.healthyAfterKillMs": 33063
+  },
+  "notes": []
+}

@@ -1,0 +1,226 @@
+{
+  "id": "c2a-veto-restart-before-deadline",
+  "title": "kill -9 3s into the veto window, back up before the deadline: fires once, not early",
+  "target": "real Terse dev server, fake glue and bridge",
+  "startedAt": "2026-10-31T19:57:08.805Z",
+  "durationMs": 193839,
+  "status": "fail",
+  "checks": [
+    {
+      "name": "veto: plant-a history intact",
+      "pass": true,
+      "detail": "2 -> 2"
+    },
+    {
+      "name": "veto: plant-a rules intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "veto: plant-a audit intact",
+      "pass": true,
+      "detail": "7 -> 8"
+    },
+    {
+      "name": "veto: plant-a proposal plant-a-p00001-11b4014d present",
+      "pass": true
+    },
+    {
+      "name": "veto: plant-a plant-a-p00001-11b4014d acknowledged votes intact",
+      "pass": true,
+      "detail": "5 -> 5"
+    },
+    {
+      "name": "veto: plant-a plant-a-p00001-11b4014d no duplicate voter",
+      "pass": true,
+      "detail": "5"
+    },
+    {
+      "name": "veto: plant-a plant-a-p00001-11b4014d vetoDeadline preserved",
+      "pass": true,
+      "detail": "2026-10-31T19:58:26.622Z -> 2026-10-31T19:58:26.622Z"
+    },
+    {
+      "name": "veto: plant-a no duplicate history ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "veto: plant-a no duplicate rule ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "veto: plant-b history intact",
+      "pass": true,
+      "detail": "2 -> 2"
+    },
+    {
+      "name": "veto: plant-b rules intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "veto: plant-b audit intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "veto: plant-b no duplicate history ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "veto: plant-b no duplicate rule ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "veto: plant-a/P-100 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "veto: plant-a/TK-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "veto: plant-a/LV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "veto: plant-a/E-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "veto: plant-a/TV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "veto: plant-b/P-100 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "veto: plant-b/TK-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "veto: plant-b/LV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "veto: plant-b/E-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "veto: plant-b/TV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "veto: company rules intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "veto: company audit intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "veto: no duplicate company rule ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "deadline unchanged",
+      "pass": true,
+      "detail": "\"2026-10-31T19:58:26.622Z\""
+    },
+    {
+      "name": "window still open after restart",
+      "pass": false,
+      "detail": "{\"status\":\"executed\",\"msLeft\":-81493}"
+    },
+    {
+      "name": "deadline fires after restart",
+      "pass": false
+    },
+    {
+      "name": "exactly one simulation command",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "not fired before the deadline",
+      "pass": true,
+      "detail": "{\"earlyByMs\":-481}"
+    },
+    {
+      "name": "one execute audit entry",
+      "pass": true,
+      "detail": "1"
+    }
+  ],
+  "restarts": [
+    {
+      "label": "veto",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793476709998,
+        "runtimePid": 42029,
+        "groupBefore": [
+          41702,
+          41943,
+          42029,
+          44338,
+          44357,
+          44489,
+          44524,
+          47775,
+          47856,
+          47877,
+          47942,
+          47962,
+          48055,
+          48085,
+          48226,
+          48246,
+          48360,
+          48380,
+          48436,
+          48456,
+          48551,
+          48571,
+          48668,
+          48689,
+          48966,
+          48986
+        ],
+        "portClosedMs": 415.92481500000576,
+        "hostsGoneMs": 1272.2864150000096,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 52799,
+      "firstCallMs": 55885
+    }
+  ],
+  "metrics": {
+    "firstStartMs": 50262.3,
+    "seedMs": 19451.9,
+    "veto.restartReadyMs": 56392,
+    "veto.firstPlantReadAfterKillMs": 55885,
+    "veto.healthyAfterKillMs": 52799,
+    "veto.firedAfterDeadlineMs": 481
+  },
+  "notes": []
+}

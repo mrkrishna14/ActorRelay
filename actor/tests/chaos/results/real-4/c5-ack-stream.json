@@ -1,0 +1,64 @@
+{
+  "id": "c5-ack-stream",
+  "title": "full speed writers across actors, kill -9 at a random moment: every ack survives",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T20:12:08.406Z",
+  "durationMs": 129375,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "no recent acknowledged audit entry lost",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "no recent acknowledged calibration lost",
+      "pass": true,
+      "detail": "[]"
+    }
+  ],
+  "restarts": [
+    {
+      "label": "stream",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793477595155,
+        "runtimePid": 90346,
+        "groupBefore": [
+          90181,
+          90316,
+          90346,
+          91829,
+          91848,
+          91953,
+          91972,
+          92625,
+          92644,
+          92692,
+          92711,
+          92800,
+          92819,
+          92859,
+          92878,
+          93017,
+          93036
+        ],
+        "portClosedMs": 60.414723000023514,
+        "hostsGoneMs": 425.7810030000401,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 50243
+    }
+  ],
+  "metrics": {
+    "firstStartMs": 44397.7,
+    "seedMs": 24809.2,
+    "stream.restartReadyMs": 54583,
+    "stream.ackedCalibration": 3,
+    "stream.ackedAudit": 3,
+    "stream.unknownOutcomes": 4,
+    "stream.restartHealthyMs": 50243
+  },
+  "notes": []
+}

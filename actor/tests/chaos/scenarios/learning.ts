@@ -70,7 +70,7 @@ export const killMidPromotion: Scenario = {
   run: async (ctx) => {
     const world = await boot(ctx);
     const done = await executedAt85(ctx, world);
-    const company = await companyHost(ctx, world);
+    const company = await companyHost(world);
     ctx.check("found the Company host process", company != null, company);
     if (company == null) return;
     process.kill(company, "SIGSTOP");
@@ -132,10 +132,7 @@ async function executedAt85Round(ctx: Ctx, world: World, to: number): Promise<an
   return done;
 }
 
-/** Finds Company's host by activating it alone. A host evicted while idle restarts, so call straight after. */
-async function companyHost(ctx: Ctx, world: World): Promise<number | null> {
-  await sleep(11_000); // Let idle hosts evict, so the one that appears is Company's.
-  await ctx.client.call("Plant", "plant-a", "getState");
+async function companyHost(world: World): Promise<number | null> {
   return await world.hostOf("Company", COMPANY);
 }
 
@@ -167,7 +164,7 @@ export const ackStream: Scenario = {
         else break;
       }
     })();
-    await sleep(1_500 + Math.random() * 1_500);
+    await sleep(8_000 + Math.random() * 2_000);
     const timing = await ctx.crash("stream", "runtime");
     running = false;
     await Promise.all([...writers, auditor]);
