@@ -1,57 +1,109 @@
-// Read-through to the actors, with just enough sharing that a page polling once a second and five voters reading at once
-// do not queue in a Plant's mailbox. Component states come back on every mirror, so /state needs no extra actor calls.
-import type { CalibrationEntry, CompanyState, ComponentId, ComponentState, LearnedRule, PlantId, PlantState } from "../shared/types";
+// What glue last heard from the actors. A Plant is one serial mailbox, and every call on it costs about 50 ms before any
+// queueing, so a page, five voters and a watcher reading it directly stall the votes and sweeps that matter. Reads are
+// answered from the newest copy, the wake loop refreshes it once a second, and glue's own writes update it straight away.
+import type { CalibrationEntry, CompanyState, ComponentId, ComponentState, HistoryEvent, LearnedRule, PlantId, PlantState, Proposal } from "../shared/types";
 import { readWithRetry, type ActorPort } from "./actors";
-import { COMPANY_ACTOR_ID } from "./config";
+import { COMPANY_ACTOR_ID, PLANT_IDS } from "./config";
 
 export type ComponentView = ComponentState & { calibration: CalibrationEntry[] };
 
-const PLANT_TTL_MS = 250;
-const COMPANY_TTL_MS = 500;
-const RULES_TTL_MS = 300;
-const COMPONENT_FRESH_MS = 3000;
+const HELD_TTL_MS = 1000;
+/** Past this a copy is not served: a dead actor server must show as an error, not as a frozen plant. */
+const HELD_MAX_AGE_MS = 5000;
+const COMPONENT_FRESH_MS = 1500;
+const COMPONENT_MAX_AGE_MS = 3000;
 const NEWEST_EVENTS = 20;
 
-type Entry = { value: Promise<unknown>; doneAt: number | null };
+class Held<T> {
+  private latest: T | null = null;
+  private at = 0;
+  private loading: Promise<T> | null = null;
+  private generation = 0;
+
+  constructor(private readonly load: () => Promise<T>) {}
+
+  refresh(): Promise<T> {
+    if (this.loading) return this.loading;
+    const generation = this.generation;
+    const loading = readWithRetry(this.load)
+      .then((value) => {
+        if (generation === this.generation) {
+          this.latest = value;
+          this.at = Date.now();
+        }
+        return value;
+      })
+      .finally(() => {
+        if (this.loading === loading) this.loading = null;
+      });
+    this.loading = loading;
+    return loading;
+  }
+
+  get(): Promise<T> {
+    const age = Date.now() - this.at;
+    if (this.latest !== null && age < HELD_TTL_MS) return Promise.resolve(this.latest);
+    const refreshing = this.refresh();
+    if (this.latest !== null && age < HELD_MAX_AGE_MS) {
+      refreshing.catch(() => undefined);
+      return Promise.resolve(this.latest);
+    }
+    return refreshing;
+  }
+
+  update(change: (value: T) => T) {
+    if (this.latest !== null) this.latest = change(this.latest);
+  }
+
+  /** The next read fetches a new copy, and serves this one meanwhile. */
+  touch() {
+    this.at = Math.min(this.at, Date.now() - HELD_TTL_MS);
+  }
+
+  clear() {
+    this.generation += 1;
+    this.latest = null;
+    this.at = 0;
+    this.loading = null;
+  }
+}
 
 export class Reads {
-  private readonly memo = new Map<string, Entry>();
+  private readonly plants: Record<PlantId, Held<PlantState>>;
+  private readonly companyState: Held<CompanyState>;
   private readonly components = new Map<ComponentId, { state: ComponentView; at: number }>();
 
   constructor(
     private readonly actors: ActorPort,
     private readonly componentIds: () => ComponentId[],
-  ) {}
-
-  private shared<T>(key: string, ttlMs: number, load: () => Promise<T>): Promise<T> {
-    const hit = this.memo.get(key);
-    if (hit && (hit.doneAt === null || Date.now() - hit.doneAt < ttlMs)) return hit.value as Promise<T>;
-    const entry: Entry = { value: readWithRetry(load), doneAt: null };
-    this.memo.set(key, entry);
-    entry.value.then(
-      () => (entry.doneAt = Date.now()),
-      () => this.memo.get(key) === entry && this.memo.delete(key),
-    );
-    return entry.value as Promise<T>;
+  ) {
+    const heldPlant = (id: PlantId) => new Held(() => actors.call<PlantState>("Plant", id, "getState"));
+    this.plants = Object.fromEntries(PLANT_IDS.map((id) => [id, heldPlant(id)])) as Record<PlantId, Held<PlantState>>;
+    this.companyState = new Held(() => actors.call<CompanyState>("Company", COMPANY_ACTOR_ID, "getState"));
   }
 
-  plant(id: PlantId): Promise<PlantState> {
-    return this.shared(`plant|${id}`, PLANT_TTL_MS, () => this.actors.call<PlantState>("Plant", id, "getState"));
+  plant(id: PlantId) {
+    return this.plants[id].get();
   }
 
-  company(): Promise<CompanyState> {
-    return this.shared("company", COMPANY_TTL_MS, () => this.actors.call<CompanyState>("Company", COMPANY_ACTOR_ID, "getState"));
+  company() {
+    return this.companyState.get();
   }
 
-  rules(plantId: PlantId, componentId: ComponentId, model?: string): Promise<LearnedRule[]> {
-    const args = model === undefined ? [componentId] : [componentId, model];
-    return this.shared(`rules|${componentId}|${model}`, RULES_TTL_MS, () => this.actors.call<LearnedRule[]>("Plant", plantId, "rulesFor", args));
+  /** The wake loop's call: always reaches the actor, which is what re-arms a Plant's alarms. */
+  refreshPlant(id: PlantId) {
+    return this.plants[id].refresh();
   }
 
-  async component(id: ComponentId): Promise<ComponentView> {
-    const state = await readWithRetry(() => this.actors.call<ComponentView>("Component", id, "getState"));
-    this.remember(state);
-    return state;
+  refreshCompany() {
+    return this.companyState.refresh();
+  }
+
+  /** Same selection as Plant.rulesFor, on the held copies, so six voters' reads do not each hold the Plant open on Company. */
+  async rules(plantId: PlantId, componentId: ComponentId, model?: string): Promise<LearnedRule[]> {
+    const [plant, company] = await Promise.all([this.plant(plantId), this.company()]);
+    const applies = (rule: LearnedRule) => rule.model === model || rule.condition.componentId === componentId || rule.consequence.componentId === componentId;
+    return [...plant.rules.filter(applies), ...company.rules.filter((rule) => model === undefined || rule.model === model)];
   }
 
   /** Mirror, calibration and seed calls all return the new state, and every writer goes through glue. */
@@ -60,24 +112,47 @@ export class Reads {
     if (view?.id) this.components.set(view.id, { state: view, at: Date.now() });
   }
 
-  async componentViews(): Promise<ComponentView[]> {
-    const now = Date.now();
-    return Promise.all(
-      this.componentIds().map((id) => {
-        const known = this.components.get(id);
-        return known && now - known.at < COMPONENT_FRESH_MS ? known.state : this.component(id);
-      }),
-    );
+  private async readComponent(id: ComponentId): Promise<ComponentView> {
+    const state = await readWithRetry(() => this.actors.call<ComponentView>("Component", id, "getState"));
+    this.remember(state);
+    return state;
   }
 
-  invalidate(plantId?: PlantId) {
-    for (const key of this.memo.keys()) {
-      if (plantId === undefined || key === `plant|${plantId}` || key.startsWith("rules|") || key === "company") this.memo.delete(key);
-    }
+  private componentOlderThan(id: ComponentId, ageMs: number): ComponentView | Promise<ComponentView> {
+    const known = this.components.get(id);
+    return known && Date.now() - known.at < ageMs ? known.state : this.readComponent(id);
+  }
+
+  async component(id: ComponentId): Promise<ComponentView> {
+    return this.componentOlderThan(id, COMPONENT_FRESH_MS);
+  }
+
+  componentViews(): Promise<ComponentView[]> {
+    return Promise.all(this.componentIds().map((id) => this.componentOlderThan(id, COMPONENT_MAX_AGE_MS)));
+  }
+
+  /** A write answered with the new proposal, so the held copy can show it now instead of after the next refresh. */
+  proposal(plantId: PlantId, proposal: Proposal) {
+    this.plants[plantId].update((plant) => {
+      const known = plant.proposals.some((item) => item.id === proposal.id);
+      return { ...plant, proposals: known ? plant.proposals.map((item) => (item.id === proposal.id ? proposal : item)) : [...plant.proposals, proposal] };
+    });
+    this.plants[plantId].touch();
+  }
+
+  event(plantId: PlantId, event: HistoryEvent) {
+    this.plants[plantId].update((plant) => (plant.history.some((item) => item.id === event.id) ? plant : { ...plant, history: [...plant.history, event] }));
+    this.plants[plantId].touch();
+  }
+
+  touch(plantId: PlantId) {
+    this.plants[plantId].touch();
+    this.companyState.touch();
   }
 
   clear() {
-    this.memo.clear();
+    for (const id of PLANT_IDS) this.plants[id].clear();
+    this.companyState.clear();
     this.components.clear();
   }
 }

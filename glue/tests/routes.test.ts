@@ -102,12 +102,15 @@ describe("reads the agents and the dashboard use", () => {
     expect((await get(`/similar?${new URLSearchParams({ ...base, to: "x" })}`)).status).toBe(400);
   });
 
-  test("/rules passes only the arguments it was given", async () => {
+  test("/rules selects like Plant.rulesFor: the component's or model's rules, then the company's for that model", async () => {
     const { get, actors } = build();
-    await get("/rules?componentId=plant-b/LV-101&model=outlet-valve-A");
-    expect(actors.named("rulesFor")[0]).toMatchObject({ id: "plant-b", args: ["plant-b/LV-101", "outlet-valve-A"] });
-    await get("/rules?componentId=plant-a/LV-101");
-    expect(actors.named("rulesFor")[1]?.args).toEqual(["plant-a/LV-101"]);
+    const own = makeRule({ id: "own", model: "other", consequence: { componentId: "plant-b/LV-101", metric: "positionPct", op: ">=", value: 85, withinTicks: 3 } });
+    const byModel = makeRule({ id: "model", model: "outlet-valve-A", condition: { componentId: "plant-b/P-100", metric: "speedPct", op: ">=", value: 80 } });
+    const elsewhere = makeRule({ id: "elsewhere", model: "steam-coil-A" });
+    actors.handlers["Plant.getState"] = (id) => ({ ...actors.plant(id as "plant-a"), rules: [own, byModel, elsewhere] });
+    actors.handlers["Company.getState"] = () => ({ plants: [], sharedResources: [], rules: [makeRule({ id: "company", scope: "company" }), makeRule({ id: "company-other", scope: "company", model: "steam-coil-A" })], crossPlantProposals: [], audit: [] });
+    const body = (await (await get("/rules?componentId=plant-b/LV-101&model=outlet-valve-A")).json()) as { id: string }[];
+    expect(body.map((rule) => rule.id)).toEqual(["own", "model", "company"]);
     expect((await get("/rules")).status).toBe(400);
   });
 
@@ -145,13 +148,43 @@ describe("reads the agents and the dashboard use", () => {
     expect(Object.keys(compactPlant(plant as never)).sort()).toEqual(Object.keys(plant).sort());
   });
 
-  test("a mutation is visible on the next read, not after the cache runs out", async () => {
-    const { post, get, actors } = build();
+  test("glue's own write shows on the next read, without waiting for a refresh", async () => {
+    const { post, get } = build();
     await get("/state?plantId=plant-a");
-    actors.proposal = makeProposal({ status: "vetoed" });
     await post("/veto", { proposalId: PROPOSAL_ID, by: "operator" });
     const body = (await (await get("/state?plantId=plant-a")).json()) as any;
     expect(body.plant.proposals[0].status).toBe("vetoed");
+  });
+
+  test("readers share one Plant read, so a page adds no load to the mailbox", async () => {
+    const { get, actors } = build();
+    await Promise.all(Array.from({ length: 20 }, () => get("/state?plantId=plant-a")));
+    await get("/state?plantId=plant-a");
+    expect(actors.named("getState").filter((call) => call.kind === "Plant")).toHaveLength(1);
+  });
+
+  test("a copy that stopped refreshing is an error, not a frozen plant", async () => {
+    const { get, actors } = build();
+    const { HttpError } = await import("../actors");
+    await get("/state?plantId=plant-a");
+    actors.handlers["Plant.getState"] = () => {
+      throw new HttpError(503, "connection refused");
+    };
+    const realNow = Date.now;
+    Date.now = () => realNow() + 6000;
+    try {
+      expect((await get("/state?plantId=plant-a")).status).toBe(503);
+    } finally {
+      Date.now = realNow;
+    }
+  });
+
+  test("/component answers from the newest mirror when it is fresh", async () => {
+    const { post, get, actors } = build();
+    await post("/mirror", { componentId: "plant-a/LV-101", metrics: { positionPct: 51 } });
+    actors.calls = [];
+    await get("/component/plant-a%2FLV-101");
+    expect(actors.named("getState")).toEqual([]);
   });
 });
 
@@ -206,6 +239,17 @@ describe("proposals and votes", () => {
     expect(actors.named("vote")).toHaveLength(1);
   });
 
+  test("a vote that timed out is sent again, and a first try that landed late counts as done", async () => {
+    const { post, actors } = build();
+    const { HttpError } = await import("../actors");
+    actors.handlers["Plant.vote"] = () => {
+      if (actors.named("vote").length === 1) throw new HttpError(503, "Terse did not answer: timed out");
+      throw new HttpError(409, "duplicate_vote: plant-a/LV-101 already voted");
+    };
+    expect((await post("/vote", { vote: makeVote() })).status).toBe(200);
+    expect(actors.named("vote")).toHaveLength(2);
+  });
+
   test("a yes can still be withdrawn with a no", async () => {
     const { post, actors } = build();
     await post("/vote", { vote: makeVote({ vote: "yes" }) });
@@ -220,6 +264,7 @@ describe("proposals and votes", () => {
       throw new HttpError(503, "no answer");
     };
     expect((await post("/vote", { vote: makeVote() })).status).toBe(503);
+    expect(actors.named("vote")).toHaveLength(3);
     actors.handlers["Plant.vote"] = () => makeProposal();
     expect((await post("/vote", { vote: makeVote() })).status).toBe(200);
   });

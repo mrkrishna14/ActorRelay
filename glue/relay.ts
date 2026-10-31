@@ -1,5 +1,6 @@
 // Glue's Relay identity: joins plant-a, plant-b and company, posts proposal, executed and rule messages, and hands agent
 // messages to the routes. The wire is agent/wire.ts as it stands: the text of every message is JSON {type, payload}.
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { CHANNELS } from "./config";
@@ -92,8 +93,10 @@ export class RelayParticipant implements RelayPort {
     // Fast reconnects: a single-identity stream otherwise lagged 14 s behind a restarted server.
     const relay = new AgentRelay({ workspaceKey, baseUrl: url, agentClientOptions: { ws: { reconnectBaseDelayMs: 250, reconnectMaxDelayMs: 1500 } } } as never);
     const token = this.savedToken(workspaceKey);
-    const client = (token ? await relay.workspace.reconnect({ apiToken: token }) : await relay.workspace.register({ name: systemName, type: "agent" })) as unknown as Client;
-    if (!token) {
+    // Registration is create-only, so a known identity comes back through its stored token.
+    const reconnected = token ? await relay.workspace.reconnect({ apiToken: token }).catch(() => null) : null;
+    const client = (reconnected ?? (await relay.workspace.register({ name: systemName, type: "agent" }))) as unknown as Client;
+    if (!reconnected) {
       if (!client.token) throw new Error("relay returned no token");
       mkdirSync(dirname(tokenFile), { recursive: true });
       writeFileSync(tokenFile, JSON.stringify({ workspaceKey, token: client.token }), { mode: 0o600 });
@@ -122,16 +125,17 @@ export class RelayParticipant implements RelayPort {
     return this.client;
   }
 
-  /** The stable key lets the SDK retry through a Relay restart without posting twice. Returns whether every channel took it. */
+  /** A key made from the content lets the SDK retry through a Relay restart without posting twice. Returns whether every channel took it. */
   async publish(type: PublishType, payload: unknown, channels: readonly string[], ref: string): Promise<boolean> {
     const client = await this.ready();
     const text = JSON.stringify({ type, payload });
+    const digest = createHash("sha256").update(text).digest("hex").slice(0, 32);
     const results = await Promise.all(
       channels.map(async (channel) => {
         const entry: Published = { at: new Date().toISOString(), type, channel, ref, ok: false };
         try {
           if (!client) throw new Error(this.error ?? "relay is not connected");
-          await client.sendMessage({ to: `#${channel}`, text, idempotencyKey: `${type}:${ref}:${channel}` });
+          await client.sendMessage({ to: `#${channel}`, text, idempotencyKey: `${type}:${channel}:${digest}` });
           entry.ok = true;
         } catch (error) {
           entry.error = error instanceof Error ? error.message : String(error);

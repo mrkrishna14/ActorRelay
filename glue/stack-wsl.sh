@@ -10,7 +10,7 @@ REPO="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 ROOT="${STACK_ROOT:-$HOME/ar-glue-stack}"
 TERSE_PORT="${STACK_TERSE_PORT:-7176}"
 GLUE_PORT="${STACK_GLUE_PORT:-7276}"
-AGENT_PORT="$((GLUE_PORT + 1))"
+AGENT_PORT="${STACK_AGENT_PORT:-7279}"
 BRIDGE_PORT="${STACK_BRIDGE_PORT:-7376}"
 STAMP="$(date +%H%M%S)"
 RUN="$ROOT/run-$STAMP"
@@ -72,9 +72,11 @@ mkdir -p "$ROOT/agent-run/agent"
 [ -e "$ROOT/agent-run/agent/node_modules" ] || ln -s "$HOME/.actorrelay/agent-run/agent/node_modules" "$ROOT/agent-run/agent/node_modules"
 (AGENT_RUN_DIR="$ROOT/agent-run" GLUE_URL="$GLUE_URL" AGENT_HEALTH_PORT="$AGENT_PORT" RELAY_TOKENS_FILE="$RUN/agent-tokens.json" \
   exec setsid bash "$REPO/agent/run-wsl.sh" >"$RUN/logs/agents.log" 2>&1) &
-PIDS+=($!)
+AGENTS=$!
+PIDS+=($AGENTS)
 for _ in $(seq 1 240); do
   grep -q "^ready:" "$RUN/logs/agents.log" 2>/dev/null && break
+  kill -0 "$AGENTS" 2>/dev/null || break
   sleep 0.5
 done
 grep "^ready:" "$RUN/logs/agents.log" || { echo "agents did not become ready"; tail -20 "$RUN/logs/agents.log" | cut -c1-240; exit 4; }

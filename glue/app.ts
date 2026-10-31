@@ -19,7 +19,8 @@ export type GlueDeps = {
 };
 
 const SEED_TIMEOUT_MS = 20_000;
-const VOTE_TIMEOUT_MS = 6000;
+const VOTE_TIMEOUT_MS = 8000;
+const VOTE_TRIES = 3;
 const OBSERVED_TIMEOUT_MS = 6000;
 /** Plant's callback gives up after 1.5 s, so a slower dispatch answers 202 and keeps running. */
 const CALLBACK_REPLY_MS = 1000;
@@ -83,11 +84,11 @@ export class Glue {
     if (this.waking || this.resetting) return;
     this.waking = true;
     try {
-      const reads = await Promise.allSettled(PLANT_IDS.map((id) => this.reads.plant(id)));
+      const reads = await Promise.allSettled(PLANT_IDS.map((id) => this.reads.refreshPlant(id)));
       const up = reads.every((read) => read.status === "fulfilled");
       if (up !== this.actorsUp) this.say(up ? "actors reachable" : `actors unreachable: ${message((reads.find((read) => read.status === "rejected") as PromiseRejectedResult).reason)}`);
       this.actorsUp = up;
-      const company = await this.reads.company().catch(() => null);
+      const company = await this.reads.refreshCompany().catch(() => null);
       if (company) this.announce(company.rules);
       await this.mirror.poll();
     } finally {
@@ -127,7 +128,7 @@ export class Glue {
   private async propose(plantId: PlantId, input: ProposalInput & { parentProposalId?: string }) {
     this.open();
     const proposal = await this.actors.call<Proposal>("Plant", plantId, "propose", [input], VOTE_TIMEOUT_MS);
-    this.reads.invalidate(plantId);
+    this.reads.proposal(plantId, proposal);
     return this.publishProposal(proposal);
   }
 
@@ -143,12 +144,26 @@ export class Glue {
     const plantId = plantOfProposal(vote.proposalId);
     this.votes.add(key);
     try {
-      const proposal = await this.actors.call<Proposal>("Plant", plantId, "vote", [vote], VOTE_TIMEOUT_MS);
-      this.reads.invalidate(plantId);
+      const proposal = await this.sendVote(plantId, vote);
+      if (proposal) this.reads.proposal(plantId, proposal);
       return { proposal };
     } catch (error) {
       this.votes.delete(key);
       throw error;
+    }
+  }
+
+  /** A voter gets one chance, so a slow mailbox must not lose its vote. If the first try landed after glue gave up, Plant says so. */
+  private async sendVote(plantId: PlantId, vote: Vote): Promise<Proposal | null> {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await this.actors.call<Proposal>("Plant", plantId, "vote", [vote], VOTE_TIMEOUT_MS);
+      } catch (error) {
+        if (!(error instanceof HttpError)) throw error;
+        if (attempt > 1 && error.message.includes("duplicate_vote")) return null;
+        if (error.status !== 503 || attempt >= VOTE_TRIES) throw error;
+        this.say(`vote ${vote.proposalId} ${vote.componentId} attempt ${attempt}: ${error.message}`);
+      }
     }
   }
 
@@ -157,7 +172,7 @@ export class Glue {
     const plantId = plantOfProposal(proposalId);
     const input = { proposalId, effects, upstreamSnapshot: this.dispatcher.upstreamFor(proposalId) };
     const event = await this.actors.call<HistoryEvent>("Plant", plantId, "recordEvent", [input], OBSERVED_TIMEOUT_MS);
-    this.reads.invalidate(plantId);
+    this.reads.event(plantId, event);
     const delivered = await this.relay.publish("executed", { proposalId, event }, [plantId, "company"], proposalId);
     return { ok: true, proposalId, eventId: event.id, published: delivered };
   }
@@ -176,7 +191,7 @@ export class Glue {
     this.open();
     const plantId = await this.ruleHome(rule);
     const promoted = await this.actors.call<LearnedRule>("Plant", plantId, "promoteRule", [rule]);
-    this.reads.invalidate(plantId);
+    this.reads.touch(plantId);
     await this.relay.publish("rule", { rule: promoted }, ["company"], `${promoted.id}:${promoted.timesSeen}|${promoted.lastSeenAt}`);
     return { rule: promoted };
   }
@@ -266,7 +281,7 @@ export class Glue {
       }
       case "/tick": {
         this.ticks += 1;
-        void this.mirror.poll();
+        if (!this.resetting) void this.mirror.poll();
         // A non-2xx here is what turns PlantState.connected false, so it says whether the simulator is really there.
         return this.mirror.simulatorSeen() ? json({ ok: true }) : json({ ok: false, error: "simulator not seen" }, 503);
       }
@@ -283,7 +298,7 @@ export class Glue {
         const { proposalId, by } = body as RouteBody<"/veto">;
         const plantId = plantOfProposal(proposalId);
         const proposal = await this.actors.call<Proposal>("Plant", plantId, "veto", [proposalId, by]);
-        this.reads.invalidate(plantId);
+        this.reads.proposal(plantId, proposal);
         return json({ proposal });
       }
       case "/execute-callback": {
