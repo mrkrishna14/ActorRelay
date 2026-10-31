@@ -1,0 +1,17 @@
+{
+  "name": "actorrelay-actor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "terse actor dev",
+    "adapter": "bun run adapter.ts",
+    "test": "bun test tests/logic"
+  },
+  "dependencies": {
+    "terse-sdk": "0.14.9"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
