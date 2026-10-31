@@ -434,7 +434,7 @@ await attempt("publish-url",async()=>{
   const failed=await caught(()=>w.live.post("/propose",proposeBody("plant-a",70)));
   check("failed publish reports 502 accepted:true and stays queued",failed?.status===502&&failed.details?.accepted===true&&w.outbox().length===1&&w.outbox()[0]!.value.type==="proposal",`status ${statusOf(failed)} outbox=${w.outbox().length}`);
   const stillDown=await caught(()=>w.bridge.flush());
-  check("flush while the endpoint is down keeps the message and records the error",!stillDown&&w.outbox().length===1&&/503/.test(w.bridge.status.error??""),`error ${w.bridge.status.error} outbox=${w.outbox().length}`);
+  check("flush while the endpoint is down keeps the message and records the error",!stillDown&&w.outbox().length===1&&/Relay publish returned 500/.test(w.bridge.status.error??""),`error ${w.bridge.status.error} outbox=${w.outbox().length}`);
   endpoint.status=200;await w.bridge.flush();
   const sent=endpoint.received.slice(before);
   check("flush delivers the queued message once and empties the outbox, with no new proposal",sent.length===1&&sent[0]!.body.payload.proposal.id===failed?.details?.proposal?.id&&w.outbox().length===0&&w.actors.count("propose")===proposes+1,`sent=${sent.length} outbox=${w.outbox().length}`);
