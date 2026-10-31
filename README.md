@@ -6,9 +6,9 @@ A pump increase changes tank inventory, outlet flow, heating duty, and steam dem
 
 Built for [Haunted Hacks 2026](https://events.ycombinator.com/haunted-hacks-2026) at Y Combinator · October 31, 2026.
 
-**2 connected plants · 10 equipment agents · 13 durable actors · 10-second operator veto**
+**2 connected plants · 10 equipment agents · 13 durable actors · 5-second operator veto**
 
-[Run locally](#run-locally) · [Demo](#the-90-second-demo) · [Architecture](#architecture) · [Evidence](#evidence-you-can-inspect) · [Limitations](#scope-and-limitations)
+[Run locally](#run-locally) · [Demo](#the-90-second-demo) · [Durable Actors & Agent Relay usage](#durable-actors-and-agent-relay-usage) · [Architecture](#architecture) · [Evidence](#evidence-you-can-inspect) · [Limitations](#scope-and-limitations)
 
 ![ActorRelay's current 3D workspace in demo mode, showing the enclosed factory hall, colored equipment and piping, equipment navigator, and agent conversation](docs/images/actorrelay-3d.jpg)
 
@@ -97,9 +97,9 @@ Start from a reset Plant A. Open a vote's evidence to follow its reasoning.
 | **1. Request throughput** | Propose P-100 pump speed **50 → 85%**. | Four local components and Plant B's steam valve review the shared-resource impact. |
 | **2. Inspect the objection** | Open LV-101's vote. | Predicted outlet-valve travel is roughly **89%**, above its initial **81% review threshold**, with event and rule citations. The request is blocked. |
 | **3. Follow the negotiation** | Let the pump agent counter-propose. | It searches supported targets, typically around **65–70%**, for additional headroom. |
-| **4. Keep operator control** | Inspect the agreed proposal. | Five approvals open a **10-second veto window**. Use **Veto** to cancel, or let it proceed. |
+| **4. Keep operator control** | Inspect the agreed proposal. | Five approvals open a **5-second veto window**. Use **Veto** to cancel, or let it proceed. |
 | **5. Inspect the outcome** | Watch the process respond. | Five simulator ticks produce an observation and prediction-versus-observation calibration. |
-| **6. Inspect the memory** | Repeat 85%, then try it in Plant B. | The latest local observation enters the evidence; matching equipment can cite company rules derived from Plant A's history. |
+| **6. Inspect the memory** | Repeat 85%, then try it in Plant B. | The latest local observation enters the evidence. Plant B refuses 85% and its votes start with **"Learned in Plant A: …"**; a banner reads **Plant B uses knowledge from Plant A**. |
 
 Values vary with state and history. Reset rebuilds rules from seeded events, so company knowledge can exist before the first live proposal. The demo shows both its reuse and new observations entering memory.
 
@@ -171,7 +171,7 @@ flowchart TB
 ### From approval to execution
 
 ```text
-Proposal → evidence-backed votes → unanimous approval → 10-second veto window
+Proposal → evidence-backed votes → unanimous approval → 5-second veto window
          → Plant authorizes dispatch → integration journals the command
          → simulator acknowledges → actor state synchronizes
          → five-tick observation → history → calibration → rule sharing
@@ -194,6 +194,57 @@ Stored experience and review behavior change; model weights stay fixed. Inspect 
 Each heated hold tank starts at **15 m³/h of 25°C feed heated to 75°C**, with a **2.0 m level in a 4.0 m tank** and **6 barg steam**. Mass and energy balances use fourth-order Runge–Kutta integration, PI controllers with anti-windup, a temperature-to-steam cascade, and an equal-percentage steam valve.
 
 Both plants' demand affects the shared header. Plant A's load changes Plant B's available pressure, giving its steam-valve agent a reason to vote. By default, one wall-clock second advances **180 simulated seconds**. Five ticks capture a response window; they do not guarantee steady state.
+
+## Durable Actors and Agent Relay usage
+
+ActorRelay is built on two tools. Here is what each one does and how many times we called it.
+
+### Terse Durable Actors: memory and decisions
+
+Every piece of equipment, every plant, and the company is a durable actor:
+
+| What | Count |
+|---|---:|
+| Actors running | **13** (10 Component · 2 Plant · 1 Company) |
+| Actor methods | **31** (Component 6 · Plant 19 · Company 6) |
+| Persisted fields | **38**, of which **28** stream live to the dashboard |
+| Actor-to-actor call sites | **10** (Plant → Component, Plant → Company) |
+| Alarms | **1 s** tick and **2 s** proposal sweep in each Plant |
+
+- **Component actors** hold each machine's live readings, limits, safety margin, and prediction-versus-reality calibration.
+- **Plant actors** hold the plant's history and learned rules, run every vote, run the 5-second veto timer, and are the only thing that can approve a change (a single-use token per change).
+- **The Company actor** holds the shared steam header and the rules shared between plants. This is how Plant B uses knowledge from Plant A.
+
+**How many times we called it**
+
+| Measured | Durable Actor calls |
+|---|---:|
+| One full live demo run (42 seconds, `glue/e2e.ts --live`, 8 of 8 checks passed) | **3,536** (Component 2,532 · Plant 748 · Company 256) |
+| Whole build session ([trace summary](docs/usage/actor-trace-summary.json)) | **19,906** |
+
+### Agent Relay: how the equipment agents talk
+
+| What | Count |
+|---|---:|
+| Relay participants | **11**: 10 equipment agents (`ar-plant-a-lv-101`, …) + 1 system participant (`ar-glue-system`) |
+| Channels | **3**: `#plant-a`, `#plant-b`, `#company` |
+| Message types | **5**: proposal, vote, counter, executed, rule |
+
+- Each equipment agent posts its own vote and reasoning on its plant's channel under its own identity.
+- Votes on a change in the other plant (the shared steam valve) go to `#company`.
+- Counter-proposals and "here is what happened" execution reports travel the same way.
+
+**How many times we called it**
+
+| Messages sent on Agent Relay | Count |
+|---|---:|
+| Votes | **197** |
+| Proposals | **32** |
+| Counter-proposals | **9** |
+| Execution reports | **16** |
+| **Total** | **254** |
+
+In the measured demo run, all **30** votes came from real OpenAI calls.
 
 ## Evidence you can inspect
 
