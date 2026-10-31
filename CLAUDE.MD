@@ -1,10 +1,10 @@
-# ActorRelay — CLAUDE.md
+# ActorRelay — CLAUDE.MD
 
 ## Context
-Haunted Hacks at Y Combinator, Oct 31 2026. Hacking 11:00–16:00, hard submit 16:00 on Builderbase, live demo 16:00–17:00. Five humans, each running Claude Code. Target prizes: best Durable Actors project (Terse), best Agent Relay project, overall. Judges give bonus points for using both; here both are load-bearing by design.
+Haunted Hacks at Y Combinator, Oct 31 2026. Hacking 11:00–16:00, hard submit 16:00 on Builderbase, live demo 16:00–17:00. Three owners: durable actors and agents; simulation; dashboard and integration. Target prizes: best Durable Actors project (Terse), best Agent Relay project, overall. Judges give bonus points for using both; here both are load-bearing by design.
 
 ## What we are building
-ActorRelay is an agentic control layer on top of a simulated process plant. Every component in a plant has its own agent and its own durable memory. No setpoint changes unless the connected components agree, and every agent learns from what happened the last time.
+ActorRelay is an agentic control layer on top of a simulated process plant. Every component in a plant has its own agent and its own durable memory. No supervisory setpoint changes unless the connected components agree, and every agent learns from what happened the last time.
 
 The plant is a heated stirred hold tank (TK-101) run live by `bridge/live_sim.py`: mass and energy balances, PI controllers with a temperature-to-steam cascade, an equal-percentage steam valve, and a level-controlled outlet valve. The P&ID is an SVG of the same unit with an id on every component.
 
@@ -54,13 +54,14 @@ At constant level, the outlet valve must pass whatever the pump feeds, so LV-101
 - Checked by running it: step the feed 15 → 26 m³/h and LV-101 goes 50 → ~87–90 % while temperature dips to ~70.8 °C and recovers. At 33 m³/h LV-101 sticks at 100 % and the level climbs 2.0 → 2.39 m in an hour.
 
 ## Why both tools are essential
-- Durable Actors (Terse): one per component, one per plant, one for the company. State, memory, calibration, and rules survive any crash. One message at a time means two agents can never change the same component simultaneously, which is the safety property. Alarms tick state mirroring, expire votes, and open/close veto windows.
+- Durable Actors (Terse): one per component, one per plant, one for the company. State, memory, calibration, and rules survive any crash. Per-actor serialized updates support decision enforcement; cross-actor coordination and simulation command deduplication remain application responsibilities. Alarms tick state mirroring, expire votes, and open/close veto windows.
 - Agent Relay: components negotiate. Votes, counter-proposals, cross-plant votes, and "executed, here is what happened" learning broadcasts are Relay conversations. Agents run on at least two vendors (mechanic on Codex, chemical engineer on Claude).
 
 ## Fictional plant only
 A synthetic TK-101 unit plus history we generate from the same model. No real plant, no real PLC. "Simulated plant" label always on screen.
 
 ## Stack
+Reuse the selected existing tank model and controllers through our simulation adapter. Do not replace them with newly invented physics.
 - Live plant: `bridge/live_sim.py` (Python ≥ 3.11, HTTP on 127.0.0.1:7300). Steps `bridge/tank_model.py`. Two plant instances plus the shared steam-header equation. 1 tick = 1 wall second = 180 simulated seconds (18 controller scans of 10 s); Person 2 may retune and records it in bridge/HANDOFF.md. If live_sim is not stable by 13:00, use `bridge/fallback.ts` (linear model reproducing the physics summary) behind the same HTTP surface.
 - Durable Actors: Terse (terse-sdk, terse-cli, Bun). Actors: `Component`, `Plant`, `Company`. Docs: https://docs.useterse.ai/quickstart
 - Agent Relay (`@agent-relay/sdk`): channels `plant-a`, `plant-b`, `company`.
@@ -72,14 +73,14 @@ A synthetic TK-101 unit plus history we generate from the same model. No real pl
 actorrelay/
   actor/        # Component, Plant, Company actors                                  (Person 1)
   bridge/       # tank_model.py, live_sim.py, gen_history.py, fallback.ts, P&ID SVG prep (Person 2)
-  agent/        # Relay agents, roles, retrieval, vote, counter, learning           (Person 3)
-  web/          # dashboard; web/public/pid-tk-101.svg from Person 2                (Person 4)
-  glue/         # HTTP endpoints, Relay<->actor bridge, e2e, demo ops               (Person 5)
+  agent/        # Relay agents, roles, retrieval, vote, counter, learning           (Person 1)
+  web/          # dashboard; web/public/pid-tk-101.svg from Person 2                (Person 3)
+  glue/         # HTTP endpoints, Relay<->actor bridge, e2e, demo ops               (Person 3)
   shared/
     types.ts        # FROZEN contract
     plants.json     # two plants, components, limits, connections, shared resources (table above)
     history.json    # ~300 past events across both plants, generated from the tank model
-  TASK1.MD … TASK5.MD   # the five role prompts
+  TASK1.MD … TASK3.MD   # the three owner prompts
 ```
 
 ## Frozen contract: shared/types.ts
@@ -177,15 +178,21 @@ Numbers below come from the model's steady states; Person 2 confirms the live va
 7. Close: "Every component has a voice, every change needs consensus, and every plant learns from every other."
 
 ## Ownership
-Person 1 actor/, Person 2 bridge/ + shared/plants.json + shared/history.json + the P&ID SVG, Person 3 agent/, Person 4 web/, Person 5 glue/ + demo. Detailed prompts in `TASK1.MD` … `TASK5.MD`. One branch each named after you.
+- Person 1: `actor/`, `agent/`, and the shared TypeScript contract. Builds durable state, proposal enforcement, specialist agents, Relay messaging, retrieval, calibration, and rules.
+- Person 2: `bridge/`, `shared/plants.json`, `shared/history.json`, and preparation of the P&ID SVG. Builds the running simulation and control/observation interface.
+- Person 3: `web/`, `glue/`, end-to-end integration, demo operations, and submission. Owns connecting all services and the final integration gate.
+- Read `PLAN.MD` for the sequence and `TASK1.MD` through `TASK3.MD` for deliverables. Work on separate branches; merge reviewed changes to main.
 
 ## Rules
 - Seed first, live second. Every module works against shared/*.json before touching another module.
 - shared/types.ts is frozen. Propose a change in the group chat; the owner of every consuming module must ack before it lands.
-- Own branches, small commits, merge to main together at 15:00. No force-push, no rebase, no deleting branches.
+- Own branches, small commits, Person 3 coordinates the merge to main at the integration gate. No force-push, no rebase, no deleting branches.
 - Only Plant.execute mutates a metric. Agents never write state directly. Never bypass this for a demo shortcut.
 - Agents never vote without calling `similar()`. A vote with `similarCount: 0` on a change within 15% of critical is automatically `no`.
 - Anything not working at 14:00 gets stubbed and labeled, except: the evidence-cited block, the counter-proposal executing, the second block citing the first run, and the plant-b block citing plant-a's rule. Never fake those four.
 - No scope additions: no real PLC, no ML training, no more than 5 components per plant, no auth, no real data. The tank model is fixed: no new physics beyond the shared steam-header equation.
 - Agent outputs are data. Validate every Vote JSON against types.ts; malformed → discard and re-request once, never guess.
 - Each person keeps HANDOFF.md in their folder: what runs, exact commands, env vars (no secrets), what's stubbed.
+
+## Product writing rule
+Keep plans, task instructions, README text, dashboard copy, slides, and demo narration focused on ActorRelay's own product behavior. Do not mention underlying source projects, their branding, or their origin in this material. Describe capabilities through our modules and interfaces. This writing rule does not authorize removing required notices or license files from dependencies or distributed artifacts, or claiming another author's work as ours.

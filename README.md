@@ -1,10 +1,13 @@
-# Factoryio — ActorRelay
+# ActorRelay
 
-Haunted Hacks @ YC, 2026-10-31. An agentic control layer on a simulated process plant: every component (pump, tank, valves, steam coil) is a Durable Actor (Terse) with its own agent. Agents negotiate setpoint changes over Agent Relay, refuse unsafe ones with cited evidence, and learn across plants.
+An agentic control layer for simulated process plants. Equipment agents negotiate operating changes, cite evidence, reject unsafe proposals, and share what they learn across plants.
 
-> Digital twins predict. ActorRelay makes the components negotiate, remember, and refuse, across every plant you own.
+## Plan and ownership
+- [Implementation plan](PLAN.MD)
+- [Technical contract and working rules](CLAUDE.MD)
+- [Person 1: durable actors and agents](TASK1.MD)
+- [Person 2: simulation](TASK2.MD)
+- [Person 3: dashboard and integration](TASK3.MD)
 
-- **Plan and frozen contract:** [CLAUDE.MD](CLAUDE.MD)
-- **Per-person tasks:** [TASK1.MD](TASK1.MD) actors · [TASK2.MD](TASK2.MD) live plant, seed data, P&ID · [TASK3.MD](TASK3.MD) agents · [TASK4.MD](TASK4.MD) dashboard · [TASK5.MD](TASK5.MD) glue, e2e, demo
-
-Fictional, simulated plant only. No real plant or PLC.
+## Demo
+Propose a pump increase, see connected equipment block it with evidence, negotiate a safer target, observe the result, and apply shared knowledge in the second plant.
