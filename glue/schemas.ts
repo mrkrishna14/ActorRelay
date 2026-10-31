@@ -8,7 +8,7 @@ export const effect = z.object({componentId:id,metric:id,before:z.number().finit
 export const calibration = z.object({at:id,proposalId:id,metric:id,predicted:z.number().finite(),observed:z.number().finite(),absError:z.number().nonnegative()});
 export const ruleSchema = z.object({id,scope:z.enum(["component","plant","company"]),model:z.string().nullable(),text:z.string().min(1),condition:z.object({componentId:z.string().nullable(),metric:id,op:z.enum([">=","<="]),value:z.number().finite()}),consequence:z.object({componentId:z.string().nullable(),metric:id,op:z.enum([">=","<="]),value:z.number().finite(),withinTicks:z.number().nonnegative()}),supportEventIds:z.array(id),timesSeen:z.number().int().nonnegative(),createdAt:id,lastSeenAt:id});
 export const schemas:Record<string,z.ZodType> = {
- "/propose":proposalInput,"/mirror":z.object({componentId:id,metrics}).strict(),
+ "/propose":proposalInput,"/mirror":z.object({componentId:id,metrics,lastTick:z.string().optional(),tick:z.number().optional()}).strict(),
  "/vote":z.object({vote:voteSchema}).strict(),"/counter":z.object({parentProposalId:id,proposal:proposalInput}).strict(),
  "/veto":z.object({proposalId:id,by:id}).strict(),"/execute-callback":z.object({proposalId:id}).strict(),
  "/observed":z.object({proposalId:id,effects:z.array(effect)}).strict(),
