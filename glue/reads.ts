@@ -25,16 +25,18 @@ class Held<T> {
   refresh(): Promise<T> {
     if (this.loading) return this.loading;
     const generation = this.generation;
-    const loading = readWithRetry(this.load)
+    const loading: Promise<T> = readWithRetry(this.load)
+      .finally(() => {
+        if (this.loading === loading) this.loading = null;
+      })
       .then((value) => {
         if (generation === this.generation) {
           this.latest = value;
           this.at = Date.now();
+          return value;
         }
-        return value;
-      })
-      .finally(() => {
-        if (this.loading === loading) this.loading = null;
+        // A write landed while this read was queued, so what it saw must not replace what the write produced.
+        return this.latest ?? this.refresh();
       });
     this.loading = loading;
     return loading;
@@ -52,6 +54,7 @@ class Held<T> {
   }
 
   update(change: (value: T) => T) {
+    this.generation += 1;
     if (this.latest !== null) this.latest = change(this.latest);
   }
 

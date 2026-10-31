@@ -156,6 +156,23 @@ describe("reads the agents and the dashboard use", () => {
     expect(body.plant.proposals[0].status).toBe("vetoed");
   });
 
+  test("a read queued before a write cannot hide that write, or a voter would see no proposal and refuse it", async () => {
+    const { post, get, glue, actors } = build();
+    const empty = { ...actors.plant("plant-a"), proposals: [] };
+    actors.handlers["Plant.getState"] = () => empty;
+    await glue.wake();
+    await Bun.sleep(1050);
+    const queued: (() => void)[] = [];
+    actors.handlers["Plant.getState"] = () => new Promise((resolve) => queued.push(() => resolve(empty)));
+    const waking = glue.wake();
+    await Bun.sleep(5);
+    await post("/propose", proposeBody);
+    queued.forEach((finish) => finish());
+    await waking;
+    const body = (await (await get("/state?plantId=plant-a")).json()) as any;
+    expect(body.plant.proposals.map((p: { id: string }) => p.id)).toEqual([PROPOSAL_ID]);
+  });
+
   test("readers share one Plant read, so a page adds no load to the mailbox", async () => {
     const { get, actors } = build();
     await Promise.all(Array.from({ length: 20 }, () => get("/state?plantId=plant-a")));

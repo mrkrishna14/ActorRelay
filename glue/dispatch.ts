@@ -7,6 +7,9 @@ import { dispatchClaimSchema } from "./contract";
 
 const SET_METRIC_TRIES = 3;
 const SET_METRIC_WAIT_MS = 300;
+const CONFIRM_TRIES = 4;
+const CONFIRM_WAIT_MS = 500;
+const SAME_VALUE = 0.01;
 const RESET_RUNNING = "dispatch refused while a reset runs";
 
 type ComponentRead = { id: ComponentId; status: string; metrics: Record<string, number>; limits: Record<string, { min: number; max: number; critical: number }> };
@@ -82,10 +85,17 @@ export class Dispatcher {
       ({ applied } = await this.bridge.setpoint({ componentId, metric, value, proposalId }));
       this.record(proposalId, componentId, metric, value, true, `applied ${applied ?? "not reported"}`);
     } catch (error) {
-      const reason = error instanceof SetpointFailed ? error.message : String(error);
-      this.record(proposalId, componentId, metric, value, false, reason);
-      await this.actors.call("Plant", plantId, "reportDispatchFailure", [proposalId, reason]);
-      return { dispatched: false, proposalId, state: "failed", reason };
+      const failed = error instanceof SetpointFailed ? error : new SetpointFailed(String(error), false);
+      this.record(proposalId, componentId, metric, value, false, failed.message);
+      if (failed.refused) {
+        await this.actors.call("Plant", plantId, "reportDispatchFailure", [proposalId, failed.message]);
+        return { dispatched: false, proposalId, state: "failed", reason: failed.message };
+      }
+      // No answer: the write may have landed, so it is neither sent again nor reverted. Plant holds the claim, and a
+      // reading of the new value or a later /observed settles it.
+      if (!(await this.landed(plantId, componentId, metric, value))) return { dispatched: false, proposalId, state: "unknown", reason: failed.message };
+      applied = value;
+      this.record(proposalId, componentId, metric, value, true, "confirmed from a simulator reading after no answer");
     }
     if (applied !== null && Math.abs(applied - value) > 1e-6) this.say(`dispatch ${proposalId}: simulator applied ${applied}, claim was ${value}`);
     return { dispatched: true, proposalId, componentId, metric, value, applied, recorded: await this.setMetric(componentId, metric, value, proposalId, token) };
@@ -102,6 +112,15 @@ export class Dispatcher {
     this.say(`dispatch ${proposalId} refused: ${reason}`);
     await this.actors.call("Plant", plantId, "reportDispatchFailure", [proposalId, reason]);
     return { dispatched: false, proposalId, state: "failed", reason };
+  }
+
+  private async landed(plantId: PlantId, componentId: ComponentId, metric: string, value: number): Promise<boolean> {
+    for (let attempt = 1; attempt <= CONFIRM_TRIES; attempt++) {
+      const reading = await this.bridge.snapshot(plantId).then((snapshot) => snapshot[componentId]?.[metric]).catch(() => undefined);
+      if (reading !== undefined && Math.abs(reading - value) <= SAME_VALUE) return true;
+      if (attempt < CONFIRM_TRIES) await Bun.sleep(CONFIRM_WAIT_MS);
+    }
+    return false;
   }
 
   /** The simulator already moved, so this retries; setMetric is safe to repeat because the token burns only on success. */

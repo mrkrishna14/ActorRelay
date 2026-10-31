@@ -115,12 +115,25 @@ describe("execution", () => {
     expect(actors.named("setMetric")).toEqual([]);
   });
 
-  test("a /setpoint that timed out is not repeated", async () => {
-    const { post, bridge } = build();
+  test("a /setpoint with no answer is not repeated and not reverted, because it may have landed", async () => {
+    const { post, actors, bridge, glue } = build();
     bridge.failWrite = new SetpointFailed("no answer from the simulator", false);
+    const result = await glue.dispatcher.run(PROPOSAL_ID);
     await post("/execute-callback", callback);
-    await post("/execute-callback", callback);
+    expect(result).toMatchObject({ dispatched: false, state: "unknown" });
     expect(bridge.writes).toHaveLength(1);
+    expect(actors.named("reportDispatchFailure")).toEqual([]);
+    expect(actors.named("setMetric")).toEqual([]);
+  });
+
+  test("a /setpoint with no answer that the simulator shows as landed is settled with setMetric", async () => {
+    const { actors, bridge, glue } = build();
+    bridge.failWrite = new SetpointFailed("no answer from the simulator", false);
+    let reads = 0;
+    bridge.snapshotBody = () => ({ "plant-a/P-100": { speedPct: ++reads > 1 ? 65 : 50 } });
+    expect(await glue.dispatcher.run(PROPOSAL_ID)).toMatchObject({ dispatched: true, value: 65 });
+    expect(actors.named("setMetric")).toHaveLength(1);
+    expect(actors.named("reportDispatchFailure")).toEqual([]);
   });
 
   test("setMetric is retried, because the simulator has already moved", async () => {
