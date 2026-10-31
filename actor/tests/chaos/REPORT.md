@@ -1,18 +1,19 @@
 # Crash test report
 
-Interim, 13:20 Pacific. Crash testing is paused by main's 13:10 order to free the machine for the end-to-end run. This report states only what was observed.
+Interim, 13:30 Pacific. Crash testing is on hold under main's 13:10 order, to free the machine for the end-to-end run. Nothing has run on Terse since then. This report states only what was observed.
 
 ## Verdict so far
 
-Durable memory held: no acknowledged write was lost in any run, and there was never a second simulation command. The failures are in recovery, not storage. After a server crash the actors can disagree with the simulator, and an operator can lose the veto window.
+Durable memory held: no acknowledged write was lost in any run, and there was never a second simulation command. The failures are in recovery, not storage. After a server crash the actors can disagree with the simulator, and an operator can lose the veto window. On the fake runtime, one lost acknowledgement then blocks every later change to that metric until a reset.
 
 | Claim tested | Result on the real runtime |
 |---|---|
-| Acknowledged votes, history, calibration, rules and audit survive `kill -9` | Held in every run |
+| Acknowledged votes, history, rules and audit survive `kill -9` | Held in every run |
+| Acknowledged calibration survives `kill -9` | Held, but on thin evidence: 3 acknowledged entries |
 | No duplicate execution | Held: at most one simulation command in every run |
 | No duplicate rule | Held for rule entries. Company `timesSeen` is inflated by a replay |
 | No proposal stuck forever | Held in the runs so far, provided something calls the Plant |
-| Alarms re-armed, tick resumes | Not on its own. Nothing ticks until a method is called on each Plant |
+| Alarms re-armed, tick resumes | Not on its own. Nothing ticks until a method is called on each Plant. Glue now has a wake loop that does this; not yet crash tested |
 | Human veto window survives a crash | Failed |
 | Actors match the simulator after a crash | Failed when the crash lands between claim and setpoint |
 | Glue slow or down does not wedge the Plant | Held in `d4`. `d1` is inconclusive, see below |
@@ -25,7 +26,7 @@ These parts are fake: glue, the executor and the simulator. They follow the exec
 
 `p` scenarios ran on the same real runtime against a throwaway probe actor, not ActorRelay code.
 
-3746bdd is not the latest code. ar-actors has since committed 69ebb4a, and a fix for the tick rate is landing. Everything here must be rerun on the fixed commit.
+3746bdd is not the latest code. ar-actors has since committed 69ebb4a and 6447368, the second with the tick-rate fix, and more is in progress. Everything here must be rerun on the fixed commit.
 
 ## Results
 
@@ -61,7 +62,29 @@ All were sent to ar-actors with the exact sequence.
 1. **Split brain after a crash in dispatch (`c3b`, `c3f`).** Sequence: `claimDispatch` succeeds, server killed, restart takes longer than the 20s claim timeout, the first sweep fails the execution and reverts the setpoint. The executor's one `/setpoint` lands anyway. `setMetric` is refused with `invalid_token: execution is failed`, `recordEvent` is refused with `not_executed`, and the next proposal starts from 50 while the simulator holds 65.
 2. **Human veto lost in an outage (`c2b`).** A deadline that lapses while the server is down executes on the first sweep after restart. A rebuild always outlasts 10s, so this hits every server crash during a veto window.
 3. **Replay inflates Company `timesSeen` (`c4a`).** The rule entry dedupes, but the count goes 3 to 4 with no new evidence.
-4. **Plant ticks about 5.4 times a second, not once (`c0`).** ar-actors found the cause independently: re-arming an overdue alarm adds deliveries under load. This inflated the mailbox latencies in this batch.
+4. **Plant ticks about 5.4 times a second, not once (`c0`).** ar-actors found the cause independently: re-arming an overdue alarm adds deliveries under load. Fixed in 6447368, not yet retested here. This inflated the mailbox latencies in this batch.
+
+## Found without a server
+
+These ran with no Terse server, during the hold. They are not real-runtime evidence.
+
+**Fake runtime: one lost acknowledgement blocks that metric until a reset.** `logic/dispatch-recovery.test.ts` runs the real actor classes at 6447368 on ar-property's in-memory actor base, starting from the state `c3b` and `c3f` reached on real Terse.
+
+The sequence: the simulator moves 50 to 65, the acknowledgement is lost, and the claim times out, which reverts the Plant's setpoint to 50. Every later proposal then starts from 50, and `claimDispatch` refuses it because the measured value is 65. A proposal back to 50 is refused as `speedPct is already 50`. A setpoint that times out but lands gives the same result with no crash.
+
+| Source | Three later proposals dispatched | Tests |
+|---|---|---|
+| 6447368 | false, false, false | 1 pass, 5 fail |
+| Patched copy of actor/src, 14 lines | false, true, true | 6 pass, 0 fail |
+
+The patch is not in the product. It is with ar-actors, and the diff is in `ar-chaos-recovery-fix.md` in the shared notes folder. It starts from the measured value after a mismatch, and accepts a late token or observation after a claim timeout. It opened no second dispatch.
+
+**Read from the code, not run.** Sent to main, who owns these paths.
+
+- `glue/dispatch.ts` retries `setMetric` for about 1s when connections are refused, and the token is held only in memory. A restart takes 25s or more, so a crash just after `/setpoint` always loses the acknowledgement.
+- `glue/dispatch.ts` reports a failure on any setpoint error, including a timeout where the write may have landed.
+- `bridge/live_sim.ts` retries `/observed` for about 19s at most. An observation due during a restart is dropped, so a change that really happened gets no history event and no calibration.
+- `glue/app.ts` does reach `Plant.getState` on both Plants every second, which covers the alarm loss in principle.
 
 ## Runtime facts, measured
 
