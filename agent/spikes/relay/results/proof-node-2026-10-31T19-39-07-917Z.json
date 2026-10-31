@@ -1,0 +1,199 @@
+{
+  "runId": "2026-10-31T19-39-07-917Z",
+  "runtime": "node v24.22.2",
+  "platform": "linux",
+  "sdk": "15.0.1",
+  "engine": "12.3.0",
+  "observations": {
+    "server boot from Linux filesystem, ms": 3078,
+    "all 11 streams live after, ms": 246,
+    "sender sees own channel post": false,
+    "who else sees a thread reply": [
+      "plant-a-P-100:thread.reply",
+      "plant-a-TK-101:thread.reply",
+      "plant-a-E-101:thread.reply",
+      "plant-a-TV-101:thread.reply",
+      "actorrelay-system:thread.reply"
+    ],
+    "agent name containing a slash": "accepted"
+  },
+  "latencyMs": {
+    "send_ack": {
+      "n": 100,
+      "p50": 118.9,
+      "p95": 222.7,
+      "p99": 287.7,
+      "max": 287.7,
+      "mean": 126.2
+    },
+    "channel_one_way": {
+      "n": 100,
+      "p50": 110.8,
+      "p95": 213.4,
+      "p99": 227.4,
+      "max": 227.4,
+      "mean": 116.1
+    },
+    "round_trip_via_reply": {
+      "n": 100,
+      "p50": 206.4,
+      "p95": 361.6,
+      "p99": 451.9,
+      "max": 451.9,
+      "mean": 226.8
+    },
+    "five_voter_round": {
+      "n": 20,
+      "p50": 805.9,
+      "p95": 2403.8,
+      "p99": 2403.8,
+      "max": 2403.8,
+      "mean": 879.2
+    }
+  },
+  "summary": {
+    "passed": 11,
+    "failed": 0
+  },
+  "checks": [
+    {
+      "name": "11 identities registered with distinct ids",
+      "pass": true,
+      "detail": {
+        "names": [
+          "plant-a-P-100",
+          "plant-a-TK-101",
+          "plant-a-LV-101",
+          "plant-a-E-101",
+          "plant-a-TV-101",
+          "plant-b-P-100",
+          "plant-b-TK-101",
+          "plant-b-LV-101",
+          "plant-b-E-101",
+          "plant-b-TV-101",
+          "actorrelay-system"
+        ],
+        "types": "agent x10, system x1"
+      }
+    },
+    {
+      "name": "channels plant-a, plant-b, company exist",
+      "pass": true,
+      "detail": {
+        "channelNames": [
+          "general",
+          "plant-a",
+          "plant-b",
+          "company"
+        ]
+      }
+    },
+    {
+      "name": "plant-a message reaches its 5 other members exactly once",
+      "pass": true,
+      "detail": {
+        "plantAReceivers": [
+          "plant-a-TK-101",
+          "plant-a-LV-101",
+          "plant-a-E-101",
+          "plant-a-TV-101",
+          "actorrelay-system"
+        ]
+      }
+    },
+    {
+      "name": "plant-a message does not reach plant-b agents",
+      "pass": true,
+      "detail": {
+        "plantBLeaks": []
+      }
+    },
+    {
+      "name": "plant-b message reaches its 5 other members and not plant-a",
+      "pass": true
+    },
+    {
+      "name": "company message reaches the other 10 exactly once",
+      "pass": true,
+      "detail": {
+        "received": 10
+      }
+    },
+    {
+      "name": "reply reaches the original sender",
+      "pass": true,
+      "detail": {
+        "kind": "thread.reply",
+        "threadId": "242371864539512832",
+        "parentId": "242371864539512832",
+        "from": "plant-a-LV-101"
+      }
+    },
+    {
+      "name": "direct message reaches its target",
+      "pass": true,
+      "detail": {
+        "kind": "dm.received"
+      }
+    },
+    {
+      "name": "100 round trips completed",
+      "pass": true,
+      "detail": {
+        "send_ack": {
+          "n": 100,
+          "p50": 118.9,
+          "p95": 222.7,
+          "p99": 287.7,
+          "max": 287.7,
+          "mean": 126.2
+        },
+        "channel_one_way": {
+          "n": 100,
+          "p50": 110.8,
+          "p95": 213.4,
+          "p99": 227.4,
+          "max": 227.4,
+          "mean": 116.1
+        },
+        "round_trip_via_reply": {
+          "n": 100,
+          "p50": 206.4,
+          "p95": 361.6,
+          "p99": 451.9,
+          "max": 451.9,
+          "mean": 226.8
+        },
+        "five_voter_round": {
+          "n": 20,
+          "p50": 805.9,
+          "p95": 2403.8,
+          "p99": 2403.8,
+          "max": 2403.8,
+          "mean": 879.2
+        }
+      }
+    },
+    {
+      "name": "20 rounds of proposal plus 5 replies completed",
+      "pass": true,
+      "detail": {
+        "n": 20,
+        "p50": 805.9,
+        "p95": 2403.8,
+        "p99": 2403.8,
+        "max": 2403.8,
+        "mean": 879.2
+      }
+    },
+    {
+      "name": "no duplicate delivery by messageId (whole run)",
+      "pass": true,
+      "detail": {
+        "entries": 1641,
+        "duplicates": [],
+        "duplicateCount": 0
+      }
+    }
+  ]
+}

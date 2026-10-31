@@ -1,0 +1,111 @@
+{
+  "runId": "2026-10-31T19-55-34-418Z",
+  "runtime": "bun 1.4.4",
+  "platform": "linux",
+  "dataRoot": "/dev/shm/actorrelay",
+  "sdk": "15.0.1",
+  "engine": "12.3.0",
+  "observations": {
+    "server boot from Linux filesystem, ms": 8829,
+    "all 11 streams live after, ms": 381
+  },
+  "latencyMs": {
+    "send_ack": {
+      "n": 100,
+      "p50": 166.8,
+      "p95": 410.6,
+      "p99": 541.7,
+      "max": 541.7,
+      "mean": 195.1
+    },
+    "channel_one_way": {
+      "n": 100,
+      "p50": 148.9,
+      "p95": 333.6,
+      "p99": 382.6,
+      "max": 382.6,
+      "mean": 174.3
+    },
+    "round_trip_via_reply": {
+      "n": 100,
+      "p50": 314.2,
+      "p95": 676.2,
+      "p99": 860,
+      "max": 860,
+      "mean": 352.2
+    },
+    "five_voter_round": {
+      "n": 20,
+      "p50": 827.3,
+      "p95": 1827,
+      "p99": 1827,
+      "max": 1827,
+      "mean": 866.3
+    }
+  },
+  "summary": {
+    "passed": 3,
+    "failed": 0
+  },
+  "checks": [
+    {
+      "name": "100 round trips completed",
+      "pass": true,
+      "detail": {
+        "send_ack": {
+          "n": 100,
+          "p50": 166.8,
+          "p95": 410.6,
+          "p99": 541.7,
+          "max": 541.7,
+          "mean": 195.1
+        },
+        "channel_one_way": {
+          "n": 100,
+          "p50": 148.9,
+          "p95": 333.6,
+          "p99": 382.6,
+          "max": 382.6,
+          "mean": 174.3
+        },
+        "round_trip_via_reply": {
+          "n": 100,
+          "p50": 314.2,
+          "p95": 676.2,
+          "p99": 860,
+          "max": 860,
+          "mean": 352.2
+        },
+        "five_voter_round": {
+          "n": 20,
+          "p50": 827.3,
+          "p95": 1827,
+          "p99": 1827,
+          "max": 1827,
+          "mean": 866.3
+        }
+      }
+    },
+    {
+      "name": "20 rounds of proposal plus 5 replies completed",
+      "pass": true,
+      "detail": {
+        "n": 20,
+        "p50": 827.3,
+        "p95": 1827,
+        "p99": 1827,
+        "max": 1827,
+        "mean": 866.3
+      }
+    },
+    {
+      "name": "no duplicate delivery by messageId (whole run)",
+      "pass": true,
+      "detail": {
+        "entries": 1610,
+        "duplicates": [],
+        "duplicateCount": 0
+      }
+    }
+  ]
+}

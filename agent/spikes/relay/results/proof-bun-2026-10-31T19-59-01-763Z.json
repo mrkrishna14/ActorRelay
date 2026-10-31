@@ -1,0 +1,502 @@
+{
+  "runId": "2026-10-31T19-59-01-763Z",
+  "runtime": "bun 1.4.4",
+  "platform": "linux",
+  "dataRoot": "/home/zubair/.actorrelay",
+  "sdk": "15.0.1",
+  "engine": "12.3.0",
+  "observations": {
+    "server boot from Linux filesystem, ms": 5704,
+    "all 11 streams live after, ms": 366,
+    "sender sees own channel post": false,
+    "who else sees a thread reply": [
+      "plant-a-P-100:thread.reply",
+      "plant-a-TK-101:thread.reply",
+      "plant-a-E-101:thread.reply",
+      "plant-a-TV-101:thread.reply",
+      "actorrelay-system:thread.reply"
+    ],
+    "agent name containing a slash": {
+      "register": "accepted",
+      "dm": "dm accepted"
+    },
+    "concurrent burst vs history order": {
+      "available": true,
+      "matchesAscending": false,
+      "matchesDescending": true
+    },
+    "two live connections on one identity, who got the thread reply": {
+      "oldConnection": true,
+      "newConnection": false
+    },
+    "server SIGTERM with 11 live clients": {
+      "exitedOnSignal": false,
+      "ms": 4032
+    },
+    "server SIGKILL with 11 live clients": {
+      "exitedOnSignal": true,
+      "ms": 28
+    },
+    "messages sent while receiver offline: replayed over stream on reconnect": {
+      "sent": 10,
+      "replayed": 10
+    },
+    "inbox.list after reconnect": {
+      "items": 0
+    }
+  },
+  "latencyMs": {
+    "send_ack": {
+      "n": 100,
+      "p50": 226.5,
+      "p95": 1030.4,
+      "p99": 3378,
+      "max": 3378,
+      "mean": 330.1
+    },
+    "channel_one_way": {
+      "n": 100,
+      "p50": 199,
+      "p95": 666.8,
+      "p99": 3367.9,
+      "max": 3367.9,
+      "mean": 290.2
+    },
+    "round_trip_via_reply": {
+      "n": 100,
+      "p50": 453.9,
+      "p95": 1585.6,
+      "p99": 3436.3,
+      "max": 3436.3,
+      "mean": 575.5
+    },
+    "five_voter_round": {
+      "n": 20,
+      "p50": 1273.7,
+      "p95": 3238.4,
+      "p99": 3238.4,
+      "max": 3238.4,
+      "mean": 1363.5
+    }
+  },
+  "midflight": {
+    "proposals": 60,
+    "killedAfterRound": 19,
+    "bootMs": 3853,
+    "backUpAtRound": 20,
+    "acknowledged": 60,
+    "slowestRounds": [
+      {
+        "round": 30,
+        "attempts": 1,
+        "ms": 5149
+      },
+      {
+        "round": 31,
+        "attempts": 1,
+        "ms": 4720
+      },
+      {
+        "round": 20,
+        "attempts": 1,
+        "ms": 4619
+      }
+    ],
+    "retried": [],
+    "maxMissingAtAVoter": 0,
+    "missingPerVoter": [
+      "plant-a-P-100:0",
+      "plant-a-TK-101:0",
+      "plant-a-LV-101:0",
+      "plant-a-E-101:0",
+      "plant-a-TV-101:0"
+    ],
+    "missingRounds": [],
+    "duplicatedRounds": [],
+    "votesMissing": 0,
+    "votesMissingSample": [],
+    "storedProposalsMaxCopies": 1,
+    "storedProposals": 60
+  },
+  "idempotencyAcrossRestart": {
+    "sameMessage": false,
+    "storedCopies": 2,
+    "distinctIds": 2
+  },
+  "summary": {
+    "passed": 38,
+    "failed": 1
+  },
+  "checks": [
+    {
+      "name": "11 identities registered with distinct ids",
+      "pass": true,
+      "detail": {
+        "names": [
+          "plant-a-P-100",
+          "plant-a-TK-101",
+          "plant-a-LV-101",
+          "plant-a-E-101",
+          "plant-a-TV-101",
+          "plant-b-P-100",
+          "plant-b-TK-101",
+          "plant-b-LV-101",
+          "plant-b-E-101",
+          "plant-b-TV-101",
+          "actorrelay-system"
+        ],
+        "types": "agent x10, system x1"
+      }
+    },
+    {
+      "name": "channels plant-a, plant-b, company exist",
+      "pass": true,
+      "detail": {
+        "channelNames": [
+          "general",
+          "plant-a",
+          "plant-b",
+          "company"
+        ]
+      }
+    },
+    {
+      "name": "plant-a message reaches its 5 other members exactly once",
+      "pass": true,
+      "detail": {
+        "plantAReceivers": [
+          "plant-a-TK-101",
+          "plant-a-LV-101",
+          "plant-a-E-101",
+          "plant-a-TV-101",
+          "actorrelay-system"
+        ]
+      }
+    },
+    {
+      "name": "plant-a message does not reach plant-b agents",
+      "pass": true,
+      "detail": {
+        "plantBLeaks": []
+      }
+    },
+    {
+      "name": "plant-b message reaches its 5 other members and not plant-a",
+      "pass": true
+    },
+    {
+      "name": "company message reaches the other 10 exactly once",
+      "pass": true,
+      "detail": {
+        "received": 10
+      }
+    },
+    {
+      "name": "reply reaches the original sender",
+      "pass": true,
+      "detail": {
+        "kind": "thread.reply",
+        "threadId": "242376897427255296",
+        "parentId": "242376897427255296",
+        "from": "plant-a-LV-101"
+      }
+    },
+    {
+      "name": "direct message reaches its target",
+      "pass": true,
+      "detail": {
+        "kind": "dm.received"
+      }
+    },
+    {
+      "name": "100 round trips completed",
+      "pass": true,
+      "detail": {
+        "send_ack": {
+          "n": 100,
+          "p50": 226.5,
+          "p95": 1030.4,
+          "p99": 3378,
+          "max": 3378,
+          "mean": 330.1
+        },
+        "channel_one_way": {
+          "n": 100,
+          "p50": 199,
+          "p95": 666.8,
+          "p99": 3367.9,
+          "max": 3367.9,
+          "mean": 290.2
+        },
+        "round_trip_via_reply": {
+          "n": 100,
+          "p50": 453.9,
+          "p95": 1585.6,
+          "p99": 3436.3,
+          "max": 3436.3,
+          "mean": 575.5
+        },
+        "five_voter_round": {
+          "n": 20,
+          "p50": 1273.7,
+          "p95": 3238.4,
+          "p99": 3238.4,
+          "max": 3238.4,
+          "mean": 1363.5
+        }
+      }
+    },
+    {
+      "name": "20 rounds of proposal plus 5 replies completed",
+      "pass": true,
+      "detail": {
+        "n": 20,
+        "p50": 1273.7,
+        "p95": 3238.4,
+        "p99": 3238.4,
+        "max": 3238.4,
+        "mean": 1363.5
+      }
+    },
+    {
+      "name": "200 awaited sends arrive in order, once, at all 10 other members",
+      "pass": true,
+      "detail": {
+        "sequentialBad": []
+      }
+    },
+    {
+      "name": "100 concurrent sends: all receivers agree on one order, no loss",
+      "pass": true,
+      "detail": {
+        "distinctOrders": 1,
+        "received": 100,
+        "rejected": 0
+      }
+    },
+    {
+      "name": "3 interleaved senders: per-sender FIFO holds at every receiver",
+      "pass": true,
+      "detail": {
+        "receivers": 8,
+        "eachGot": 150
+      }
+    },
+    {
+      "name": "3 interleaved senders: all receivers see one global order",
+      "pass": true,
+      "detail": {
+        "distinctOrders": 1
+      }
+    },
+    {
+      "name": "fresh process: register rejects with name_conflict",
+      "pass": true,
+      "detail": {
+        "registerResult": "name_conflict",
+        "id": "242376866070638592",
+        "name": "plant-a-LV-101",
+        "gotReply": true
+      }
+    },
+    {
+      "name": "fresh process: reconnect keeps the same agent id",
+      "pass": true,
+      "detail": {
+        "before": "242376866070638592",
+        "after": "242376866070638592"
+      }
+    },
+    {
+      "name": "fresh process: can send and receive a reply",
+      "pass": true
+    },
+    {
+      "name": "server SIGTERM: live clients recover without action",
+      "pass": true,
+      "detail": {
+        "serverBootMs": 3498,
+        "streamsLiveAfterBootMs": 16124,
+        "totalOutageMs": 23656
+      }
+    },
+    {
+      "name": "server SIGTERM: register still rejects with name_conflict",
+      "pass": true,
+      "detail": {
+        "conflict": "name_conflict"
+      }
+    },
+    {
+      "name": "server SIGTERM: reconnect returns the same id",
+      "pass": true
+    },
+    {
+      "name": "server SIGTERM: channels survive",
+      "pass": true,
+      "detail": {
+        "companyMembers": 11
+      }
+    },
+    {
+      "name": "server SIGTERM: pre-restart message history survives",
+      "pass": true
+    },
+    {
+      "name": "server SIGTERM: reply reaches sender after restart",
+      "pass": true
+    },
+    {
+      "name": "server SIGKILL: live clients recover without action",
+      "pass": true,
+      "detail": {
+        "serverBootMs": 2306,
+        "streamsLiveAfterBootMs": 3198,
+        "totalOutageMs": 5533
+      }
+    },
+    {
+      "name": "server SIGKILL: register still rejects with name_conflict",
+      "pass": true,
+      "detail": {
+        "conflict": "name_conflict"
+      }
+    },
+    {
+      "name": "server SIGKILL: reconnect returns the same id",
+      "pass": true
+    },
+    {
+      "name": "server SIGKILL: channels survive",
+      "pass": true,
+      "detail": {
+        "companyMembers": 11
+      }
+    },
+    {
+      "name": "server SIGKILL: pre-restart message history survives",
+      "pass": true
+    },
+    {
+      "name": "server SIGKILL: reply reaches sender after restart",
+      "pass": true
+    },
+    {
+      "name": "mid-conversation SIGKILL: every proposal eventually acknowledged",
+      "pass": true,
+      "detail": {
+        "proposals": 60,
+        "killedAfterRound": 19,
+        "bootMs": 3853,
+        "backUpAtRound": 20,
+        "acknowledged": 60,
+        "slowestRounds": [
+          {
+            "round": 30,
+            "attempts": 1,
+            "ms": 5149
+          },
+          {
+            "round": 31,
+            "attempts": 1,
+            "ms": 4720
+          },
+          {
+            "round": 20,
+            "attempts": 1,
+            "ms": 4619
+          }
+        ],
+        "retried": [],
+        "maxMissingAtAVoter": 0,
+        "missingPerVoter": [
+          "plant-a-P-100:0",
+          "plant-a-TK-101:0",
+          "plant-a-LV-101:0",
+          "plant-a-E-101:0",
+          "plant-a-TV-101:0"
+        ],
+        "missingRounds": [],
+        "duplicatedRounds": [],
+        "votesMissing": 0,
+        "votesMissingSample": [],
+        "storedProposalsMaxCopies": 1,
+        "storedProposals": 60
+      }
+    },
+    {
+      "name": "mid-conversation SIGKILL: no acknowledged proposal lost at any live voter",
+      "pass": true,
+      "detail": {
+        "missingPerVoter": [
+          "plant-a-P-100:0",
+          "plant-a-TK-101:0",
+          "plant-a-LV-101:0",
+          "plant-a-E-101:0",
+          "plant-a-TV-101:0"
+        ],
+        "missingRounds": []
+      }
+    },
+    {
+      "name": "mid-conversation SIGKILL: no voter saw a duplicate proposal",
+      "pass": true,
+      "detail": {
+        "duplicatedRounds": []
+      }
+    },
+    {
+      "name": "mid-conversation SIGKILL: every vote reached the system identity",
+      "pass": true,
+      "detail": {
+        "votesMissing": 0,
+        "sample": []
+      }
+    },
+    {
+      "name": "missed messages are recoverable from channel history",
+      "pass": true,
+      "detail": {
+        "recoverable": 10
+      }
+    },
+    {
+      "name": "missed messages are replayed over the stream on reconnect",
+      "pass": true,
+      "detail": {
+        "replayed": 10,
+        "sent": 10
+      }
+    },
+    {
+      "name": "same idempotency key without restart returns the same message",
+      "pass": true,
+      "detail": {
+        "first": "242378736070496256",
+        "second": "242378736070496256"
+      }
+    },
+    {
+      "name": "same idempotency key delivered once",
+      "pass": true
+    },
+    {
+      "name": "same idempotency key after SIGKILL does not create a second message",
+      "pass": false,
+      "detail": {
+        "sameMessage": false,
+        "storedCopies": 2,
+        "distinctIds": 2
+      }
+    },
+    {
+      "name": "no duplicate delivery by messageId (whole run)",
+      "pass": true,
+      "detail": {
+        "entries": 8600,
+        "duplicates": [],
+        "duplicateCount": 0
+      }
+    }
+  ]
+}

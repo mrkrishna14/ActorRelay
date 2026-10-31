@@ -1,0 +1,17 @@
+{
+  "name": "actorrelay-relay-spike",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "server": "bash ./start-relay.sh",
+    "proof": "bun run proof.mjs"
+  },
+  "dependencies": {
+    "@agent-relay/sdk": "15.0.1",
+    "@relaycast/engine": "12.3.0",
+    "zod": "^4.6.7"
+  }
+}
