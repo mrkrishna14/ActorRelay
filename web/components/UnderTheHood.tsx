@@ -49,7 +49,7 @@ export function UnderTheHood({ plants, company, components, audit }: { plants: P
                 <span className="num font-medium text-ink">{entry.by}</span>
                 <span className="num text-ink-3">{entry.at.slice(11, 19)}</span>
               </div>
-              <div className="text-ink-2">{entry.summary.replace(/(d+.d{2})d+/g, "$1")}</div>
+              <div className="text-ink-2">{entry.summary.replace(/(\d+\.\d{2})\d+/g, "$1")}</div>
             </li>
           ))}
         </ul>
