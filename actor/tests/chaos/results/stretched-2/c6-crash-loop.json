@@ -1,0 +1,193 @@
+{
+  "id": "c6-crash-loop",
+  "title": "five kills across one proposal's life: still one execution",
+  "target": "real Terse dev server, real actors with timeout constants stretched in the snapshot, fake glue and simulator",
+  "startedAt": "2026-10-31T21:56:39.150Z",
+  "durationMs": 182367,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "reaches veto_window across crashes",
+      "pass": true,
+      "detail": "veto_window"
+    },
+    {
+      "name": "executes across crashes",
+      "pass": true,
+      "detail": "executed"
+    },
+    {
+      "name": "exactly one simulation command",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "accepted once in the audit",
+      "pass": true,
+      "detail": "1"
+    }
+  ],
+  "restarts": [
+    {
+      "label": "loop1",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793483812883,
+        "runtimePid": 84700,
+        "groupBefore": [
+          84665,
+          84688,
+          84700,
+          84930,
+          84949,
+          84968,
+          84987,
+          85003,
+          85022,
+          85038,
+          85057,
+          85075,
+          85094,
+          85116,
+          85135,
+          85151,
+          85170,
+          85189,
+          85208,
+          85224,
+          85243,
+          85260,
+          85279,
+          85297,
+          85316,
+          85330,
+          85349,
+          85366,
+          85385
+        ],
+        "portClosedMs": 20.558825999993132,
+        "hostsGoneMs": 33.677687999996124,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 7552,
+      "firstCallMs": 7767
+    },
+    {
+      "label": "loop2",
+      "kill": {
+        "mode": "group",
+        "atEpochMs": 1793483820712,
+        "runtimePid": 85461,
+        "groupBefore": [
+          85427,
+          85450,
+          85461,
+          85671,
+          85691
+        ],
+        "portClosedMs": 12.020829999994021,
+        "hostsGoneMs": 12.985671999980696,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 10266,
+      "firstCallMs": 30188
+    },
+    {
+      "label": "loop3",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793483850965,
+        "runtimePid": 85759,
+        "groupBefore": [
+          85713,
+          85735,
+          85759,
+          87877,
+          87896
+        ],
+        "portClosedMs": 6.4604050000198185,
+        "hostsGoneMs": 30.71857799999998,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 6797,
+      "firstCallMs": 7004
+    },
+    {
+      "label": "loop4",
+      "kill": {
+        "mode": "group",
+        "atEpochMs": 1793483859775,
+        "runtimePid": 87959,
+        "groupBefore": [
+          87916,
+          87945,
+          87959,
+          88156,
+          88176,
+          88195,
+          88215
+        ],
+        "portClosedMs": 7.4589320000086445,
+        "hostsGoneMs": 8.20554200001061,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 9571,
+      "firstCallMs": 28417
+    },
+    {
+      "label": "loop5",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793483890212,
+        "runtimePid": 88271,
+        "groupBefore": [
+          88238,
+          88260,
+          88271,
+          90530,
+          90549,
+          90563,
+          90582
+        ],
+        "portClosedMs": 8.561943000007886,
+        "hostsGoneMs": 32.3857999999891,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 9783,
+      "firstCallMs": 10009
+    }
+  ],
+  "metrics": {
+    "firstStartMs": 10632.6,
+    "seedMs": 3039.6,
+    "loop1.restartReadyMs": 9987,
+    "loop1.firstPlantReadAfterKillMs": 7767,
+    "loop1.unavailableResponses": 0,
+    "loop1.healthyAfterKillMs": 7552,
+    "loop2.restartReadyMs": 10238,
+    "loop2.firstPlantReadAfterKillMs": 30188,
+    "loop2.unavailableResponses": 50,
+    "loop2.healthyAfterKillMs": 10266,
+    "loop3.restartReadyMs": 9235,
+    "loop3.firstPlantReadAfterKillMs": 7004,
+    "loop3.unavailableResponses": 0,
+    "loop3.healthyAfterKillMs": 6797,
+    "loop4.restartReadyMs": 9549,
+    "loop4.firstPlantReadAfterKillMs": 28417,
+    "loop4.unavailableResponses": 54,
+    "loop4.healthyAfterKillMs": 9571,
+    "loop5.restartReadyMs": 9740,
+    "loop5.firstPlantReadAfterKillMs": 10009,
+    "loop5.unavailableResponses": 0,
+    "loop5.healthyAfterKillMs": 9783
+  },
+  "notes": [
+    "final status=executed votes=5 deadline=2026-10-31T21:59:19.611Z",
+    "audit: [\"speedPct 50 → 65: chaos scenario proposal\",\"Unanimous yes, veto window until 2026-10-31T21:59:19.611Z\",\"Accepted speedPct → 65, awaiting simulator\"]"
+  ]
+}

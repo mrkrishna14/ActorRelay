@@ -1,0 +1,61 @@
+{
+  "id": "c3g-dispatch-failure-then-kill",
+  "title": "simulator refuses the setpoint, kill -9, retries must not resend",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T21:34:56.362Z",
+  "durationMs": 81071,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "no simulation command after a refused dispatch",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "proposal ends expired",
+      "pass": true,
+      "detail": "\"expired\""
+    },
+    {
+      "name": "execution ends failed",
+      "pass": true,
+      "detail": "\"failed\""
+    }
+  ],
+  "restarts": [
+    {
+      "label": "refused",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793482537428,
+        "runtimePid": 44054,
+        "groupBefore": [
+          44017,
+          44041,
+          44054,
+          44545,
+          44564,
+          44591,
+          44610,
+          44628,
+          44647
+        ],
+        "portClosedMs": 21.775804999982938,
+        "hostsGoneMs": 50.733924000000115,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 20637,
+      "firstCallMs": 20998
+    }
+  ],
+  "metrics": {
+    "firstStartMs": 23989.4,
+    "seedMs": 6625,
+    "refused.restartReadyMs": 23045,
+    "refused.firstPlantReadAfterKillMs": 20998,
+    "refused.unavailableResponses": 0,
+    "refused.healthyAfterKillMs": 20637
+  },
+  "notes": []
+}

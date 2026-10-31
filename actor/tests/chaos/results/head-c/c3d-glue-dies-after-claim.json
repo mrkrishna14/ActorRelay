@@ -1,0 +1,79 @@
+{
+  "id": "c3d-glue-dies-after-claim",
+  "title": "actors and executor both die after claimDispatch: no setpoint was sent, does anything notice",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T21:40:42.056Z",
+  "durationMs": 102408,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "reached the point between claim and setpoint",
+      "pass": true
+    },
+    {
+      "name": "no simulation command from a retry",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "the lost dispatch is marked, not a silent success",
+      "pass": true,
+      "detail": "{\"status\":\"executed\",\"state\":\"unknown\"}"
+    },
+    {
+      "name": "the lost dispatch is visible in the audit",
+      "pass": true,
+      "detail": "[\"proposal: speedPct 50 → 65: chaos scenario proposal\",\"vote: plant-a/TK-101 voted yes: chaos vote: within envelope\",\"vote: plant-a/LV-101 voted yes: chaos vote: within envelope\",\"vote: plant-a/E-101 voted yes: chaos vote: within envelope\",\"vote: plant-a/TV-101 voted yes: chaos vote: within envelope\",\"vote: plant-b/TV-101 voted yes: chaos vote: within envelope\",\"proposal: Unanimous yes, veto window until 2026-10-31T21:41:31.075Z\",\"execute: Accepted speedPct → 65, awaiting simulator\",\"incident: Dispatch never confirmed: simulator outcome unknown\"]"
+    },
+    {
+      "name": "later proposals recover after at most one failed attempt",
+      "pass": true,
+      "detail": "[false,true]"
+    },
+    {
+      "name": "the recovered proposal sent one simulation command",
+      "pass": true,
+      "detail": "1"
+    }
+  ],
+  "restarts": [
+    {
+      "label": "lostclaim",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793482891393,
+        "runtimePid": 56988,
+        "groupBefore": [
+          56948,
+          56974,
+          56988,
+          57816,
+          57835,
+          57920,
+          57939,
+          57966,
+          57985
+        ],
+        "portClosedMs": 11.27414999998291,
+        "hostsGoneMs": 35.50920999998925,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 17843,
+      "firstCallMs": 18200
+    }
+  ],
+  "metrics": {
+    "firstStartMs": 18065.2,
+    "seedMs": 21258.3,
+    "lostclaim.restartReadyMs": 20301,
+    "lostclaim.firstPlantReadAfterKillMs": 18200,
+    "lostclaim.unavailableResponses": 0,
+    "lostclaim.healthyAfterKillMs": 17843
+  },
+  "notes": [
+    "final status=executed execution={\"acceptedAt\":\"2026-10-31T21:41:31.245Z\",\"appliedAt\":null,\"attempts\":1,\"claimedAt\":\"2026-10-31T21:41:31.343Z\",\"componentId\":\"plant-a/P-100\",\"failedAt\":null,\"failure\":\"dispatch never confirmed\",\"lastAttemptAt\":\"2026-10-31T21:41:31.245Z\",\"metric\":\"speedPct\",\"observedAt\":null,\"proposalId\":\"plant-a-p00001-5342fb90\",\"state\":\"unknown\",\"value\":65}",
+    "audit: [\"proposal: speedPct 50 → 65: chaos scenario proposal\",\"vote: plant-a/TK-101 voted yes: chaos vote: within envelope\",\"vote: plant-a/LV-101 voted yes: chaos vote: within envelope\",\"vote: plant-a/E-101 voted yes: chaos vote: within envelope\",\"vote: plant-a/TV-101 voted yes: chaos vote: within envelope\",\"vote: plant-b/TV-101 voted yes: chaos vote: within envelope\",\"proposal: Unanimous yes, veto window until 2026-10-31T21:41:31.075Z\",\"execute: Accepted speedPct → 65, awaiting simulator\",\"incident: Dispatch never confirmed: simulator outcome unknown\"]",
+    "two later proposals with the simulator still at 50: dispatch [false,true]"
+  ]
+}

@@ -33,7 +33,7 @@ ref="${CHAOS_REF:-HEAD}"
 git -C "$repo" archive "$ref" actor/src actor/package.json actor/tsconfig.json shared | tar -C "$target" -xf -
 ln -s "$modules" "$target/actor/node_modules"
 if [ "${1:-}" = "stretched" ]; then
-  sed -i -E 's/VOTE_TIMEOUT_MS = 30_000/VOTE_TIMEOUT_MS = 240_000/; s/VETO_WINDOW_MS = 10_000/VETO_WINDOW_MS = 150_000/; s/CLAIM_TIMEOUT_MS = 20_000/CLAIM_TIMEOUT_MS = 240_000/' "$target/actor/src/config.ts"
+  sed -i -E 's/VOTE_TIMEOUT_MS = 30_000/VOTE_TIMEOUT_MS = 240_000/; s/VETO_WINDOW_MS = 10_000/VETO_WINDOW_MS = 100_000/; s/CLAIM_TIMEOUT_MS = 20_000/CLAIM_TIMEOUT_MS = 240_000/; s/WAITING_TIMEOUT_MS = 60_000/WAITING_TIMEOUT_MS = 300_000/; s/LEASE_TTL_MS = 60_000/LEASE_TTL_MS = 300_000/' "$target/actor/src/config.ts"
 fi
 {
   git -C "$repo" log -1 --format='commit %h %s' "$ref" -- actor/src || true

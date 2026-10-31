@@ -1,0 +1,188 @@
+{
+  "id": "c6-crash-loop",
+  "title": "five kills across one proposal's life: still one execution",
+  "target": "real Terse dev server, real actors with timeout constants stretched in the snapshot, fake glue and simulator",
+  "startedAt": "2026-10-31T21:48:35.778Z",
+  "durationMs": 303378,
+  "status": "fail",
+  "checks": [
+    {
+      "name": "reaches veto_window across crashes",
+      "pass": false
+    },
+    {
+      "name": "executes across crashes",
+      "pass": false
+    },
+    {
+      "name": "exactly one simulation command",
+      "pass": false,
+      "detail": "got 0, expected 1"
+    },
+    {
+      "name": "one execute audit entry",
+      "pass": false,
+      "detail": "got 0, expected 1"
+    }
+  ],
+  "restarts": [
+    {
+      "label": "loop1",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793483339894,
+        "runtimePid": 71940,
+        "groupBefore": [
+          71838,
+          71924,
+          71940,
+          72819,
+          72838,
+          72862,
+          72881,
+          72957,
+          72976,
+          72993,
+          73012,
+          73029,
+          73048,
+          73064,
+          73083,
+          73101,
+          73120,
+          73138,
+          73157,
+          73174,
+          73193,
+          73209,
+          73228,
+          73245,
+          73264,
+          73281,
+          73300,
+          73319,
+          73338
+        ],
+        "portClosedMs": 17.173683000000892,
+        "hostsGoneMs": 79.0357049999875,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 16883,
+      "firstCallMs": 17195
+    },
+    {
+      "label": "loop2",
+      "kill": {
+        "mode": "group",
+        "atEpochMs": 1793483357212,
+        "runtimePid": 73488,
+        "groupBefore": [
+          73382,
+          73475,
+          73488,
+          73909,
+          73929
+        ],
+        "portClosedMs": 16.632408999983454,
+        "hostsGoneMs": 30.598652999993647,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 16639,
+      "firstCallMs": 30168
+    },
+    {
+      "label": "loop3",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793483387601,
+        "runtimePid": 74064,
+        "groupBefore": [
+          73959,
+          73983,
+          74064,
+          75335,
+          75354
+        ],
+        "portClosedMs": 13.457016000000294,
+        "hostsGoneMs": 55.02283100000932,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 18188,
+      "firstCallMs": 18513
+    },
+    {
+      "label": "loop4",
+      "kill": {
+        "mode": "group",
+        "atEpochMs": 1793483421306,
+        "runtimePid": 75473,
+        "groupBefore": [
+          75377,
+          75461,
+          75473,
+          75779,
+          75799,
+          75887,
+          75907
+        ],
+        "portClosedMs": 18.973521999956574,
+        "hostsGoneMs": 20.6117249999661,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 17216,
+      "firstCallMs": 24870
+    },
+    {
+      "label": "loop5",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793483448197,
+        "runtimePid": 76214,
+        "groupBefore": [
+          76076,
+          76167,
+          76214,
+          77038,
+          77066,
+          77151,
+          77170
+        ],
+        "portClosedMs": 19.701662999985274,
+        "hostsGoneMs": 34.61944300000323,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 16514,
+      "firstCallMs": 16851
+    }
+  ],
+  "metrics": {
+    "firstStartMs": 20977.4,
+    "seedMs": 5542.3,
+    "loop1.restartReadyMs": 19242,
+    "loop1.firstPlantReadAfterKillMs": 17195,
+    "loop1.unavailableResponses": 0,
+    "loop1.healthyAfterKillMs": 16883,
+    "loop2.restartReadyMs": 19078,
+    "loop2.firstPlantReadAfterKillMs": 30168,
+    "loop2.unavailableResponses": 24,
+    "loop2.healthyAfterKillMs": 16639,
+    "loop3.restartReadyMs": 20595,
+    "loop3.firstPlantReadAfterKillMs": 18513,
+    "loop3.unavailableResponses": 0,
+    "loop3.healthyAfterKillMs": 18188,
+    "loop4.restartReadyMs": 19665,
+    "loop4.firstPlantReadAfterKillMs": 24870,
+    "loop4.unavailableResponses": 13,
+    "loop4.healthyAfterKillMs": 17216,
+    "loop5.restartReadyMs": 18993,
+    "loop5.firstPlantReadAfterKillMs": 16851,
+    "loop5.unavailableResponses": 0,
+    "loop5.healthyAfterKillMs": 16514
+  },
+  "notes": []
+}

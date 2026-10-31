@@ -1,0 +1,157 @@
+{
+  "id": "c2a-veto-restart-before-deadline",
+  "title": "kill -9 3s into the veto window, back up before the deadline: fires once, not early",
+  "target": "real Terse dev server, real actors with timeout constants stretched in the snapshot, fake glue and simulator",
+  "startedAt": "2026-10-31T21:48:17.669Z",
+  "durationMs": 144076,
+  "status": "fail",
+  "checks": [
+    {
+      "name": "veto: plant-a history intact",
+      "pass": true,
+      "detail": "11 -> 11"
+    },
+    {
+      "name": "veto: plant-a rules intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "veto: plant-a audit intact",
+      "pass": true,
+      "detail": "7 -> 7"
+    },
+    {
+      "name": "veto: plant-a proposal plant-a-p00001-f6ea81f4 present",
+      "pass": true
+    },
+    {
+      "name": "veto: plant-a plant-a-p00001-f6ea81f4 acknowledged votes intact",
+      "pass": true,
+      "detail": "5 -> 5"
+    },
+    {
+      "name": "veto: plant-a plant-a-p00001-f6ea81f4 no duplicate voter",
+      "pass": true,
+      "detail": "5"
+    },
+    {
+      "name": "veto: plant-a plant-a-p00001-f6ea81f4 vetoDeadline preserved",
+      "pass": true,
+      "detail": "2026-10-31T21:50:22.337Z -> 2026-10-31T21:50:22.337Z"
+    },
+    {
+      "name": "veto: plant-a no duplicate history ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "veto: plant-a no duplicate rule ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "veto: company rules intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "veto: company audit intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "veto: no duplicate company rule ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "deadline unchanged",
+      "pass": true,
+      "detail": "\"2026-10-31T21:50:22.337Z\""
+    },
+    {
+      "name": "window still open after restart",
+      "pass": true,
+      "detail": "{\"status\":\"veto_window\",\"msLeft\":77390}"
+    },
+    {
+      "name": "deadline fires after restart",
+      "pass": true,
+      "detail": "executed"
+    },
+    {
+      "name": "exactly one simulation command",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "not fired before the deadline",
+      "pass": true,
+      "detail": "{\"earlyByMs\":-351}"
+    },
+    {
+      "name": "one execute audit entry",
+      "pass": false,
+      "detail": "got 2, expected 1"
+    }
+  ],
+  "restarts": [
+    {
+      "label": "veto",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793483325418,
+        "runtimePid": 71580,
+        "groupBefore": [
+          71544,
+          71568,
+          71580,
+          72014,
+          72033,
+          72052,
+          72071,
+          72087,
+          72106,
+          72124,
+          72143,
+          72161,
+          72180,
+          72197,
+          72216,
+          72232,
+          72251,
+          72270,
+          72289,
+          72307,
+          72326,
+          72416,
+          72435,
+          72452,
+          72471,
+          72486,
+          72505,
+          72523,
+          72542
+        ],
+        "portClosedMs": 45.1318639999954,
+        "hostsGoneMs": 102.89819899998838,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 19137,
+      "firstCallMs": 19514
+    }
+  ],
+  "metrics": {
+    "firstStartMs": 20764.8,
+    "seedMs": 5066.6,
+    "veto.restartReadyMs": 19014,
+    "veto.firstPlantReadAfterKillMs": 19514,
+    "veto.unavailableResponses": 0,
+    "veto.healthyAfterKillMs": 19137,
+    "veto.killBeforeDeadlineMs": 96919,
+    "veto.firedAfterDeadlineMs": 351
+  },
+  "notes": []
+}

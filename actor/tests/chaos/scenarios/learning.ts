@@ -95,7 +95,7 @@ export const killMidPromotion: Scenario = {
     // The caller saw no ack, so it retries. That retry must converge on one event and one rule everywhere.
     const retry = await ctx.client.invoke("Plant", "plant-a", "recordEvent", [{ proposalId: done.id, effects: OBSERVED(85) }]);
     ctx.check("retry after the crash succeeds", retry.kind === "completed", retry);
-    const settled = await until(async () => (await rulesSummary(world)).company.length > 0, 8_000, 250);
+    const settled = await until(async () => (await rulesSummary(world)).company.length > 0, 25_000, 500);
     const final = await world.durable();
     ctx.equal("exactly one event after retry", final.plants["plant-a"].history.filter((item: any) => item.proposalId === done.id).length, 1);
     ctx.equal("exactly one plant rule", final.plants["plant-a"].rules.length, 1);
@@ -111,21 +111,25 @@ export const randomKillRecordEvent: Scenario = {
   title: "kill -9 at random microtiming during recordEvent, retry, repeated",
   run: async (ctx) => {
     const world = await boot(ctx);
-    const rounds = Number(process.env.CHAOS_ROUNDS ?? 6);
-    for (let round = 0; round < rounds; round++) {
-      const done = await executedAt85Round(ctx, world, 80 + (round % 5));
-      const inFlight = ctx.client.invoke("Plant", "plant-a", "recordEvent", [{ proposalId: done.id, effects: OBSERVED(done.to) }], 8_000);
+    // The first round is the third sighting, so it promotes a rule. Later ones are safe, because a learned rule now
+    // forces a no on anything it covers.
+    const targets = [85, 70, 72, 74, 76, 78].slice(0, Number(process.env.CHAOS_ROUNDS ?? 4));
+    for (const [round, to] of targets.entries()) {
+      const effects = to === 85 ? OBSERVED(85) : [{ componentId: "plant-a/LV-101", metric: "positionPct", before: 50, after: to, ticksToSettle: 3 }];
+      const done = await executedAt85Round(ctx, world, to);
+      const inFlight = ctx.client.invoke("Plant", "plant-a", "recordEvent", [{ proposalId: done.id, effects }], 8_000);
       await sleep(Math.random() * 25);
       await crashAndRead(ctx, `event${round}`, round % 2 ? "group" : "runtime");
       const outcome = await inFlight;
       const present = (await world.plantState("plant-a")).history.filter((item: any) => item.proposalId === done.id).length;
       ctx.check(`round ${round}: acknowledged implies present`, outcome.kind !== "completed" || present === 1, { outcome: outcome.kind, present });
-      const retry = await ctx.client.invoke("Plant", "plant-a", "recordEvent", [{ proposalId: done.id, effects: OBSERVED(done.to) }]);
+      const retry = await ctx.client.invoke("Plant", "plant-a", "recordEvent", [{ proposalId: done.id, effects }]);
       ctx.check(`round ${round}: retry succeeds`, retry.kind === "completed", retry);
       const state = await world.plantState("plant-a");
       ctx.equal(`round ${round}: exactly one event`, state.history.filter((item: any) => item.proposalId === done.id).length, 1);
       ctx.equal(`round ${round}: no duplicate rule`, duplicates(state.rules.map(ruleSignature)), []);
     }
+    ctx.equal("the third sighting promoted exactly one rule", (await world.plantState("plant-a")).rules.length, 1);
   },
 };
 

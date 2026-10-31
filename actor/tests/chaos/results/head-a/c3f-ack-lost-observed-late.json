@@ -1,0 +1,49 @@
+{
+  "id": "c3f-ack-lost-observed-late",
+  "title": "kill -9 after the simulator took the command, down 25s so the claim times out first",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T21:23:59.706Z",
+  "durationMs": 119352,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "reached the point after the setpoint",
+      "pass": true
+    },
+    {
+      "name": "setMetric failed because the server was down",
+      "pass": true,
+      "detail": "[{\"proposalId\":\"plant-a-p00001-715461b3\",\"ok\":false,\"error\":\"Component(plant-a.P-100).setMetric: {\\\"kind\\\":\\\"refused\\\",\\\"ms\\\":0.5128219999896828}\"}]"
+    },
+    {
+      "name": "no second simulation command",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "observed effects of a command the simulator took are recorded",
+      "pass": true,
+      "detail": "{\"kind\":\"completed\",\"result\":{\"after\":65,\"approvedBy\":[\"agent:plant-a/TK-101\",\"agent:plant-a/LV-101\",\"agent:plant-a/E-101\",\"agent:plant-a/TV-101\",\"agent:plant-b/TV-101\"],\"at\":\"2026-10-31T21:25:30.434Z\",\"before\":50,\"componentId\":\"plant-a/P-100\",\"effects\":[{\"after\":66,\"before\":50,\"componentId\":\"plant-a/LV-101\",\"metric\":\"positionPct\",\"ticksToSettle\":3}],\"id\":\"event-plant-a-p00001-715461b3\",\"incident\":null,\"metric\":\"speedPct\",\"operator\":null,\"plantId\":\"plant-a\",\"proposalId\":\"plant-a-p00001-715461b3\",\"upstreamSnapshot\":{}},\"ms\":74.10881700000027}"
+    },
+    {
+      "name": "a command that landed does not read as expired",
+      "pass": true,
+      "detail": "executed"
+    },
+    {
+      "name": "next proposal starts from the value the simulator really holds",
+      "pass": true,
+      "detail": "{\"from\":65,\"simulatorAt\":65}"
+    }
+  ],
+  "restarts": [],
+  "metrics": {
+    "firstStartMs": 25024.4,
+    "seedMs": 7456.3,
+    "ackloss.firstPlantReadAfterKillMs": 46884
+  },
+  "notes": [
+    "simulator is at 65. status=executed execution=observed failure=dispatch never confirmed",
+    "recordEvent: {\"kind\":\"completed\",\"result\":{\"after\":65,\"approvedBy\":[\"agent:plant-a/TK-101\",\"agent:plant-a/LV-101\",\"agent:plant-a/E-101\",\"agent:plant-a/TV-101\",\"agent:plant-b/TV-101\"],\"at\":\"2026-10-31T21:25:30.434Z\",\"before\":50,\"compo"
+  ]
+}

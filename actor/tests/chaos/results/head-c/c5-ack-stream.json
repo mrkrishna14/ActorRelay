@@ -1,0 +1,89 @@
+{
+  "id": "c5-ack-stream",
+  "title": "full speed writers across actors, kill -9 at a random moment: every ack survives",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T21:38:27.335Z",
+  "durationMs": 55484,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "the stream acknowledged real volume before the kill",
+      "pass": true,
+      "detail": "{\"lastAcked\":[[\"plant-a.LV-101\",118],[\"plant-a.TK-101\",118],[\"plant-a.E-101\",119],[\"plant-a.TV-101\",117]],\"audit\":108}"
+    },
+    {
+      "name": "plant-a.LV-101 kept its newest acknowledged write",
+      "pass": true,
+      "detail": "{\"held\":119,\"acked\":118}"
+    },
+    {
+      "name": "plant-a.TK-101 kept its newest acknowledged write",
+      "pass": true,
+      "detail": "{\"held\":119,\"acked\":118}"
+    },
+    {
+      "name": "plant-a.E-101 kept its newest acknowledged write",
+      "pass": true,
+      "detail": "{\"held\":119,\"acked\":119}"
+    },
+    {
+      "name": "plant-a.TV-101 kept its newest acknowledged write",
+      "pass": true,
+      "detail": "{\"held\":118,\"acked\":117}"
+    },
+    {
+      "name": "no recent acknowledged audit entry lost",
+      "pass": true,
+      "detail": "[]"
+    }
+  ],
+  "restarts": [
+    {
+      "label": "stream",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793482737917,
+        "runtimePid": 50933,
+        "groupBefore": [
+          50895,
+          50919,
+          50933,
+          51225,
+          51244,
+          51329,
+          51348,
+          51367,
+          51387,
+          51438,
+          51457,
+          51475,
+          51494,
+          51509,
+          51528,
+          51546,
+          51565,
+          51652,
+          51688,
+          51707,
+          51726,
+          51745
+        ],
+        "portClosedMs": 13.133461999997962,
+        "hostsGoneMs": 105.61546500000986,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 17606
+    }
+  ],
+  "metrics": {
+    "firstStartMs": 18058.1,
+    "seedMs": 5970.7,
+    "stream.restartReadyMs": 19969,
+    "stream.ackedMirrors": 476,
+    "stream.ackedAudit": 108,
+    "stream.unknownOutcomes": 3,
+    "stream.healthyAfterKillMs": 17606
+  },
+  "notes": []
+}

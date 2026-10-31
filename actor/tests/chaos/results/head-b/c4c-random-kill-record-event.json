@@ -1,0 +1,220 @@
+{
+  "id": "c4c-random-kill-record-event",
+  "title": "kill -9 at random microtiming during recordEvent, retry, repeated",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T21:33:02.261Z",
+  "durationMs": 199013,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "round 0: acknowledged implies present",
+      "pass": true,
+      "detail": "{\"outcome\":\"transport\",\"present\":1}"
+    },
+    {
+      "name": "round 0: retry succeeds",
+      "pass": true,
+      "detail": "{\"kind\":\"completed\",\"result\":{\"after\":85,\"approvedBy\":[\"agent:plant-a/TK-101\",\"agent:plant-a/LV-101\",\"agent:plant-a/E-101\",\"agent:plant-a/TV-101\",\"agent:plant-b/TV-101\"],\"at\":\"2026-10-31T21:33:45.439Z\",\"before\":50,\"componentId\":\"plant-a/P-100\",\"effects\":[{\"after\":92,\"before\":50,\"componentId\":\"plant-a/LV-101\",\"metric\":\"positionPct\",\"ticksToSettle\":3}],\"id\":\"event-plant-a-p00001-c23ca9d7\",\"incident\":null,\"metric\":\"speedPct\",\"operator\":null,\"plantId\":\"plant-a\",\"proposalId\":\"plant-a-p00001-c23ca9d7\",\"upstreamSnapshot\":{}},\"ms\":17.195498000015505}"
+    },
+    {
+      "name": "round 0: exactly one event",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "round 0: no duplicate rule",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "round 1: acknowledged implies present",
+      "pass": true,
+      "detail": "{\"outcome\":\"transport\",\"present\":0}"
+    },
+    {
+      "name": "round 1: retry succeeds",
+      "pass": true,
+      "detail": "{\"kind\":\"completed\",\"result\":{\"after\":70,\"approvedBy\":[\"agent:plant-a/TK-101\",\"agent:plant-a/LV-101\",\"agent:plant-a/E-101\",\"agent:plant-a/TV-101\",\"agent:plant-b/TV-101\"],\"at\":\"2026-10-31T21:34:50.588Z\",\"before\":85,\"componentId\":\"plant-a/P-100\",\"effects\":[{\"after\":70,\"before\":50,\"componentId\":\"plant-a/LV-101\",\"metric\":\"positionPct\",\"ticksToSettle\":3}],\"id\":\"event-plant-a-p00002-adfdd2c8\",\"incident\":null,\"metric\":\"speedPct\",\"operator\":null,\"plantId\":\"plant-a\",\"proposalId\":\"plant-a-p00002-adfdd2c8\",\"upstreamSnapshot\":{}},\"ms\":86.49180700001307}"
+    },
+    {
+      "name": "round 1: exactly one event",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "round 1: no duplicate rule",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "round 2: acknowledged implies present",
+      "pass": true,
+      "detail": "{\"outcome\":\"transport\",\"present\":1}"
+    },
+    {
+      "name": "round 2: retry succeeds",
+      "pass": true,
+      "detail": "{\"kind\":\"completed\",\"result\":{\"after\":72,\"approvedBy\":[\"agent:plant-a/TK-101\",\"agent:plant-a/LV-101\",\"agent:plant-a/E-101\",\"agent:plant-a/TV-101\",\"agent:plant-b/TV-101\"],\"at\":\"2026-10-31T21:35:03.853Z\",\"before\":70,\"componentId\":\"plant-a/P-100\",\"effects\":[{\"after\":72,\"before\":50,\"componentId\":\"plant-a/LV-101\",\"metric\":\"positionPct\",\"ticksToSettle\":3}],\"id\":\"event-plant-a-p00003-113164c8\",\"incident\":null,\"metric\":\"speedPct\",\"operator\":null,\"plantId\":\"plant-a\",\"proposalId\":\"plant-a-p00003-113164c8\",\"upstreamSnapshot\":{}},\"ms\":44.89708399999654}"
+    },
+    {
+      "name": "round 2: exactly one event",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "round 2: no duplicate rule",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "round 3: acknowledged implies present",
+      "pass": true,
+      "detail": "{\"outcome\":\"transport\",\"present\":0}"
+    },
+    {
+      "name": "round 3: retry succeeds",
+      "pass": true,
+      "detail": "{\"kind\":\"completed\",\"result\":{\"after\":74,\"approvedBy\":[\"agent:plant-a/TK-101\",\"agent:plant-a/LV-101\",\"agent:plant-a/E-101\",\"agent:plant-a/TV-101\",\"agent:plant-b/TV-101\"],\"at\":\"2026-10-31T21:36:06.183Z\",\"before\":72,\"componentId\":\"plant-a/P-100\",\"effects\":[{\"after\":74,\"before\":50,\"componentId\":\"plant-a/LV-101\",\"metric\":\"positionPct\",\"ticksToSettle\":3}],\"id\":\"event-plant-a-p00004-a8a1cd01\",\"incident\":null,\"metric\":\"speedPct\",\"operator\":null,\"plantId\":\"plant-a\",\"proposalId\":\"plant-a-p00004-a8a1cd01\",\"upstreamSnapshot\":{}},\"ms\":63.7779140000348}"
+    },
+    {
+      "name": "round 3: exactly one event",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "round 3: no duplicate rule",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "the third sighting promoted exactly one rule",
+      "pass": true,
+      "detail": "1"
+    }
+  ],
+  "restarts": [
+    {
+      "label": "event0",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793482425468,
+        "runtimePid": 39274,
+        "groupBefore": [
+          39190,
+          39218,
+          39274,
+          39894,
+          39913,
+          39933,
+          39952,
+          39971,
+          39990,
+          40772,
+          40791
+        ],
+        "portClosedMs": 21.333451999991667,
+        "hostsGoneMs": 80.18702299997676,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 24532,
+      "firstCallMs": 24937
+    },
+    {
+      "label": "event1",
+      "kill": {
+        "mode": "group",
+        "atEpochMs": 1793482463930,
+        "runtimePid": 40862,
+        "groupBefore": [
+          40824,
+          40850,
+          40862,
+          41842,
+          41862,
+          41885,
+          41904,
+          42224,
+          42244
+        ],
+        "portClosedMs": 18.199965000036173,
+        "hostsGoneMs": 19.53173099999549,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 21498,
+      "firstCallMs": 26600
+    },
+    {
+      "label": "event2",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793482503883,
+        "runtimePid": 42306,
+        "groupBefore": [
+          42267,
+          42294,
+          42306,
+          43764,
+          43783,
+          43803,
+          43822,
+          44160,
+          44179
+        ],
+        "portClosedMs": 20.807849000033457,
+        "hostsGoneMs": 67.47173799999291,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 21431,
+      "firstCallMs": 21814
+    },
+    {
+      "label": "event3",
+      "kill": {
+        "mode": "group",
+        "atEpochMs": 1793482539342,
+        "runtimePid": 44254,
+        "groupBefore": [
+          44208,
+          44242,
+          44254,
+          45184,
+          45214,
+          45247,
+          45267,
+          45524,
+          45544
+        ],
+        "portClosedMs": 19.97779100004118,
+        "hostsGoneMs": 21.320211000042036,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 20295,
+      "firstCallMs": 26744
+    }
+  ],
+  "metrics": {
+    "firstStartMs": 26198,
+    "seedMs": 6828,
+    "event0.restartReadyMs": 24428,
+    "event0.firstPlantReadAfterKillMs": 24937,
+    "event0.unavailableResponses": 0,
+    "event0.healthyAfterKillMs": 24532,
+    "event1.restartReadyMs": 23947,
+    "event1.firstPlantReadAfterKillMs": 26600,
+    "event1.unavailableResponses": 8,
+    "event1.healthyAfterKillMs": 21498,
+    "event2.restartReadyMs": 23810,
+    "event2.firstPlantReadAfterKillMs": 21814,
+    "event2.unavailableResponses": 0,
+    "event2.healthyAfterKillMs": 21431,
+    "event3.restartReadyMs": 22742,
+    "event3.firstPlantReadAfterKillMs": 26744,
+    "event3.unavailableResponses": 10,
+    "event3.healthyAfterKillMs": 20295
+  },
+  "notes": []
+}

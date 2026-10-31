@@ -18,10 +18,13 @@ const flag = (name: string) => {
 const all: Scenario[] = [
   restart.killHostOnly,
   restart.alarmRearm,
+  restart.silentTicks,
+  restart.silentAfterHostKill,
   restart.votingRestart,
   restart.votingExpiredDown,
   restart.vetoRestartBeforeDeadline,
   restart.vetoDownPastDeadline,
+  restart.vetoReopened,
   restart.vetoThenKill,
   execute.killBeforeClaim,
   execute.killAtSetpointRuntime,

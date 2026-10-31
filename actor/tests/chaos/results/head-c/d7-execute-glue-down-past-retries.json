@@ -1,0 +1,41 @@
+{
+  "id": "d7-execute-glue-down-past-retries",
+  "title": "glue down past every retry: the proposal must not read as a success",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T21:42:17.014Z",
+  "durationMs": 64768,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "execLost: every mailbox read succeeded",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "execLost: mailbox stays under 2000ms",
+      "pass": true,
+      "detail": "{\"max\":25.8211949999677,\"n\":18}"
+    },
+    {
+      "name": "nothing sent twice",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "an undelivered execution is reported as undelivered",
+      "pass": true,
+      "detail": "{\"kind\":\"completed\",\"result\":{\"acceptedAt\":\"2026-10-31T21:42:51.404Z\",\"appliedAt\":null,\"attempts\":3,\"claimedAt\":null,\"componentId\":\"plant-a/P-100\",\"failedAt\":\"2026-10-31T21:43:03.616Z\",\"failure\":\"no executor claimed the dispatch after 3 attempts\",\"lastAttemptAt\":\"2026-10-31T21:42:59.545Z\",\"metric\":\"speedPct\",\"observedAt\":null,\"proposalId\":\"plant-a-p00001-9a146f56\",\"state\":\"failed\",\"value\":65},\"ms\":10.208991999970749}"
+    }
+  ],
+  "restarts": [],
+  "metrics": {
+    "firstStartMs": 18550.5,
+    "seedMs": 5834.1,
+    "execLost.mailboxP50Ms": 14.4,
+    "execLost.mailboxMaxMs": 25.8
+  },
+  "notes": [
+    "status=expired execution={\"kind\":\"completed\",\"result\":{\"acceptedAt\":\"2026-10-31T21:42:51.404Z\",\"appliedAt\":null,\"attempts\":3,\"claimedAt\":null,\"componentId\":\"plant-a/P-100\",\"failedAt\":\"2026-10-31T21:43:03.616Z\",\"failure\":\"no executor claimed the dispatch after 3 attempts\",\"lastAttemptAt\":\"2026-10-31T21:42:59.545Z\",\"metric\":\"speedPct\",\"observedAt\":null,\"proposalId\":\"plant-a-p00001-9a146f56\",\"state\":\"failed\",\"value\":65},\"ms\"",
+    "callbacks after glue came back: 0"
+  ]
+}

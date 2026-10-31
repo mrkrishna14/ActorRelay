@@ -1,0 +1,23 @@
+{
+  "id": "c0b-silent-ticks",
+  "title": "no crash and no callers at all: does the alarm chain keep ticking through long silence",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T21:54:16.305Z",
+  "durationMs": 116762,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "ticks never stop in 80s of silence",
+      "pass": true,
+      "detail": "[20,20,10,18,20,20,20,20,20,8,20,20,20,20,18,10]"
+    }
+  ],
+  "restarts": [],
+  "metrics": {
+    "firstStartMs": 23792.6,
+    "seedMs": 12924.2
+  },
+  "notes": [
+    "/tick arrivals per 5s with no callers, both Plants: [20,20,10,18,20,20,20,20,20,8,20,20,20,20,18,10]"
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "id": "d10-company-frozen",
+  "title": "Company host frozen (SIGSTOP): does the Plant mailbox wedge on the cross-actor call",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T21:39:52.226Z",
+  "durationMs": 40433,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "found the Company host process",
+      "pass": true,
+      "detail": "55256"
+    },
+    {
+      "name": "frozen: every mailbox read succeeded",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "frozen: mailbox stays under 9000ms",
+      "pass": true,
+      "detail": "{\"max\":7533.9449770000065,\"n\":1}"
+    },
+    {
+      "name": "thawed: every mailbox read succeeded",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "thawed: mailbox stays under 2000ms",
+      "pass": true,
+      "detail": "{\"max\":24.382015999988653,\"n\":18}"
+    }
+  ],
+  "restarts": [],
+  "metrics": {
+    "firstStartMs": 18940.3,
+    "seedMs": 10256.3,
+    "frozen.mailboxP50Ms": 7533.9,
+    "frozen.mailboxMaxMs": 7533.9,
+    "thawed.mailboxP50Ms": 12.5,
+    "thawed.mailboxMaxMs": 24.4
+  },
+  "notes": [
+    "propose with Company frozen: {\"kind\":\"failed\",\"code\":\"actor_error\",\"message\":\"actor_call_timeout: Company.requiredCrossPlantVoters\",\"ms\":8018.285193999996}"
+  ]
+}

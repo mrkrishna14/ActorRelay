@@ -1,0 +1,75 @@
+{
+  "id": "c3b-kill-after-claim",
+  "title": "runtime kill between claimDispatch and the setpoint, glue alive and about to send it",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T21:27:15.715Z",
+  "durationMs": 80023,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "reached the point between claim and setpoint",
+      "pass": true
+    },
+    {
+      "name": "exactly one simulation command",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "only one claim said dispatch",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "setMetric redeemed",
+      "pass": true,
+      "detail": "[{\"proposalId\":\"plant-a-p00001-7edf1732\",\"ok\":true}]"
+    },
+    {
+      "name": "metric carries the new value",
+      "pass": true,
+      "detail": "65"
+    },
+    {
+      "name": "execution reached applied",
+      "pass": true,
+      "detail": "\"applied\""
+    }
+  ],
+  "restarts": [
+    {
+      "label": "postclaim",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793482079904,
+        "runtimePid": 26043,
+        "groupBefore": [
+          26000,
+          26031,
+          26043,
+          27122,
+          27141,
+          27164,
+          27183,
+          27204,
+          27223
+        ],
+        "portClosedMs": 17.773016999999527,
+        "hostsGoneMs": 45.55476000002818,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 21842,
+      "firstCallMs": 22313
+    }
+  ],
+  "metrics": {
+    "firstStartMs": 27554.5,
+    "seedMs": 7404.6,
+    "postclaim.restartReadyMs": 24245,
+    "postclaim.firstPlantReadAfterKillMs": 22313,
+    "postclaim.unavailableResponses": 0,
+    "postclaim.healthyAfterKillMs": 21842
+  },
+  "notes": []
+}

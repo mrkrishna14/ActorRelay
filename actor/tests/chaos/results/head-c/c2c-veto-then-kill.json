@@ -1,0 +1,86 @@
+{
+  "id": "c2c-veto-then-kill",
+  "title": "veto acknowledged, kill -9 at once: the veto holds through the deadline",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T21:39:45.421Z",
+  "durationMs": 61595,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "status vetoed after restart",
+      "pass": true,
+      "detail": "\"vetoed\""
+    },
+    {
+      "name": "still vetoed after the deadline",
+      "pass": true,
+      "detail": "\"vetoed\""
+    },
+    {
+      "name": "no callback sent",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "no simulation command",
+      "pass": true,
+      "detail": "0"
+    }
+  ],
+  "restarts": [
+    {
+      "label": "vetoed",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793482819725,
+        "runtimePid": 54588,
+        "groupBefore": [
+          54493,
+          54577,
+          54588,
+          54981,
+          55000,
+          55019,
+          55038,
+          55114,
+          55133,
+          55159,
+          55178,
+          55274,
+          55293,
+          55422,
+          55441,
+          55494,
+          55514,
+          55568,
+          55587,
+          55639,
+          55658,
+          55750,
+          55786,
+          55843,
+          55862,
+          55917,
+          55936,
+          55989,
+          56008
+        ],
+        "portClosedMs": 29.142627000022912,
+        "hostsGoneMs": 71.93075900000986,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 16940,
+      "firstCallMs": 17236
+    }
+  ],
+  "metrics": {
+    "firstStartMs": 19937.3,
+    "seedMs": 14555,
+    "vetoed.restartReadyMs": 19340,
+    "vetoed.firstPlantReadAfterKillMs": 17236,
+    "vetoed.unavailableResponses": 0,
+    "vetoed.healthyAfterKillMs": 16940
+  },
+  "notes": []
+}

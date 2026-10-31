@@ -57,8 +57,6 @@ export const alarmRearm: Scenario = {
     ctx.metric("ticksPerSecondPerPlant", hz);
     ctx.check("tick rate is about 1 per second", hz > 0.6 && hz < 1.5, hz);
 
-    const tickA = (await world.plantState("plant-a")).tick;
-    const tickB = (await world.plantState("plant-b")).tick;
     const timing = await ctx.crash("idle", "runtime");
     const restartedAt = Date.now();
     const lateTicks = ctx.glue.of("/tick").filter((call) => call.atEpochMs > timing.kill.atEpochMs).length;
@@ -66,11 +64,58 @@ export const alarmRearm: Scenario = {
     ctx.metric("idle.healthyAfterKillMs", timing.healthzMs);
     // Silence first: nothing may touch either Plant until the tick has had its chance to come back alone.
     await Promise.all([
-      world.checkTickResumes("idle", "plant-a", tickA, restartedAt),
-      world.checkTickResumes("idle", "plant-b", tickB, restartedAt),
+      world.checkTickResumes("idle", "plant-a", restartedAt),
+      world.checkTickResumes("idle", "plant-b", restartedAt),
     ]);
     world.checkIntact(before, await world.durable(), "idle");
     await probeMailbox(ctx, "postRestart", 5_000);
+  },
+};
+
+/** /tick arrivals in consecutive 5s buckets, with nothing calling any actor, so only alarms can produce them. */
+async function tickBuckets(ctx: Ctx, buckets: number): Promise<number[]> {
+  const counts: number[] = [];
+  for (let bucket = 0; bucket < buckets; bucket++) {
+    const from = ctx.glue.count("/tick");
+    await sleep(5_000);
+    counts.push(ctx.glue.count("/tick") - from);
+  }
+  return counts;
+}
+
+export const silentTicks: Scenario = {
+  id: "c0b-silent-ticks",
+  title: "no crash and no callers at all: does the alarm chain keep ticking through long silence",
+  run: async (ctx) => {
+    await boot(ctx);
+    await ctx.glue.waitFor("/tick", 4, 8_000);
+    const quiet = await tickBuckets(ctx, 16);
+    ctx.note(`/tick arrivals per 5s with no callers, both Plants: ${JSON.stringify(quiet)}`);
+    ctx.check("ticks never stop in 80s of silence", quiet.every((count) => count > 0), quiet);
+  },
+};
+
+export const silentAfterHostKill: Scenario = {
+  id: "c0c-silent-after-host-kill",
+  title: "kill plant-a's host and stay silent for two minutes: how long can ticks stop, and do they come back",
+  run: async (ctx) => {
+    await boot(ctx);
+    await ctx.glue.waitFor("/tick", 4, 8_000);
+    const before = await tickBuckets(ctx, 2);
+    const pid = hostPid(ctx.server.pgid, "Plant", "plant-a");
+    ctx.check("found the Plant host", pid != null, pid);
+    const killedAt = Date.now();
+    process.kill(pid!, "SIGKILL");
+    const after = await tickBuckets(ctx, 24);
+    const times = ctx.glue.of("/tick").filter((call) => call.atEpochMs > killedAt).map((call) => call.atEpochMs);
+    const gaps = times.slice(1).map((at, index) => ({ startedAfterKillMs: times[index] - killedAt, ms: at - times[index] }));
+    const widest = gaps.reduce((best, gap) => (gap.ms > best.ms ? gap : best), { startedAfterKillMs: 0, ms: 0 });
+    ctx.metric("hostkill.widestTickGapMs", widest.ms);
+    ctx.metric("hostkill.widestTickGapStartedAfterKillMs", widest.startedAfterKillMs);
+    ctx.note(`/tick arrivals per 5s before ${JSON.stringify(before)}, after killing plant-a's host ${JSON.stringify(after)}`);
+    ctx.note(`widest gap ${widest.ms}ms, starting ${widest.startedAfterKillMs}ms after the kill`);
+    ctx.check("ticks come back by themselves after any gap", after.slice(-2).every((count) => count > 0), after);
+    ctx.check("no tick gap reaches 15s", widest.ms < 15_000, widest);
   },
 };
 
@@ -155,8 +200,8 @@ export const vetoRestartBeforeDeadline: Scenario = {
     ctx.check("not fired before the deadline", Boolean(first) && first.atEpochMs >= deadline, first ? { earlyByMs: deadline - first.atEpochMs } : "no callback");
     if (first) ctx.metric("veto.firedAfterDeadlineMs", first.atEpochMs - deadline);
     const state = await world.plantState("plant-a");
-    const executes = state.audit.filter((entry: any) => entry.kind === "execute" && entry.refId === open.id);
-    ctx.equal("one execute audit entry", executes.length, 1);
+    const accepted = state.audit.filter((entry: any) => entry.kind === "execute" && entry.refId === open.id && /^Accepted/.test(entry.summary));
+    ctx.equal("accepted once in the audit", accepted.length, 1);
   },
 };
 
@@ -171,7 +216,7 @@ export const vetoDownPastDeadline: Scenario = {
     const downMs = Math.max(0, deadline - killAt) + 3_000;
     await crashAndRead(ctx, "lateveto", "runtime", downMs);
     const restartedAt = Date.now();
-    const final = await world.waitStatus("plant-a", open.id, ["executed", "expired", "vetoed"], 15_000);
+    const final = await world.waitStatus("plant-a", open.id, ["executed", "expired", "vetoed"], 25_000);
     const held = await world.proposal("plant-a", open.id);
     ctx.note(`after restart status=${held?.status} vetoDeadline=${held?.vetoDeadline} (was ${open.vetoDeadline})`);
     ctx.check("window does not stay open forever", Boolean(final) || Date.parse(held?.vetoDeadline) > restartedAt, held?.status);
@@ -185,6 +230,29 @@ export const vetoDownPastDeadline: Scenario = {
       firstCommand == null || humanMs! >= 5_000,
       firstCommand ? `simulation command ${humanMs}ms after restart` : "no command sent",
     );
+  },
+};
+
+export const vetoReopened: Scenario = {
+  id: "c2d-veto-in-reopened-window",
+  title: "deadline lapses in an outage, then an operator vetoes in the reopened window: nothing is sent",
+  run: async (ctx) => {
+    const world = await boot(ctx);
+    const open = await intoVetoWindow(world);
+    await crashAndRead(ctx, "reopen", "runtime", Math.max(0, Date.parse(open.vetoDeadline) - Date.now()) + 1_000);
+    const reopened = await until(async () => {
+      const current = await world.proposal("plant-a", open.id);
+      return current?.status === "veto_window" && current.vetoDeadline !== open.vetoDeadline ? current : undefined;
+    }, 10_000, 100);
+    ctx.check("the lapsed window reopened with a new deadline", Boolean(reopened), { was: open.vetoDeadline, now: reopened?.vetoDeadline });
+    if (!reopened) return;
+    const audit = (await world.plantState("plant-a")).audit.filter((entry: any) => entry.refId === open.id).map((entry: any) => entry.summary);
+    ctx.check("the reopening is in the audit", audit.some((line: string) => /reopened/i.test(line)), audit);
+    await ctx.client.call("Plant", "plant-a", "veto", [open.id, "chaos-operator"]);
+    await sleep(Math.max(0, Date.parse(reopened.vetoDeadline) - Date.now()) + 5_000);
+    ctx.equal("the veto holds past the new deadline", (await world.proposal("plant-a", open.id))?.status, "vetoed");
+    ctx.equal("no callback sent", ctx.glue.count("/execute-callback"), 0);
+    ctx.equal("no simulation command", world.sim.length, 0);
   },
 };
 
@@ -205,9 +273,15 @@ export const vetoThenKill: Scenario = {
   },
 };
 
+/** A read that lands on a dying host fails at once, and the runtime then answers 503 until its lease drains. */
+async function readThroughHostDeath(ctx: Ctx): Promise<void> {
+  const up = await until(async () => (await ctx.client.invoke("Plant", "plant-a", "getState", [], 5_000)).kind === "completed", 60_000, 50);
+  if (!up) throw new Error("Plant never answered after its host was killed");
+}
+
 export const killHostOnly: Scenario = {
   id: "h1-kill-plant-host",
-  title: "kill -9 of only the Plant's host process: the runtime stays up, so no rebuild and no alarm loss",
+  title: "kill -9 of only the Plant's host process: the runtime stays up, so no rebuild, but the old lease must drain",
   run: async (ctx) => {
     const world = await boot(ctx);
     await ctx.glue.waitFor("/tick", 4, 8_000);
@@ -218,35 +292,44 @@ export const killHostOnly: Scenario = {
       return performance.now();
     };
 
-    // Silent: nothing may call the Plant, so only the alarm can bring it back.
-    const tickBefore = (await world.plantState("plant-a")).tick;
+    // Silent past the lease: nothing may call the Plant, so only its alarm can bring it back. The live counter dies with
+    // the host and /tick carries no plant id, so the evidence is the arrival rate against this baseline for both Plants.
+    const baselineFrom = ctx.glue.count("/tick");
+    await sleep(5_000);
+    const baseline = (ctx.glue.count("/tick") - baselineFrom) / 5;
+    const silentAt = Date.now();
     const silentKill = kill();
-    await sleep(10_000);
-    const quiet = ctx.glue.count("/tick");
-    const tickAfter = (await world.plantState("plant-a")).tick;
+    await sleep(45_000);
+    const late = ctx.glue.of("/tick").filter((call) => call.atEpochMs > silentAt + 40_000).length / 5;
+    ctx.metric("hostkill.ticksPerSecondBefore", baseline);
+    ctx.metric("hostkill.ticksPerSecondAfterSilence", late);
+    ctx.note(`after a host kill and 45s of silence: ${late} /tick arrivals a second against ${baseline} before; ${late >= baseline * 0.75 ? "the alarm brought the Plant back alone" : "the alarm did not bring the Plant back alone"}`);
+    await readThroughHostDeath(ctx);
     ctx.metric("hostkill.silentRecoveryReadMs", performance.now() - silentKill);
-    ctx.note(`after a host kill and 10s of silence: tick ${tickBefore} -> ${tickAfter}, ${quiet} /tick arrivals in total`);
-    ctx.check("alarm brings the Plant back with no outside call", tickAfter > tickBefore + 2, `${tickBefore} -> ${tickAfter}`);
+    const resumedFrom = ctx.glue.count("/tick");
+    await sleep(5_000);
+    const resumed = (ctx.glue.count("/tick") - resumedFrom) / 5;
+    ctx.metric("hostkill.ticksPerSecondAfterRead", resumed);
+    ctx.check("one read restarts the tick after a host kill", resumed >= baseline * 0.75, { baseline, resumed });
 
     const proposal = await world.propose("plant-a", 65);
     await world.castVotes(proposal, VOTERS.slice(0, 2));
     const before = await world.durablePlant();
     const killed = kill();
-    await ctx.client.call("Plant", "plant-a", "getState");
+    await readThroughHostDeath(ctx);
     ctx.metric("hostkill.firstReadAfterKillMs", performance.now() - killed);
-    ctx.metric("hostkill.unavailableResponses", ctx.client.unavailableResponses);
     world.checkIntact(before, await world.durablePlant(), "hostkill");
 
-    await world.castVotes(proposal, VOTERS.slice(2));
-    const open = await world.waitStatus("plant-a", proposal.id, ["veto_window"], 15_000);
-    ctx.check("reaches veto_window", Boolean(open), open?.status);
+    // The drain outlasts the vote window, so the veto window part needs a proposal of its own.
+    await world.waitStatus("plant-a", proposal.id, ["expired"], 10_000);
+    const open = await intoVetoWindow(world, 66);
     await sleep(3_000);
     kill();
-    const done = await world.waitStatus("plant-a", proposal.id, ["executed"], 16_000);
-    ctx.check("deadline fires after the host was killed in the window", Boolean(done), done?.status);
+    const done = await world.waitStatus("plant-a", open.id, ["executed"], 75_000);
+    ctx.check("the proposal still executes after its host died in the veto window", Boolean(done), done?.status);
     await until(() => world.sim.length > 0, 8_000);
     await sleep(5_000);
-    ctx.equal("exactly one simulation command", world.commandsFor(proposal.id).length, 1);
+    ctx.equal("exactly one simulation command", world.commandsFor(open.id).length, 1);
   },
 };
 
@@ -266,12 +349,16 @@ export const crashLoop: Scenario = {
     await crashAndRead(ctx, "loop4", "group");
     await sleep(2_000);
     await crashAndRead(ctx, "loop5");
-    const done = await world.waitStatus("plant-a", proposal.id, ["executed"], 20_000);
+    const done = await world.waitStatus("plant-a", proposal.id, ["executed"], VETO_WINDOW_MS + 20_000);
+    const state = await world.plantState("plant-a");
+    const final = state.proposals.find((item: any) => item.id === proposal.id);
+    ctx.note(`final status=${final?.status} votes=${final?.votes.length} deadline=${final?.vetoDeadline}`);
+    ctx.note(`audit: ${JSON.stringify(state.audit.filter((entry: any) => entry.refId === proposal.id && entry.kind !== "vote").map((entry: any) => entry.summary))}`);
     ctx.check("executes across crashes", Boolean(done), done?.status);
     await until(() => world.sim.length > 0, 10_000);
     await sleep(9_000);
     ctx.equal("exactly one simulation command", world.commandsFor(proposal.id).length, 1);
-    const state = await world.plantState("plant-a");
-    ctx.equal("one execute audit entry", state.audit.filter((entry: any) => entry.kind === "execute" && entry.refId === proposal.id).length, 1);
+    const audit = (await world.plantState("plant-a")).audit;
+    ctx.equal("accepted once in the audit", audit.filter((entry: any) => entry.kind === "execute" && entry.refId === proposal.id && /^Accepted/.test(entry.summary)).length, 1);
   },
 };

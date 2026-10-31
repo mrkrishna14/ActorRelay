@@ -1,0 +1,59 @@
+{
+  "id": "d1-tick-hang",
+  "title": "glue never answers /tick",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T21:29:31.206Z",
+  "durationMs": 50779,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "ticks running before the fault",
+      "pass": true,
+      "detail": "28"
+    },
+    {
+      "name": "d1-tick-hang.baseline: every mailbox read succeeded",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "d1-tick-hang.baseline: mailbox stays under 2000ms",
+      "pass": true,
+      "detail": "{\"max\":66.30153900000005,\"n\":26}"
+    },
+    {
+      "name": "d1-tick-hang: every mailbox read succeeded",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "d1-tick-hang: mailbox stays under 2000ms",
+      "pass": true,
+      "detail": "{\"max\":68.78004099999816,\"n\":70}"
+    },
+    {
+      "name": "sweep still advances proposals during the fault",
+      "pass": true,
+      "detail": "veto_window"
+    },
+    {
+      "name": "tick counter advances during the fault",
+      "pass": true,
+      "detail": "21 -> 36"
+    },
+    {
+      "name": "ticks recover after the fault clears",
+      "pass": true
+    }
+  ],
+  "restarts": [],
+  "metrics": {
+    "firstStartMs": 28244.9,
+    "seedMs": 8812,
+    "d1-tick-hang.baseline.mailboxP50Ms": 13.8,
+    "d1-tick-hang.baseline.mailboxMaxMs": 66.3,
+    "d1-tick-hang.mailboxP50Ms": 13,
+    "d1-tick-hang.mailboxMaxMs": 68.8
+  },
+  "notes": []
+}

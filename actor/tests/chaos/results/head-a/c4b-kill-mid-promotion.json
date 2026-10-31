@@ -1,0 +1,93 @@
+{
+  "id": "c4b-kill-mid-promotion",
+  "title": "kill -9 mid recordEvent with the Plant parked on a frozen Company host",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T21:27:05.424Z",
+  "durationMs": 89126,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "found the Company host process",
+      "pass": true,
+      "detail": "26292"
+    },
+    {
+      "name": "event recorded at most once after the crash",
+      "pass": true,
+      "detail": "[\"event-plant-a-p00001-739bf16d\"]"
+    },
+    {
+      "name": "retry after the crash succeeds",
+      "pass": true,
+      "detail": "{\"kind\":\"completed\",\"result\":{\"after\":85,\"approvedBy\":[\"agent:plant-a/TK-101\",\"agent:plant-a/LV-101\",\"agent:plant-a/E-101\",\"agent:plant-a/TV-101\",\"agent:plant-b/TV-101\"],\"at\":\"2026-10-31T21:27:50.096Z\",\"before\":50,\"componentId\":\"plant-a/P-100\",\"effects\":[{\"after\":92,\"before\":50,\"componentId\":\"plant-a/LV-101\",\"metric\":\"positionPct\",\"ticksToSettle\":3}],\"id\":\"event-plant-a-p00001-739bf16d\",\"incident\":null,\"metric\":\"speedPct\",\"operator\":null,\"plantId\":\"plant-a\",\"proposalId\":\"plant-a-p00001-739bf16d\",\"upstreamSnapshot\":{}},\"ms\":28.237673000025097}"
+    },
+    {
+      "name": "exactly one event after retry",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "exactly one plant rule",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "company rule converges after retry",
+      "pass": true,
+      "detail": "{\"plant\":[{\"id\":\"rule:plant-a/P-100:speedPct:plant-a/LV-101:positionPct:high\",\"timesSeen\":3,\"support\":[\"event-plant-a-p00001-739bf16d\",\"chaos-seed-plant-a-1\",\"chaos-seed-plant-a-0\"]}],\"company\":[{\"id\":\"company-rule:outlet-valve-A:speedPct:positionPct:high\",\"timesSeen\":3,\"support\":[\"event-plant-a-p00001-739bf16d\",\"chaos-seed-plant-a-1\",\"chaos-seed-plant-a-0\"]}],\"events\":[\"event-plant-a-p00001-739bf16d\"]}"
+    },
+    {
+      "name": "exactly one company rule",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "after retry: plant rule signatures unique",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "after retry: company rule signatures unique",
+      "pass": true,
+      "detail": "[]"
+    }
+  ],
+  "restarts": [
+    {
+      "label": "midpromo",
+      "kill": {
+        "mode": "group",
+        "atEpochMs": 1793482070166,
+        "runtimePid": 25816,
+        "groupBefore": [
+          25712,
+          25764,
+          25816,
+          26273,
+          26292,
+          26313,
+          26332,
+          26349,
+          26368,
+          27755,
+          27775
+        ],
+        "portClosedMs": 20.777148000022862,
+        "hostsGoneMs": 23.030537000042386,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 22220
+    }
+  ],
+  "metrics": {
+    "firstStartMs": 26431.6,
+    "seedMs": 7437.4,
+    "midpromo.restartReadyMs": 24658
+  },
+  "notes": [
+    "recordEvent returned without waiting for Company",
+    "in-flight recordEvent outcome: {\"kind\":\"completed\",\"result\":{\"after\":85,\"approvedBy\":[\"agent:plant-a/TK-101\",\"agent:plant-a/LV-101\",\"agent:plant-a/E-101\",\"agent:plant-a/TV-101\",\"agent:plant-b/TV-101\"],\"at\":\"2026-10-31T21:27:50.096Z",
+    "after restart: {\"plant\":[{\"id\":\"rule:plant-a/P-100:speedPct:plant-a/LV-101:positionPct:high\",\"timesSeen\":3,\"support\":[\"event-plant-a-p00001-739bf16d\",\"chaos-seed-plant-a-1\",\"chaos-seed-plant-a-0\"]}],\"company\":[{\"id\":\"company-rule:outlet-valve-A:speedPct:positionPct:high\",\"timesSeen\":3,\"support\":[\"event-plant-a-p00001-739bf16d\",\"chaos-seed-plant-a-1\",\"chaos-seed-plant-a-0\"]}],\"events\":[\"event-plant-a-p00001-739bf16d\"]}"
+  ]
+}

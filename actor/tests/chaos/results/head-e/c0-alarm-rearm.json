@@ -1,0 +1,216 @@
+{
+  "id": "c0-alarm-rearm",
+  "title": "kill -9 while idle: do tick and sweep alarms come back, and who has to call what",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T22:01:54.009Z",
+  "durationMs": 65759,
+  "status": "fail",
+  "checks": [
+    {
+      "name": "ticks reach glue before the crash",
+      "pass": true,
+      "detail": "{\"ticks\":46}"
+    },
+    {
+      "name": "tick rate is about 1 per second",
+      "pass": false,
+      "detail": "1.9165661453277612"
+    },
+    {
+      "name": "idle: plant-b one read restarts the tick",
+      "pass": true,
+      "detail": "after_read"
+    },
+    {
+      "name": "idle: plant-a one read restarts the tick",
+      "pass": true,
+      "detail": "after_read"
+    },
+    {
+      "name": "idle: plant-a history intact",
+      "pass": true,
+      "detail": "11 -> 11"
+    },
+    {
+      "name": "idle: plant-a rules intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-a audit intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-a no duplicate history ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "idle: plant-a no duplicate rule ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "idle: plant-b history intact",
+      "pass": true,
+      "detail": "11 -> 11"
+    },
+    {
+      "name": "idle: plant-b rules intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-b audit intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-b no duplicate history ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "idle: plant-b no duplicate rule ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "idle: plant-a/P-100 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-a/TK-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-a/LV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-a/E-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-a/TV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-b/P-100 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-b/TK-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-b/LV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-b/E-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: plant-b/TV-101 calibration intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: company rules intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: company audit intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "idle: no duplicate company rule ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "postRestart: every mailbox read succeeded",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "postRestart: mailbox stays under 2000ms",
+      "pass": true,
+      "detail": "{\"max\":60.54173499997705,\"n\":46}"
+    }
+  ],
+  "restarts": [
+    {
+      "label": "idle",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793484145168,
+        "runtimePid": 95524,
+        "groupBefore": [
+          95484,
+          95509,
+          95524,
+          96067,
+          96086,
+          96136,
+          96155,
+          96218,
+          96237,
+          96523,
+          96542,
+          96659,
+          96678,
+          96696,
+          96715,
+          96732,
+          96751,
+          96829,
+          96848,
+          96876,
+          96895,
+          96930,
+          96949,
+          96968,
+          96987,
+          97003,
+          97023,
+          97044,
+          97064
+        ],
+        "portClosedMs": 17.281658000021707,
+        "hostsGoneMs": 80.49927100000787,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 9066
+    }
+  ],
+  "metrics": {
+    "firstStartMs": 14202,
+    "seedMs": 12368.1,
+    "ticksPerSecondPerPlant": 1.9,
+    "idle.restartReadyMs": 11459,
+    "idle.ticksBetweenKillAndRestart": 0,
+    "idle.healthyAfterKillMs": 9066,
+    "idle.firstTickAfterRestartMs": 7032,
+    "postRestart.mailboxP50Ms": 7,
+    "postRestart.mailboxMaxMs": 60.5
+  },
+  "notes": [
+    "idle: plant-b 0 /tick arrivals in 5000ms of silence, tick 30 then 38; resumed: after_read",
+    "idle: plant-a 0 /tick arrivals in 5000ms of silence, tick 30 then 38; resumed: after_read"
+  ]
+}

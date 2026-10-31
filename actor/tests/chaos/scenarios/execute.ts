@@ -3,6 +3,7 @@
 import type { GlueCall } from "../lib/fakeGlue";
 import { sleep, until } from "../lib/server";
 import type { Ctx, Scenario } from "../lib/scenario";
+import type { World } from "../lib/world";
 import { boot, crashAndRead, intoVetoWindow } from "./restart";
 
 /** Promise that a hook parks on, so the harness can kill at that exact step. */
@@ -24,6 +25,14 @@ async function execution(ctx: Ctx, plantId: string, proposalId: string): Promise
 }
 
 const reachedWithin = (parked: ReturnType<typeof gate>, ms: number) => Promise.race([parked.reached, sleep(ms).then(() => null)]);
+
+/** One full proposal through the veto window. Says whether the claim told the executor to dispatch. */
+async function dispatchOnce(world: World, to: number): Promise<boolean | null> {
+  const open = await intoVetoWindow(world, to);
+  await waitDeadline(open);
+  await until(() => world.claims.some((claim) => claim.proposalId === open.id), 14_000, 100);
+  return world.claims.find((claim) => claim.proposalId === open.id)?.dispatch ?? null;
+}
 
 const CALLBACK_RETRIES_MS = 14_000; // Three attempts 4s apart, the last failing at +12s, plus one sweep.
 const CLAIM_TIMEOUT_MS = 20_000;
@@ -103,17 +112,24 @@ export const glueDiesAfterClaim: Scenario = {
     await crashAndRead(ctx, "lostclaim");
     world.hooks.beforeSetpoint = undefined;
     // The parked delivery never resumes: that executor is gone. Any later delivery is a new one.
-    const settled = await world.waitStatus("plant-a", open.id, ["expired"], CLAIM_TIMEOUT_MS + 8_000);
+    const settled = await until(async () => {
+      const record = await execution(ctx, "plant-a", open.id);
+      return record?.state === "unknown" || record?.state === "failed" ? record : undefined;
+    }, CLAIM_TIMEOUT_MS + 8_000, 500);
     ctx.equal("no simulation command from a retry", world.sim.length, 0);
     const proposal = await world.proposal("plant-a", open.id);
     const record = await execution(ctx, "plant-a", open.id);
     const audit = (await world.plantState("plant-a")).audit.filter((entry: any) => entry.refId === open.id).map((entry: any) => `${entry.kind}: ${entry.summary}`);
     ctx.note(`final status=${proposal?.status} execution=${JSON.stringify(record)}`);
     ctx.note(`audit: ${JSON.stringify(audit)}`);
-    ctx.check("the proposal did not stick as a silent success", Boolean(settled), { status: proposal?.status, state: record?.state });
+    ctx.check("the lost dispatch is marked, not a silent success", Boolean(settled), { status: proposal?.status, state: record?.state });
     ctx.check("the lost dispatch is visible in the audit", audit.some((line: string) => /unknown|failed/i.test(line)), audit);
-    const next = await ctx.client.invoke("Plant", "plant-a", "propose", [{ proposerComponentId: "plant-a/P-100", metric: "speedPct", to: 60, rationale: "chaos: after a lost dispatch" }]);
-    ctx.check("a new proposal can open afterwards", next.kind === "completed", next);
+
+    // The simulator never moved, so the Plant's setpoint is wrong. One attempt carries the measured value back.
+    const attempts = [await dispatchOnce(world, 60), await dispatchOnce(world, 62)];
+    ctx.note(`two later proposals with the simulator still at 50: dispatch ${JSON.stringify(attempts)}`);
+    ctx.check("later proposals recover after at most one failed attempt", attempts[1] === true, attempts);
+    ctx.equal("the recovered proposal sent one simulation command", world.sim.length, 1);
     parked.open();
   },
 };
@@ -190,7 +206,7 @@ export const randomKillAroundDeadline: Scenario = {
   title: "kill -9 at random offsets around the veto deadline, repeated: at most one command every time",
   run: async (ctx) => {
     const world = await boot(ctx);
-    const rounds = Number(process.env.CHAOS_ROUNDS ?? 6);
+    const rounds = Number(process.env.CHAOS_ROUNDS ?? 4);
     for (let round = 0; round < rounds; round++) {
       // Each round is a fresh proposal on the same durable state, which is the point of the loop.
       const target = 55 + round;

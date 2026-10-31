@@ -1,0 +1,96 @@
+{
+  "id": "h1-kill-plant-host",
+  "title": "kill -9 of only the Plant's host process: the runtime stays up, so no rebuild and no alarm loss",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T21:29:31.207Z",
+  "durationMs": 87495,
+  "status": "error",
+  "checks": [
+    {
+      "name": "found the Plant host",
+      "pass": true,
+      "detail": "31424"
+    },
+    {
+      "name": "the alarm brings the Plant back with no outside call",
+      "pass": false,
+      "detail": "{\"baseline\":3.8,\"late\":2}"
+    },
+    {
+      "name": "found the Plant host",
+      "pass": true,
+      "detail": "32452"
+    },
+    {
+      "name": "hostkill: plant-a history intact",
+      "pass": true,
+      "detail": "11 -> 11"
+    },
+    {
+      "name": "hostkill: plant-a rules intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "hostkill: plant-a audit intact",
+      "pass": true,
+      "detail": "3 -> 3"
+    },
+    {
+      "name": "hostkill: plant-a proposal plant-a-p00001-30228f60 present",
+      "pass": true
+    },
+    {
+      "name": "hostkill: plant-a plant-a-p00001-30228f60 acknowledged votes intact",
+      "pass": true,
+      "detail": "2 -> 2"
+    },
+    {
+      "name": "hostkill: plant-a plant-a-p00001-30228f60 no duplicate voter",
+      "pass": true,
+      "detail": "2"
+    },
+    {
+      "name": "hostkill: plant-a plant-a-p00001-30228f60 vetoDeadline preserved",
+      "pass": true,
+      "detail": "null -> null"
+    },
+    {
+      "name": "hostkill: plant-a no duplicate history ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "hostkill: plant-a no duplicate rule ids",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "hostkill: company rules intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "hostkill: company audit intact",
+      "pass": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "name": "hostkill: no duplicate company rule ids",
+      "pass": true,
+      "detail": "[]"
+    }
+  ],
+  "restarts": [],
+  "metrics": {
+    "firstStartMs": 27924.1,
+    "seedMs": 8816.3,
+    "hostkill.ticksPerSecondBefore": 3.8,
+    "hostkill.ticksPerSecondAfterSilence": 2,
+    "hostkill.silentRecoveryReadMs": 10056.9,
+    "hostkill.firstReadAfterKillMs": 35368.4,
+    "hostkill.unavailableResponses": 0
+  },
+  "notes": [],
+  "error": "Error: Plant(plant-a).vote: {\"kind\":\"failed\",\"code\":\"actor_error\",\"message\":\"stale_proposal: plant-a-p00001-30228f60 voting window has closed\",\"ms\":22.208789000011166}\n    at call (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/client.ts:80:63)\n    at async castVote (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/world.ts:167:34)\n    at async castVotes (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/world.ts:171:44)\n    at async <anonymous> (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/scenarios/restart.ts:272:17)\n    at async runScenario (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/scenario.ts:124:20)"
+}

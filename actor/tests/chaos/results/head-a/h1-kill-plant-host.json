@@ -1,0 +1,31 @@
+{
+  "id": "h1-kill-plant-host",
+  "title": "kill -9 of only the Plant's host process: the runtime stays up, so no rebuild and no alarm loss",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T21:23:18.771Z",
+  "durationMs": 43414,
+  "status": "error",
+  "checks": [
+    {
+      "name": "found the Plant host",
+      "pass": true,
+      "detail": "17016"
+    },
+    {
+      "name": "found the Plant host",
+      "pass": true,
+      "detail": "17953"
+    }
+  ],
+  "restarts": [],
+  "metrics": {
+    "firstStartMs": 26329.8,
+    "seedMs": 6764.2,
+    "hostkill.ticksPerSecondAfterSilence": 4,
+    "hostkill.silentRecoveryReadMs": 10057.7
+  },
+  "notes": [
+    "after a host kill and 10s of silence: 4 /tick arrivals a second, about 2 means the alarm brought plant-a back"
+  ],
+  "error": "Error: Plant(plant-a).getState: {\"kind\":\"failed\",\"code\":\"actor_error\",\"message\":\"actor executor failed: customer actor executor disconnected before replying: channel closed\",\"ms\":12.626014999994368}\n    at call (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/client.ts:80:63)\n    at async <anonymous> (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/scenarios/restart.ts:257:22)\n    at async runScenario (/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/lib/scenario.ts:124:20)"
+}

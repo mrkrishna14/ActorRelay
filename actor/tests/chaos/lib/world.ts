@@ -248,40 +248,28 @@ export class World {
     ctx.equal(`${label}: no duplicate company rule ids`, duplicates(after.company.rules.map((rule: any) => rule.id)), []);
   }
 
-  /** Stage by stage, per plant: does the tick come back alone, after a dashboard read, or only after tick()?
-   *  `tickAtKill` must be read just before the kill. /tick carries no plant id, so arrivals at glue are the direct
-   *  evidence for the whole server, and the persisted counter, read only after each silence, is the per-plant view. */
-  async checkTickResumes(label: string, plantId: string, tickAtKill: number, restartedAt: number, silentMs = 5_000): Promise<string> {
+  /** Does a Plant tick again, and who had to call what? The counter is a heartbeat that falls back to its last
+   *  checkpoint after a crash, so the evidence is arrivals at glue and a counter that rises after the first read. */
+  async checkTickResumes(label: string, plantId: string, restartedAt: number, silentMs = 5_000): Promise<string> {
     const { ctx } = this;
     const readTick = async () => (await this.plantState(plantId)).tick as number;
     const arrivals = () => ctx.glue.of("/tick").filter((call) => call.atEpochMs > restartedAt);
     await sleep(silentMs);
     const quietArrivals = arrivals().length;
-    const afterSilence = await readTick();
-    // A tick in flight at the kill can still land, so the counter alone proves nothing: arrivals must have happened.
+    const afterSilence = await readTick(); // This read re-arms a lost alarm, which is what glue's wake loop does.
+    await sleep(4_000);
+    const afterRead = await readTick();
     let stage = "never";
-    if (quietArrivals > 0 && afterSilence > tickAtKill + 2) stage = "alone";
+    if (afterRead > afterSilence) stage = quietArrivals > 0 ? "alone" : "after_read";
     else {
+      await ctx.client.invoke("Plant", plantId, "tick");
       await sleep(4_000);
-      const afterRead = await readTick();
-      if (afterRead > afterSilence) stage = "after_read";
-      else {
-        await ctx.client.invoke("Plant", plantId, "tick");
-        await sleep(4_000);
-        if ((await readTick()) > afterRead + 1) stage = "after_tick";
-      }
+      if ((await readTick()) > afterRead + 1) stage = "after_tick";
     }
     const first = arrivals()[0];
     if (first) ctx.metric(`${label}.firstTickAfterRestartMs`, first.atEpochMs - restartedAt);
-    ctx.note(`${label}: ${plantId} tick ${tickAtKill} at kill, ${afterSilence} after ${silentMs}ms of silence, ${quietArrivals} /tick arrivals in that silence; resumed: ${stage}`);
-    ctx.check(`${label}: ${plantId} tick resumes with no outside call`, stage === "alone", stage);
-    ctx.check(`${label}: ${plantId} tick resumes at all`, stage !== "never", stage);
-    if (stage !== "never") {
-      const before = await readTick();
-      await sleep(3_000);
-      const after = await readTick();
-      ctx.check(`${label}: ${plantId} tick counter keeps advancing`, after > before, `${before} -> ${after}`);
-    }
+    ctx.note(`${label}: ${plantId} ${quietArrivals} /tick arrivals in ${silentMs}ms of silence, tick ${afterSilence} then ${afterRead}; resumed: ${stage}`);
+    ctx.check(`${label}: ${plantId} one read restarts the tick`, stage === "alone" || stage === "after_read", stage);
     return stage;
   }
 

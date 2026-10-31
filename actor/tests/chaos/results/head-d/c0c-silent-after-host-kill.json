@@ -1,0 +1,28 @@
+{
+  "id": "c0c-silent-after-host-kill",
+  "title": "kill plant-a's host and stay silent: does plant-b keep ticking",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T21:56:03.130Z",
+  "durationMs": 83966,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "found the Plant host",
+      "pass": true,
+      "detail": "83720"
+    },
+    {
+      "name": "the other Plant keeps ticking when one host dies",
+      "pass": true,
+      "detail": "[10,10,20,18,20,20,20,10,19,19,20,20]"
+    }
+  ],
+  "restarts": [],
+  "metrics": {
+    "firstStartMs": 10620.7,
+    "seedMs": 3296.3
+  },
+  "notes": [
+    "/tick arrivals per 5s before [10,10], after killing plant-a's host [10,10,20,18,20,20,20,10,19,19,20,20]"
+  ]
+}

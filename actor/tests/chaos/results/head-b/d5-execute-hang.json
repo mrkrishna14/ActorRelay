@@ -1,0 +1,56 @@
+{
+  "id": "d5-execute-hang",
+  "title": "glue never answers /execute-callback: Plant stays live and the retries are bounded",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T21:31:05.037Z",
+  "durationMs": 68279,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "callback attempted",
+      "pass": true
+    },
+    {
+      "name": "execHang: every mailbox read succeeded",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "execHang: mailbox stays under 2000ms",
+      "pass": true,
+      "detail": "{\"max\":103.1103460000013,\"n\":137}"
+    },
+    {
+      "name": "attempts are bounded",
+      "pass": true,
+      "detail": "3"
+    },
+    {
+      "name": "no further attempts",
+      "pass": true,
+      "detail": "3"
+    },
+    {
+      "name": "nothing dispatched",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "a new proposal is not blocked forever by the hung one",
+      "pass": true,
+      "detail": "{\"ok\":true,\"id\":\"plant-a-p00002-6d741793\"}"
+    }
+  ],
+  "restarts": [],
+  "metrics": {
+    "firstStartMs": 24637.6,
+    "seedMs": 6625.9,
+    "execHang.mailboxP50Ms": 13.7,
+    "execHang.mailboxMaxMs": 103.1,
+    "execHang.attempts": 3
+  },
+  "notes": [
+    "status after retries: expired",
+    "new proposal after the hung dispatch: {\"ok\":true,\"id\":\"plant-a-p00002-6d741793\"}"
+  ]
+}

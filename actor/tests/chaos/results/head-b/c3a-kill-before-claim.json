@@ -1,0 +1,70 @@
+{
+  "id": "c3a-kill-before-claim",
+  "title": "kill -9 with the first callback in flight at glue, before claimDispatch",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T21:32:13.589Z",
+  "durationMs": 85336,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "callback reached glue",
+      "pass": true
+    },
+    {
+      "name": "a re-sent callback completes the dispatch",
+      "pass": true,
+      "detail": "{\"callbacks\":2}"
+    },
+    {
+      "name": "exactly one simulation command",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "setMetric redeemed once",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "execution reached applied",
+      "pass": true,
+      "detail": "\"applied\""
+    }
+  ],
+  "restarts": [
+    {
+      "label": "preclaim",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793482375363,
+        "runtimePid": 37240,
+        "groupBefore": [
+          37199,
+          37227,
+          37240,
+          38186,
+          38205,
+          38226,
+          38245,
+          38264,
+          38283
+        ],
+        "portClosedMs": 18.1523880000168,
+        "hostsGoneMs": 71.39291200001026,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 23104,
+      "firstCallMs": 23748
+    }
+  ],
+  "metrics": {
+    "firstStartMs": 24487.9,
+    "seedMs": 7596.9,
+    "preclaim.restartReadyMs": 25491,
+    "preclaim.firstPlantReadAfterKillMs": 23748,
+    "preclaim.unavailableResponses": 0,
+    "preclaim.healthyAfterKillMs": 23104
+  },
+  "notes": []
+}

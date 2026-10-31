@@ -1,124 +1,124 @@
 # Crash test report
 
-Interim, 13:40 Pacific. Crash testing is on hold under main's 13:10 order and the 13:35 WSL freeze, until the real end-to-end table passes. Nothing has run on Terse since 13:10. This report states only what was observed.
+Final matrix, 15:35 Pacific, on real Terse 0.14.9 with real `kill -9`, against the real actors at commit 9b943c3. `actor/src` is unchanged at the later HEAD 5db59a2.
 
-## Verdict so far
+## Verdict
 
-Durable memory held: no acknowledged write was lost in any run, and there was never a second simulation command. The failures are in recovery, not storage. After a server crash the actors can disagree with the simulator, and an operator can lose the veto window. On the fake runtime at 6447368, one lost acknowledgement then blocked every later change to that metric until a reset. ar-actors' fixes in d4d976b clear that on the fake runtime. None of the fixes has been proven on real Terse yet.
+Durable memory held. Across 36 server kills, no acknowledged write was lost and no proposal ever sent a second simulation command.
+
+All four failures found in the first pass are fixed or reduced, and the fixes are proven on the real runtime. 31 of 33 scenarios pass. The two that do not:
+
+- `c0`: every recovery check passes. The tick runs about 1.9 times a second, not once. Low severity, because timeouts use wall clock.
+- `c0c`: after killing one host, ticks from both Plants paused once. See Open items.
 
 | Claim tested | Result on the real runtime |
 |---|---|
-| Acknowledged votes, history, rules and audit survive `kill -9` | Held in every run |
-| Acknowledged calibration survives `kill -9` | Held, but on thin evidence: 3 acknowledged entries |
-| No duplicate execution | Held: at most one simulation command in every run |
-| No duplicate rule | Held for rule entries. Company `timesSeen` is inflated by a replay |
-| No proposal stuck forever | Held in the runs so far, provided something calls the Plant |
-| Alarms re-armed, tick resumes | Not on its own. Nothing ticks until a method is called on each Plant. Glue now has a wake loop that does this; not yet crash tested |
-| Human veto window survives a crash | Failed |
-| Actors match the simulator after a crash | Failed when the crash lands between claim and setpoint |
-| Glue slow or down does not wedge the Plant | Held in `d4`. `d1` is inconclusive, see below |
+| Acknowledged votes, history, calibration, rules and audit survive `kill -9` | Held. 476 acknowledged writes and 108 audit entries in the stream, plus a real calibration entry |
+| No duplicate execution | Held: at most one simulation command in every run, including 4 random kills around the deadline |
+| No duplicate rule | Held. A replay no longer moves `timesSeen` |
+| No proposal stuck forever | Held. Votes expire, lost dispatches are marked `unknown`, and later proposals recover |
+| Alarms re-armed, tick resumes | Not on its own after a server restart. One read restarts it, on both Plants. Glue's wake loop does that read but was not crash tested |
+| Human veto survives a crash | Held. A lapsed window reopens, and an operator vetoed in it |
+| Actors match the simulator after a crash | Held. A late acknowledgement or observation settles it |
+| Glue slow, down or calling back does not wedge the Plant | Held. Mailbox reads stayed under 110ms in every glue fault |
 
 ## What ran where
 
-All `c`, `d` and `h` scenarios ran on a real Terse 0.14.9 dev server with real `kill -9`, against real Component, Plant and Company actors at commit 3746bdd. The snapshot hash was checked against that commit.
+Real: Terse dev server, `kill -9`, Component, Plant and Company actors, compiler and persistence.
 
-These parts are fake: glue, the executor and the simulator. They follow the execute flow ar-actors published. Real glue and the real bridge have not been crash tested, and no LLM or Relay is involved.
+Fake: glue, the executor and the simulator, which follow the published execute flow. Real glue, the real bridge, Relay and agents have not been crash tested, and no OpenAI calls were made.
 
-`p` scenarios ran on the same real runtime against a throwaway probe actor, not ActorRelay code.
+Runs used two servers at a time, on ports 7140-7141 with their own data dirs. The demo stack was not touched. Load stayed well under 16, and the guard never fired.
 
-3746bdd is not the latest code. ar-actors has since committed 69ebb4a and 6447368, the second with the tick-rate fix, and more is in progress. Everything here must be rerun on the fixed commit.
+Stretched scenarios use a copy of the same commit with only the timeout constants raised, so a rebuild fits inside the windows. Without that, the survive-inside-the-window path cannot be reached by a server kill.
 
 ## Results
 
 | Scenario | Result | Checks | What it shows |
 |---|---|---|---|
-| c0 alarm re-arm | FAIL | 31/33 | No `/tick` arrived in 5s of silence after restart. A Plant read restarts it. Tick rate 5.4/s per plant |
-| c1 voting | PASS | 17/17 | Acknowledged votes intact, replayed vote rejected, proposal expires rather than sticking |
-| c2b veto down past deadline | FAIL | 2/3 | Setpoint sent 2.6s after restart with no live veto window |
-| c2c veto then kill | PASS | 4/4 | An acknowledged veto holds through the deadline, with no callback |
-| c3b kill after claim | FAIL | 3/6 | One simulation command, but the actors stay at 50 while the simulator is at 65 |
-| c3d executor dies after claim | PASS | 5/5 | Ends expired, no retry dispatch, audit says the outcome is unknown |
-| c3f lost acknowledgement | FAIL | 3/6 | Observation refused, proposal reads expired, next proposal starts from the wrong value |
-| c4a acknowledged event, kill, replay | FAIL | 34/35 | Rule and event survive and replay adds no duplicates. Company `timesSeen` goes 3 to 4 |
-| c5 ack stream | PASS, weak | 2/2 | Only 3 acknowledged writes per log, because the machine was overloaded. Needs a rerun |
-| d4 glue down | PASS | 5/5 | Mailbox reads stayed under the bound and sweeps kept advancing |
-| d10 Company frozen | PASS | 5/5 | Propose fails closed in 3.6s, mailbox maximum 3.3s, recovers when thawed |
-| p1 durability and alarm | FAIL by design | 9/10 | 50/50 writes survive. The one failure is alarm loss |
-| p2 in-flight call | PASS | 4/4 | Caller sees `ECONNRESET`, nothing past the crash point is stored, no replay |
-| p3 held fetch | PASS | 2/2 | An awaited fetch closes the mailbox: a read timed out at 3s |
+| h1 kill one Plant host | PASS | 18/18 | State intact, one read restarts it, one simulation command |
+| c0 alarm re-arm | FAIL, tick rate only | 28/29 | No tick in 5s of silence, then one read restarts both Plants. Mailbox 92ms |
+| c0b silence, no crash | PASS | 1/1 | Ticks never stop in 80s with no callers, twice |
+| c0c silence after a host kill | FAIL once, PASS once | see below | Both Plants' ticks paused at about 60s |
+| c1 voting | PASS | 19/19 | Votes intact, replay refused, voting finishes, one command. Also passes stretched |
+| c1b down past vote expiry | PASS | 3/3 | Expires 0.7s after restart, late vote refused |
+| c2a restart inside the window | PASS, stretched | 18/18 | Deadline unchanged, fires once, not early |
+| c2b down past the deadline | PASS | 3/3 | Window reopens, command 11s after restart, was 2.6s |
+| c2c veto then kill | PASS | 4/4 | Veto holds through the deadline |
+| c2d veto in a reopened window | PASS | 5/5 | Operator vetoes after the outage, nothing is sent |
+| c3a kill before claim | PASS | 5/5 | A re-sent callback completes it, one command |
+| c3b kill after claim | PASS | 6/6 | Simulator and actors agree, one command |
+| c3c same, whole group killed | PASS | 6/6 | Same |
+| c3d executor dies after claim | PASS | 6/6 | Marked `unknown`, no retry, next proposals `[false,true]` |
+| c3e lost ack, prompt observation | PASS, stretched | 6/6 | Observation settles it |
+| c3f lost ack, late observation | PASS | 6/6 | Observation recorded, next proposal starts from 65 |
+| c3g simulator refuses | PASS | 3/3 | Ends failed and expired, no retry |
+| c3r 4 random kills around the deadline | PASS | 8/8 | One command every time |
+| c4a acknowledged event, kill, replay | PASS | 36/36 | Rule, event and calibration survive. Replay adds nothing, `timesSeen` stays 3 |
+| c4b kill with Company frozen | PASS | 9/9 | One event, one plant rule, one company rule |
+| c4c 4 random kills in `recordEvent` | PASS | 17/17 | Retry gives exactly one event, no duplicate rule |
+| c5 ack stream | PASS | 6/6 | 476 mirrors and 108 audit entries acknowledged, none lost |
+| c6 five kills across one proposal | PASS, stretched | 4/4 | One execution |
+| d1 tick hang | PASS | 8/8 | Mailbox 69ms maximum |
+| d2 tick slow | PASS | 8/8 | Mailbox 50ms maximum |
+| d3 tick 500 | PASS | 8/8 | Mailbox 23ms maximum |
+| d4 glue down | PASS | 5/5 | Mailbox 61ms maximum |
+| d5 execute hang | PASS | 7/7 | 3 attempts, ends expired, new proposal opens. Mailbox 103ms |
+| d6 glue back before retries end | PASS | 4/4 | One command |
+| d7 glue down past every retry | PASS | 4/4 | Reported as undelivered |
+| d8 glue calls back during `/tick` | PASS | 5/5 | No deadlock, callback 70ms |
+| d9 kill with glue hung | PASS | 5/5 | Nothing wedged after restart |
+| d10 Company frozen | PASS | 5/5 | Propose fails closed in 8.0s, mailbox held 7.5s, 24ms once thawed |
 
-Results that do not count yet:
+Evidence is in `results/`. `head-a` to `head-e` are real timeouts, and `stretched-1` and `stretched-2` are stretched. `real-3` and `real-4` are the first pass at 3746bdd.
 
-- `d1` tick hang: no read failed and sweeps advanced, so nothing wedged. The mailbox bound failed at baseline too (5.6s before any fault), so this measured machine load.
-- `c2a` restart before the deadline: invalid. A slow state read delayed the kill past the deadline. It also cannot pass at real timeouts, because a rebuild outlasts the 10s window. It needs the stretched-timeout snapshot.
-- `h1`, `c4b`, `d5`: harness errors, not actor verdicts. `h1` and `c4b` hit the 503 described below before the harness retried it. `d5` was overtaken by the tick-rate defect.
+A first stretched run failed `c2a` and `c6`. Both were my test setup: `c2a` counted audit lines the actors now write twice by design, and my stretch missed the 60s waiting timeout. Both pass with those corrected.
 
-Not run yet: `c1b`, `c3a`, `c3c`, `c3e`, `c3g`, `c3r`, `c4c`, `c6`, `d2`, `d3`, `d6`, `d7`, `d8`, `d9`.
+## First-pass failures
 
-## Confirmed failures
+| Failure at 3746bdd | Now |
+|---|---|
+| Actors at 50 while the simulator was at 65 after a crash in dispatch | Fixed, `c3b` `c3c` `c3e` `c3f` |
+| One lost ack blocked that metric until a reset (fake runtime) | Fixed, later proposals dispatch in `c3d` |
+| Lapsed veto window executed 2.6s after restart | Fixed, `c2b` `c2d` |
+| Replay moved Company `timesSeen` from 3 to 4 | Fixed, `c4a` |
+| Plant ticked 5.4 times a second | Reduced to about 1.9, still open |
 
-All were sent to ar-actors with the exact sequence.
+## Open items
 
-1. **Split brain after a crash in dispatch (`c3b`, `c3f`). Actor fix in d4d976b, not yet proven on real Terse.** Sequence: `claimDispatch` succeeds, server killed, restart takes longer than the 20s claim timeout, the first sweep fails the execution and reverts the setpoint. The executor's one `/setpoint` lands anyway. `setMetric` is refused with `invalid_token: execution is failed`, `recordEvent` is refused with `not_executed`, and the next proposal starts from 50 while the simulator holds 65.
-2. **Human veto lost in an outage (`c2b`). d4d976b reopens a window that lapsed by more than 6s. Read, not yet run.** A deadline that lapses while the server is down executes on the first sweep after restart. A rebuild always outlasts 10s, so this hits every server crash during a veto window.
-3. **Replay inflates Company `timesSeen` (`c4a`). Still open at d4d976b, `rules.ts:211`.** The rule entry dedupes, but the count goes 3 to 4 with no new evidence.
-4. **Plant ticks about 5.4 times a second, not once (`c0`).** ar-actors found the cause independently: re-arming an overdue alarm adds deliveries under load. Fixed in 6447368, not yet retested here. This inflated the mailbox latencies in this batch.
-
-## Found without a server
-
-These ran with no Terse server, during the hold. They are not real-runtime evidence.
-
-**Fake runtime: one lost acknowledgement blocked that metric until a reset.** `logic/dispatch-recovery.test.ts` runs the real actor classes on ar-property's in-memory actor base, starting from the state `c3b` and `c3f` reached on real Terse.
-
-The sequence at 6447368: the simulator moves 50 to 65, the acknowledgement is lost, and the claim times out, which reverts the Plant's setpoint to 50. Every later proposal then starts from 50, and `claimDispatch` refuses it because the measured value is 65. A proposal back to 50 is refused as `speedPct is already 50`. A setpoint that times out but lands gave the same result with no crash.
-
-| Source | After a lost ack | After a timed out setpoint that landed | After a write that never landed | Tests |
-|---|---|---|---|---|
-| 6447368 | false, false, false | false, false, false | true, true, true | 1 pass, 5 fail |
-| Patched copy, 14 lines | false, true, true | false, true, true | true, true, true | 6 pass, 0 fail |
-| d4d976b, ar-actors' own fix | true, true, true | false, true, true | false, true, true | 6 pass, 0 fail |
-
-Each cell is whether three later proposals dispatched. One false is the attempt that carries the measured value back to Plant. On d4d976b the test also passes the checks that a late token and a late observation are accepted, and that recovery opens no second dispatch. The patched copy was a test of the idea; d4d976b is ar-actors' own version. An earlier ar-actors working copy fixed the landed case and blocked the never-landed case, so that row is worth keeping in the test.
-
-**Read from the code, not run.** Sent to main, who owns these paths.
-
-- `glue/dispatch.ts` retries `setMetric` for about 1s when connections are refused, and the token is held only in memory. A restart takes 25s or more, so a crash just after `/setpoint` always loses the acknowledgement.
-- `glue/dispatch.ts` now reports a failure only on a real refusal, and checks a simulator reading after a timeout. Done since this was raised.
-- `bridge/live_sim.ts` retries `/observed` for about 19s at most. An observation due during a restart is dropped, so a change that really happened gets no history event and no calibration.
-- `glue/app.ts` does reach `Plant.getState` on both Plants every second, which covers the alarm loss in principle.
+1. **Tick rate, low.** About 1.8 to 1.9 per plant per second, measured three times. Terse alarms can fire early, and the Plant only ignores ticks closer than 500ms. Decisions use wall clock, so nothing here depends on it. Raising the guard in `onAlarm` to about 900ms should give 1 per second.
+2. **Tick pause after a host kill, unexplained.** Ticks from both Plants stopped for at least 5s at about 40-60s after a host kill, in 2 of 5 runs. It never happened in the 2 no-kill silence runs. In `h1` they were back within 5s of the next read. It needs a killed actor host, not a server kill. Length is being measured.
+3. **Retry windows, low.** `glue/dispatch.ts` gives up on `setMetric` after about 1s, and `bridge/live_sim.ts` stops retrying `/observed` after about 19s. State stays correct, because the setpoint is kept and the mirror corrects the Component. An observation due during a restart can be lost, so that run would not teach anything. Read from the code, not run.
+4. **Not crash tested:** real glue, including its wake loop, the real bridge, Relay and agents.
 
 ## Runtime facts, measured
 
-- A server kill loses every alarm. `alarm.get()` is null after restart and nothing fires until a method re-arms it. Glue must call both Plants on its own loop. Requested on the board for ar-glue.
-- After a hard kill an actor can answer `503 actor host is unavailable`, with `previous owner lease is still active` in the log, until the old lease expires. Seen after killing a Plant host and after a whole-group kill. Callers must retry 503. The lease length is not published and has not been measured yet.
-- Every start rebuilds the bundle. The source shows no cache and no skip option.
-- Hosts die within 0.3s to 5.7s of a runtime kill. In the probe, a dying host sent nothing further.
-- Each actor is its own process pair. A second server on another port does not call 7100, because the runtime injects its own URL.
+- A server kill loses every alarm, and nothing ticks until a method is called on each Plant.
+- After a whole-group kill, an actor answers 503 until its old lease drains. That is why the first Plant read takes about 30s, 10s or more after the server is healthy.
+- After killing one Plant host, the first successful read took 0.3s, 0.6s and 35.4s in three runs. So killing a host is not a reliably quick stage crash.
+- In `h1`, the alarm did not bring a killed host's Plant back within 45s of silence, in both runs. A read did.
+- Every start rebuilds the bundle. The tick counter is a heartbeat, so it falls back to its last checkpoint after a crash, by design.
 
 ## Recovery times
 
-Measured on a heavily loaded machine, with other sessions and up to six builds running. Treat these as upper bounds. 25s is the idle-machine figure.
+Measured at load 2 to 3 with the demo stack up and two servers running, excluding deliberate downtime.
 
-| Measurement | Result |
-|---|---|
-| Kill to `/healthz` ok, real actors | 25.1s minimum, 55.1s median, 71.6s maximum, n=8 |
-| Kill to first Plant read | 34.5s minimum, 57.6s median, 81.3s maximum, n=8 |
-| Kill to `/healthz` ok, probe actor | 24.6s |
-| Cold read after restart, probe actor | 525ms |
+| Measurement | Minimum | Median | Maximum | n |
+|---|---|---|---|---|
+| Server kill to `/healthz` ok | 6.8s | 19.0s | 24.5s | 26 |
+| Server kill to first Plant read | 7.0s | 19.7s | 24.9s | 24 |
+| Whole-group kill to `/healthz` ok | 9.6s | 16.9s | 23.6s | 10 |
+| Whole-group kill to first Plant read | 24.9s | 30.2s | 32.3s | 9 |
 
-Plan for this on stage: about 25s offline at best, with all windows shorter than that lapsing.
-
-## Ready for the rerun, not yet run
-
-The scenarios were updated for d4d976b while WSL was frozen, and checked for syntax only. Plant now counts similar events itself, so the seed has safe runs near every target. The fake executor passes the measured value, as glue does. `c4a` records a real calibration entry before the kill. `c5` streams acknowledged mirror writes and audit entries, because `addCalibration` now refuses made-up proposals, and it fails if it acknowledges too little to mean anything.
+Plan for about 20s offline on stage, or 30s if every process dies. Under heavy load, restarts took up to 72s in the first pass.
 
 ## How to run
 
-Stop first if main has paused Terse. From PowerShell:
+From PowerShell:
 
 ```powershell
 wsl.exe -d Ubuntu -- bash "/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/prepare.sh"
-wsl.exe -d Ubuntu -- bash "/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/wsl.sh" run.ts --only c1
+wsl.exe -d Ubuntu -- bash "/mnt/c/Users/zubai/Haunted Hacks/Factoryio/actor/tests/chaos/batch.sh" myrun "$HOME/ar-chaos/snapshot/actor" "c0-,c2b" "c3b,c4a"
 ```
 
-`prepare.sh` freezes an exact commit onto the Linux filesystem. Runs use port 7140 upward and data dirs under `~/ar-chaos`, so a server on 7100 is never touched. `prepare.sh stretched` raises only the timeout constants, so a rebuild fits inside the windows. Results from it are labelled.
+`prepare.sh` freezes an exact commit onto the Linux filesystem, and `prepare.sh stretched` also raises the timeout constants. Each quoted group runs on its own server, from port 7140 upward, with data dirs under `~/ar-chaos`. `batch.sh` stops its own runs if load reaches 16. `logic/run.sh` runs the no-server recovery tests.

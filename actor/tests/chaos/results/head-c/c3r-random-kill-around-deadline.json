@@ -1,0 +1,171 @@
+{
+  "id": "c3r-random-kill-around-deadline",
+  "title": "kill -9 at random offsets around the veto deadline, repeated: at most one command every time",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T21:40:30.179Z",
+  "durationMs": 232509,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "round 0 (offset 595ms): at most one command",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "round 0: the approved change was dispatched",
+      "pass": true,
+      "detail": "{\"commands\":1,\"state\":\"applied\",\"failure\":null}"
+    },
+    {
+      "name": "round 1 (offset 778ms): at most one command",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "round 1: the approved change was dispatched",
+      "pass": true,
+      "detail": "{\"commands\":1,\"state\":\"applied\",\"failure\":null}"
+    },
+    {
+      "name": "round 2 (offset 1610ms): at most one command",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "round 2: the approved change was dispatched",
+      "pass": true,
+      "detail": "{\"commands\":1,\"state\":\"applied\",\"failure\":null}"
+    },
+    {
+      "name": "round 3 (offset 705ms): at most one command",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "round 3: the approved change was dispatched",
+      "pass": true,
+      "detail": "{\"commands\":1,\"state\":\"applied\",\"failure\":null}"
+    }
+  ],
+  "restarts": [
+    {
+      "label": "random0",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793482869237,
+        "runtimePid": 56637,
+        "groupBefore": [
+          56535,
+          56562,
+          56637,
+          57126,
+          57145,
+          57166,
+          57185,
+          57200,
+          57219
+        ],
+        "portClosedMs": 79.59203199998592,
+        "hostsGoneMs": 664.4681749999872,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 19536,
+      "firstCallMs": 19918
+    },
+    {
+      "label": "random1",
+      "kill": {
+        "mode": "group",
+        "atEpochMs": 1793482917940,
+        "runtimePid": 58221,
+        "groupBefore": [
+          58188,
+          58210,
+          58221,
+          58876,
+          58896,
+          58981,
+          59001,
+          59621,
+          59641
+        ],
+        "portClosedMs": 21.46556799998507,
+        "hostsGoneMs": 23.659444999997504,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 16653,
+      "firstCallMs": 31556
+    },
+    {
+      "label": "random2",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793482963264,
+        "runtimePid": 59765,
+        "groupBefore": [
+          59665,
+          59750,
+          59765,
+          61276,
+          61295,
+          61312,
+          61331
+        ],
+        "portClosedMs": 15.43810199998552,
+        "hostsGoneMs": 30.63507999997819,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 18285,
+      "firstCallMs": 18611
+    },
+    {
+      "label": "random3",
+      "kill": {
+        "mode": "group",
+        "atEpochMs": 1793483010061,
+        "runtimePid": 62149,
+        "groupBefore": [
+          62107,
+          62136,
+          62149,
+          62511,
+          62533,
+          62567,
+          62587,
+          63075,
+          63095
+        ],
+        "portClosedMs": 10.163303999986965,
+        "hostsGoneMs": 11.205787999962922,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 14864,
+      "firstCallMs": 32103
+    }
+  ],
+  "metrics": {
+    "firstStartMs": 18162.9,
+    "seedMs": 11899.7,
+    "random0.restartReadyMs": 18858,
+    "random0.firstPlantReadAfterKillMs": 19918,
+    "random0.unavailableResponses": 0,
+    "random0.healthyAfterKillMs": 19536,
+    "random1.restartReadyMs": 19074,
+    "random1.firstPlantReadAfterKillMs": 31556,
+    "random1.unavailableResponses": 27,
+    "random1.healthyAfterKillMs": 16653,
+    "random2.restartReadyMs": 18235,
+    "random2.firstPlantReadAfterKillMs": 18611,
+    "random2.unavailableResponses": 0,
+    "random2.healthyAfterKillMs": 18285,
+    "random3.restartReadyMs": 17283,
+    "random3.firstPlantReadAfterKillMs": 32103,
+    "random3.unavailableResponses": 30,
+    "random3.healthyAfterKillMs": 14864
+  },
+  "notes": []
+}

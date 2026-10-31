@@ -1,0 +1,84 @@
+{
+  "id": "c2b-veto-down-past-deadline",
+  "title": "kill -9 in the veto window, stay down past the deadline: what happens to the human veto",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T21:24:37.144Z",
+  "durationMs": 85965,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "window does not stay open forever",
+      "pass": true,
+      "detail": "executed"
+    },
+    {
+      "name": "at most one simulation command",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "operator gets a live veto window after the outage (a lapsed window must not execute unseen)",
+      "pass": true,
+      "detail": "simulation command 11040ms after restart"
+    }
+  ],
+  "restarts": [
+    {
+      "label": "lateveto",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793481907709,
+        "runtimePid": 20004,
+        "groupBefore": [
+          19956,
+          19986,
+          20004,
+          20375,
+          20394,
+          20474,
+          20493,
+          20513,
+          20532,
+          20552,
+          20572,
+          20591,
+          20610,
+          20626,
+          20645,
+          20661,
+          20680,
+          20696,
+          20715,
+          20731,
+          20750,
+          20787,
+          20806,
+          20829,
+          20848,
+          20878,
+          20898,
+          20978,
+          20997
+        ],
+        "portClosedMs": 33.399594999995315,
+        "hostsGoneMs": 107.68870699999388,
+        "survivors": []
+      },
+      "downMs": 12927,
+      "healthzMs": 36407,
+      "firstCallMs": 36882
+    }
+  ],
+  "metrics": {
+    "firstStartMs": 25315.5,
+    "seedMs": 6256.8,
+    "lateveto.restartReadyMs": 28318,
+    "lateveto.firstPlantReadAfterKillMs": 36882,
+    "lateveto.unavailableResponses": 0,
+    "lateveto.healthyAfterKillMs": 36407,
+    "lateveto.commandAfterRestartMs": 11040
+  },
+  "notes": [
+    "after restart status=executed vetoDeadline=2026-10-31T21:25:55.224Z (was 2026-10-31T21:25:17.612Z)"
+  ]
+}
