@@ -4,7 +4,7 @@ import { describe, expect, test } from "bun:test"
 import type { ComponentState, HistoryEvent, LearnedRule, PlantId, Proposal, Vote } from "../../../shared/types"
 import plants from "../../../shared/plants.json"
 import history from "../fixtures/history.json"
-import { applyCalibration, computeStatus } from "../../src/logic/component"
+import { applyCalibration, computeStatus, sameReadings } from "../../src/logic/component"
 import { assertCounterAllowed, assertExecutable, assertVoteAllowed, enforceVoteSafety, planSweep, reachableVoters, unanimousYes, type Setpoints } from "../../src/logic/proposals"
 import { counterexampleId, crossPlantVoters, deriveRules, mergeCompanyRule, mergeDerivedRules, mergeSubmittedRule, toCompanyRule, unsupportedEventId, type Topology } from "../../src/logic/rules"
 import { rankSimilar } from "../../src/logic/similar"
@@ -232,6 +232,13 @@ describe("sweep", () => {
 })
 
 describe("small guards", () => {
+    test("sameReadings spots a changed, added or missing metric", () => {
+        expect(sameReadings({ a: 1, b: 2 }, { b: 2, a: 1 })).toBe(true)
+        expect(sameReadings({ a: 1 }, { a: 1.01 })).toBe(false)
+        expect(sameReadings({ a: 1 }, { a: 1, b: 2 })).toBe(false)
+        expect(sameReadings({ a: 1, b: 2 }, { a: 1 })).toBe(false)
+    })
+
     test("a target above the operating max is refused before dispatch", () => {
         const windowed = proposal({ status: "veto_window", vetoDeadline: new Date(1_010_000).toISOString(), votes: voters.map(voter => vote(voter)), to: 91 })
         expect(() => assertExecutable(windowed, topologyA, setpointsA, 1_020_000)).toThrow("out_of_limits")

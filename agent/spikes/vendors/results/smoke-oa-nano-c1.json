@@ -1,0 +1,68 @@
+{
+ "summary": {
+  "path": "oa-nano",
+  "tag": "smoke",
+  "concurrency": 1,
+  "rounds": 1,
+  "calls": 1,
+  "success": 1,
+  "jsonStrict": 1,
+  "jsonAfterFenceStrip": 1,
+  "contractClean": 0,
+  "p50": 1962,
+  "p95": 1962,
+  "max": 1962,
+  "roundWallMs": [
+   1963
+  ],
+  "over20s": 0,
+  "over5s": 0,
+  "lvVerdictOk": "0/0",
+  "apiP50": null,
+  "statuses": "200:1",
+  "errors": [],
+  "contractErrors": [
+   "wrong similarCount"
+  ],
+  "models": [
+   "gpt-5.4-nano-2026-03-17"
+  ],
+  "openaiLimits": {
+   "limitRequests": "5000",
+   "limitTokens": "2000000",
+   "minRemainingRequests": 4999,
+   "minRemainingTokens": 1999923,
+   "retryAfter": []
+  },
+  "samples": [],
+  "at": "2026-10-31T19:24:09.102Z"
+ },
+ "calls": [
+  {
+   "voter": "plant-a/P-100",
+   "ms": 1961.9125999999997,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1156,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999923",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [
+    "wrong similarCount"
+   ],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 84.9
+   },
+   "vote": "no"
+  }
+ ]
+}

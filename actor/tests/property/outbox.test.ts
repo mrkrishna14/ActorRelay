@@ -20,6 +20,10 @@ const stepArb: fc.Arbitrary<Step> = fc.oneof(
   { weight: 3, arbitrary: fc.constantFrom<Mode>("up", "down", "ackLost", "refusing").map((mode): Step => ({ kind: "mode", mode })) },
 );
 
+const valveAt = (position: number, plant = "plant-a") => [
+  { componentId: `${plant}/LV-101`, metric: "positionPct", before: 50, after: position, ticksToSettle: 3 },
+];
+
 function run(id: string, after: number, position: number, at: number, plant = "plant-a"): HistoryEvent {
   return makeEvent(
     id,
@@ -53,10 +57,10 @@ async function play(stage: Stage, steps: Step[], onStep: () => void = () => unde
     stage.advance(1000);
     switch (step.kind) {
       case "unsafe":
-        await stage.plant("plant-a").recordEvent(run(`e${i++}`, 85, 95, stage.now));
+        await stage.observe("plant-a", `e${i++}`, 85, valveAt(95));
         break;
       case "safe":
-        await stage.plant("plant-a").recordEvent(run(`e${i++}`, 65, 67, stage.now));
+        await stage.observe("plant-a", `e${i++}`, 65, valveAt(67));
         break;
       case "sweepA":
         await stage.plant("plant-a").sweep();
@@ -89,7 +93,7 @@ async function sweepBoth(stage: Stage, plants = ["plant-b", "plant-a"]) {
 async function recordUnsafe(stage: Stage, ids: number[], plant = "plant-a") {
   for (const i of ids) {
     stage.advance(1000);
-    await stage.plant(plant).recordEvent(run(`${plant}-e${i}`, 85, 95, stage.now, plant));
+    await stage.observe(plant, `${plant}-e${i}`, 85, valveAt(95, plant));
     await stage.idle();
   }
 }
@@ -241,14 +245,13 @@ describe.skipIf(!isReal)("company outbox [real logic, fake runtime]", () => {
       const unique = (c: ComponentState) => (c.tag === "LV-101" ? { ...c, model: "valve-only-in-b" } : c);
       await stage.seedPlant("plant-b", { edit: unique });
       await sweepBoth(stage);
-      const withDuty = (id: string, at: number) =>
-        makeEvent(id, PUMP, "speedPct", 85, [
-          { componentId: LV, metric: "positionPct", before: 50, after: 95, ticksToSettle: 3 },
-          { componentId: "plant-a/E-101", metric: "dutyKw", before: 900, after: 1000, ticksToSettle: 3 },
-        ], { at: iso(at) });
+      const withDuty = [
+        ...valveAt(95),
+        { componentId: "plant-a/E-101", metric: "dutyKw", before: 900, after: 1000, ticksToSettle: 3 },
+      ];
       for (const i of [0, 1, 2]) {
         stage.advance(1000);
-        await stage.plant("plant-a").recordEvent(withDuty(`e${i}`, stage.now));
+        await stage.observe("plant-a", `e${i}`, 85, withDuty);
         await stage.idle();
       }
       // A new rule key, so it cannot merge into the derived rule and keep that rule's model.
@@ -365,11 +368,10 @@ describe.skipIf(!isReal)("company outbox [real logic, fake runtime]", () => {
     await onStage(async (stage) => {
       await stage.seedAll();
       await sweepBoth(stage);
-      const onTank = (id: string, at: number) =>
-        makeEvent(id, PUMP, "speedPct", 85, [
-          { componentId: LV, metric: "positionPct", before: 50, after: 95, ticksToSettle: 3 },
-          { componentId: "plant-a/TK-101", metric: "levelPct", before: 50, after: 75, ticksToSettle: 3 },
-        ], { at: iso(at) });
+      const onTank = [
+        ...valveAt(95),
+        { componentId: "plant-a/TK-101", metric: "levelPct", before: 50, after: 75, ticksToSettle: 3 },
+      ];
       let promotes = 0;
       stage.world.fault = (target, method) => {
         if (target !== COMPANY || method !== "promoteRule") return null;
@@ -378,7 +380,7 @@ describe.skipIf(!isReal)("company outbox [real logic, fake runtime]", () => {
       };
       for (const i of [0, 1, 2]) {
         stage.advance(1000);
-        await stage.plant("plant-a").recordEvent(onTank(`e${i}`, stage.now));
+        await stage.observe("plant-a", `e${i}`, 85, onTank);
         await stage.idle();
       }
       stage.world.fault = () => null;

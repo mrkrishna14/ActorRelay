@@ -100,7 +100,7 @@ describe("buildCounter", () => {
     expect(counter?.parentProposalId).toBe(first.id);
   });
 
-  test("when the doubled margin leaves nothing, the plain threshold is the ceiling, at the smallest supported step", async () => {
+  test("when the doubled margin leaves nothing, the smallest supported step under the plain threshold is taken", async () => {
     const parent = blocked();
     parent.votes = [{ ...noVote(parent.id), marginPct: 25 }];
     const glue = new FakeGlue();

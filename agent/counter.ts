@@ -33,7 +33,7 @@ async function blockersOf(deps: CounterDeps, proposal: Proposal): Promise<Blocke
     for (const [metric, predicted] of Object.entries(vote.predicted)) {
       const limit = voter.limits[metric];
       if (!limit) continue;
-      const threshold = thresholdFor(limit, vote.marginPct);
+      const threshold = thresholdFor(limit, vote.marginPct, voter.metrics[metric]);
       if (predicted < threshold) continue;
       const withMargin = threshold * (1 - vote.marginPct / 100);
       const now = voter.metrics[metric] ?? -Infinity;
@@ -80,6 +80,9 @@ export function safeCandidates(proposal: Proposal, blockers: Blocker[], allEvent
 
 /** The target that keeps the most of what was asked for, among those safe history reached. Candidates run from `from` towards the blocked target. */
 export const bestCandidate = (candidates: Candidate[]): Candidate | null => candidates.filter((c) => c.safeRuns >= MIN_SAFE_RUNS).at(-1) ?? null;
+
+/** The smallest supported step, for when only the plain threshold leaves room: a wide margin must never land higher than a narrow one. */
+const cautiousCandidate = (candidates: Candidate[]): Candidate | null => candidates.find((c) => c.safeRuns >= MIN_SAFE_RUNS) ?? null;
 
 const COUNTER_SYSTEM = `You are the proposer's agent on a simulated hold-tank unit. Your last proposal was blocked by the connected equipment. The safer target below was computed from history and the blocking limits. Explain it.
 Rules:
@@ -183,10 +186,9 @@ export async function buildCounter(deps: CounterDeps, blocked: Proposal, proposa
     to: (blocked.from + blocked.to) / 2,
     k: HISTORY_K,
   });
-  // The doubled margin can leave nothing at wide margins. The plain threshold still has room, but a voter with a wide
-  // margin has been wrong lately, so that tier takes the smallest step safe history supports, not the largest.
+  // The doubled margin can leave nothing at wide margins, though the plain threshold still has room.
   const atThreshold = blockers.map((b) => ({ ...b, ceiling: b.threshold }));
-  const best = bestCandidate(safeCandidates(blocked, blockers, events)) ?? safeCandidates(blocked, atThreshold, events).find((c) => c.safeRuns >= MIN_SAFE_RUNS) ?? null;
+  const best = bestCandidate(safeCandidates(blocked, blockers, events)) ?? cautiousCandidate(safeCandidates(blocked, atThreshold, events));
   if (!best) {
     deps.log?.(`${blocked.id}: no safe target between ${blocked.from} and ${blocked.to}`);
     return null;

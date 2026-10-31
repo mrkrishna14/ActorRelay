@@ -1,0 +1,492 @@
+{
+ "label": "real-ram",
+ "voter": "plant-a/LV-101",
+ "summary": {
+  "repeat": {
+   "n": 8,
+   "under5s": 4,
+   "total": {
+    "name": "total",
+    "n": 8,
+    "p50": 3771,
+    "p95": 12783,
+    "max": 12783
+   }
+  },
+  "tenA": {
+   "n": 3,
+   "under5s": 3,
+   "total": {
+    "name": "total",
+    "n": 3,
+    "p50": 4616,
+    "p95": 4892,
+    "max": 4892
+   }
+  }
+ },
+ "stages": [
+  {
+   "name": "total",
+   "n": 12,
+   "p50": 4616,
+   "p95": 12783,
+   "max": 12783
+  },
+  {
+   "name": "propose",
+   "n": 12,
+   "p50": 804,
+   "p95": 6231,
+   "max": 6231
+  },
+  {
+   "name": "publish",
+   "n": 12,
+   "p50": 443,
+   "p95": 1182,
+   "max": 1182
+  },
+  {
+   "name": "deliver",
+   "n": 12,
+   "p50": 106,
+   "p95": 1142,
+   "max": 1142
+  },
+  {
+   "name": "context",
+   "n": 12,
+   "p50": 611,
+   "p95": 1473,
+   "max": 1473
+  },
+  {
+   "name": "decide",
+   "n": 12,
+   "p50": 1511,
+   "p95": 3293,
+   "max": 3293
+  },
+  {
+   "name": "post",
+   "n": 12,
+   "p50": 235,
+   "p95": 1478,
+   "max": 1478
+  },
+  {
+   "name": "fanOut",
+   "n": 12,
+   "p50": -19,
+   "p95": 7,
+   "max": 7
+  },
+  {
+   "name": "plantVote",
+   "n": 12,
+   "p50": 963,
+   "p95": 8009,
+   "max": 8009
+  },
+  {
+   "name": "seen",
+   "n": 12,
+   "p50": 5115,
+   "p95": 20996,
+   "max": 20996
+  }
+ ],
+ "rows": [
+  {
+   "label": "first",
+   "id": "plant-a-p00001-a03db64a",
+   "load": "56.55",
+   "total": 9511,
+   "propose": 1033,
+   "publish": 250,
+   "deliver": 147,
+   "context": 571,
+   "decide": 3293,
+   "post": 1478,
+   "fanOut": -416,
+   "plantVote": 3398,
+   "voteOk": true,
+   "voteTries": 1,
+   "seen": 9564,
+   "prefix": ""
+  },
+  {
+   "label": "repeat-0",
+   "id": "plant-a-p00003-b6c7374c",
+   "load": "43.09",
+   "total": 9229,
+   "propose": 6231,
+   "publish": 473,
+   "deliver": 152,
+   "context": 484,
+   "decide": 1507,
+   "post": 253,
+   "fanOut": -10,
+   "plantVote": 611,
+   "voteOk": true,
+   "voteTries": 1,
+   "seen": 9433,
+   "prefix": "[decided from retrieved evidence; the mo"
+  },
+  {
+   "label": "repeat-1",
+   "id": "plant-a-p00004-14a04f16",
+   "load": "42.40",
+   "total": 3111,
+   "propose": 723,
+   "publish": 200,
+   "deliver": 49,
+   "context": 379,
+   "decide": 1524,
+   "post": 258,
+   "fanOut": -94,
+   "plantVote": 271,
+   "voteOk": true,
+   "voteTries": 1,
+   "seen": 3377,
+   "prefix": "[decided from retrieved evidence; the mo"
+  },
+  {
+   "label": "repeat-2",
+   "id": "plant-a-p00005-38db1b2f",
+   "load": "40.52",
+   "total": 3101,
+   "propose": 707,
+   "publish": 396,
+   "deliver": 78,
+   "context": 442,
+   "decide": 1506,
+   "post": 89,
+   "fanOut": -8,
+   "plantVote": 286,
+   "voteOk": true,
+   "voteTries": 1,
+   "seen": 3878,
+   "prefix": "[decided from retrieved evidence; the mo"
+  },
+  {
+   "label": "repeat-3",
+   "id": "plant-a-p00006-b63a7955",
+   "load": "37.21",
+   "total": 3771,
+   "propose": 434,
+   "publish": 443,
+   "deliver": 106,
+   "context": 611,
+   "decide": 1518,
+   "post": 114,
+   "fanOut": -8,
+   "plantVote": 990,
+   "voteOk": true,
+   "voteTries": 1,
+   "seen": 4406,
+   "prefix": "[decided from retrieved evidence; the mo"
+  },
+  {
+   "label": "repeat-4",
+   "id": "plant-a-p00007-75998c2b",
+   "load": "39.29",
+   "total": 2781,
+   "propose": -548,
+   "publish": 1182,
+   "deliver": 1142,
+   "context": 92,
+   "decide": 1452,
+   "post": 77,
+   "fanOut": 7,
+   "plantVote": 558,
+   "voteOk": true,
+   "voteTries": 1,
+   "seen": 3580,
+   "prefix": "[decided from retrieved evidence; the mo"
+  },
+  {
+   "label": "repeat-5",
+   "id": "plant-a-p00008-0c090874",
+   "load": "35.38",
+   "total": 12783,
+   "propose": 1387,
+   "publish": 155,
+   "deliver": 89,
+   "context": 1403,
+   "decide": 1580,
+   "post": 553,
+   "fanOut": -238,
+   "plantVote": 8009,
+   "voteOk": false,
+   "voteTries": 2,
+   "seen": 20996,
+   "prefix": "[decided from retrieved evidence; the mo"
+  },
+  {
+   "label": "repeat-6",
+   "id": "plant-a-p00009-fc924c95",
+   "load": "37.43",
+   "total": 7610,
+   "propose": 1615,
+   "publish": 945,
+   "deliver": 288,
+   "context": 1009,
+   "decide": 1517,
+   "post": 235,
+   "fanOut": -126,
+   "plantVote": 3072,
+   "voteOk": true,
+   "voteTries": 1,
+   "seen": 8361,
+   "prefix": "[decided from retrieved evidence; the mo"
+  },
+  {
+   "label": "repeat-7",
+   "id": "plant-a-p00010-63a79add",
+   "load": "38.81",
+   "total": 6081,
+   "propose": 1762,
+   "publish": 744,
+   "deliver": 180,
+   "context": 1278,
+   "decide": 1505,
+   "post": 102,
+   "fanOut": -6,
+   "plantVote": 1259,
+   "voteOk": true,
+   "voteTries": 1,
+   "seen": 6235,
+   "prefix": "[decided from retrieved evidence; the mo"
+  },
+  {
+   "label": "ten-a-0",
+   "id": "plant-a-p00011-fe1902af",
+   "load": "35.66",
+   "total": 4892,
+   "propose": 804,
+   "publish": 483,
+   "deliver": 131,
+   "context": 683,
+   "decide": 1526,
+   "post": 561,
+   "fanOut": -298,
+   "plantVote": 1485,
+   "voteOk": true,
+   "voteTries": 1,
+   "seen": 5862,
+   "prefix": "[decided from retrieved evidence; the mo"
+  },
+  {
+   "label": "ten-b-0",
+   "id": "plant-b-p00001-b64b497b",
+   "missing": {
+    "propose": false,
+    "post": true,
+    "plantVote": true
+   }
+  },
+  {
+   "label": "ten-b-1",
+   "id": "plant-b-p00002-0e383208",
+   "missing": {
+    "propose": false,
+    "post": true,
+    "plantVote": true
+   }
+  },
+  {
+   "label": "ten-a-1",
+   "id": "plant-a-p00012-db8f0e33",
+   "load": "35.11",
+   "total": 4289,
+   "propose": 1107,
+   "publish": 913,
+   "deliver": -87,
+   "context": 1291,
+   "decide": 1511,
+   "post": 62,
+   "fanOut": -14,
+   "plantVote": 418,
+   "voteOk": true,
+   "voteTries": 1,
+   "seen": 4707,
+   "prefix": "[decided from retrieved evidence; the mo"
+  },
+  {
+   "label": "ten-b-2",
+   "id": "plant-b-p00004-5f0eeae4",
+   "missing": {
+    "propose": false,
+    "post": true,
+    "plantVote": true
+   }
+  },
+  {
+   "label": "ten-a-2",
+   "id": "plant-a-p00013-9181c5c2",
+   "load": "33.27",
+   "total": 4616,
+   "propose": 749,
+   "publish": 337,
+   "deliver": -424,
+   "context": 1473,
+   "decide": 1503,
+   "post": 370,
+   "fanOut": -19,
+   "plantVote": 963,
+   "voteOk": true,
+   "voteTries": 1,
+   "seen": 5115,
+   "prefix": "[decided from retrieved evidence; the mo"
+  }
+ ],
+ "slow": [
+  {
+   "label": "first",
+   "total": 9511,
+   "propose": 1033,
+   "plantVote": 3398,
+   "load": "56.55",
+   "byMethod": {
+    "plant-b.getState": {
+     "n": 6,
+     "maxMs": 977
+    },
+    "plant-a.propose": {
+     "n": 1,
+     "maxMs": 1033
+    },
+    "plant-a.getState": {
+     "n": 5,
+     "maxMs": 3375
+    },
+    "plant-a.similar": {
+     "n": 1,
+     "maxMs": 435
+    },
+    "plant-a.vote": {
+     "n": 5,
+     "maxMs": 3398
+    }
+   }
+  },
+  {
+   "label": "repeat-0",
+   "total": 9229,
+   "propose": 6231,
+   "plantVote": 611,
+   "load": "43.09",
+   "byMethod": {
+    "plant-a.getState": {
+     "n": 4,
+     "maxMs": 4501
+    },
+    "plant-b.getState": {
+     "n": 5,
+     "maxMs": 4501
+    },
+    "plant-a.propose": {
+     "n": 1,
+     "maxMs": 6231
+    },
+    "plant-a.similar": {
+     "n": 1,
+     "maxMs": 439
+    },
+    "plant-a.vote": {
+     "n": 1,
+     "maxMs": 611
+    }
+   }
+  },
+  {
+   "label": "repeat-5",
+   "total": 12783,
+   "propose": 1387,
+   "plantVote": 8009,
+   "load": "35.38",
+   "byMethod": {
+    "plant-a.getState": {
+     "n": 5,
+     "maxMs": 4505
+    },
+    "plant-b.getState": {
+     "n": 6,
+     "maxMs": 4501
+    },
+    "plant-a.propose": {
+     "n": 1,
+     "maxMs": 1387
+    },
+    "plant-a.similar": {
+     "n": 1,
+     "maxMs": 1332
+    },
+    "plant-a.vote": {
+     "n": 5,
+     "maxMs": 8014
+    }
+   }
+  },
+  {
+   "label": "repeat-6",
+   "total": 7610,
+   "propose": 1615,
+   "plantVote": 3072,
+   "load": "37.43",
+   "byMethod": {
+    "plant-a.vote": {
+     "n": 9,
+     "maxMs": 6705
+    },
+    "plant-a.getState": {
+     "n": 5,
+     "maxMs": 3026
+    },
+    "plant-b.getState": {
+     "n": 5,
+     "maxMs": 1282
+    },
+    "plant-a.propose": {
+     "n": 1,
+     "maxMs": 1615
+    },
+    "plant-a.similar": {
+     "n": 1,
+     "maxMs": 925
+    }
+   }
+  },
+  {
+   "label": "repeat-7",
+   "total": 6081,
+   "propose": 1762,
+   "plantVote": 1259,
+   "load": "38.81",
+   "byMethod": {
+    "plant-a.getState": {
+     "n": 6,
+     "maxMs": 1878
+    },
+    "plant-b.getState": {
+     "n": 5,
+     "maxMs": 1126
+    },
+    "plant-a.propose": {
+     "n": 1,
+     "maxMs": 1762
+    },
+    "plant-a.similar": {
+     "n": 1,
+     "maxMs": 1225
+    },
+    "plant-a.vote": {
+     "n": 3,
+     "maxMs": 1784
+    }
+   }
+  }
+ ]
+}

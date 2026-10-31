@@ -25,8 +25,9 @@ import {
 /** What a voter is shown. It is drawn from a wider pool, because k-nearest alone can leave out the runs that matter most. */
 export const SIMILAR_K = 5;
 const SIMILAR_POOL = 20;
-/** A prediction outside this multiple of critical is noise, not a prediction. */
+/** Far outside the operating band is noise, not a prediction: with nothing to go on, a model has answered 0. */
 const PLAUSIBLE_MULTIPLE = 3;
+const PLAUSIBLE_SHARE_OF_MIN = 0.5;
 const MAX_REASON_CHARS = 900;
 const MAX_AGENT_NOTE_CHARS = 240;
 const MAX_IDS_IN_REASON = 3;
@@ -36,12 +37,10 @@ export const LLM_TIMEOUT_MS = { openai: 12_000, claude: 9000 };
 export const TOTAL_LLM_BUDGET_MS = 18_000;
 /** An instant failure would otherwise spend both attempts at once. */
 const RETRY_BACKOFF_MS = 400;
-/**
- * A no the evidence already proves is posted after this long even if the model is slow. A first block can wait for the
- * model's reasoning. A repeat has fresh memory behind it, so it goes early: with a 2 s sweep that keeps it under 5 s.
- */
+/** A first no the evidence already proves can wait this long for the model's reasoning, and no longer. */
 export const FIRST_NO_MS = 6000;
-export const FAST_NO_MS = 1500;
+/** A repeat does not wait at all. */
+export const FAST_NO_MS = 0;
 
 /** `cache` is accepted but not read: every vote stands on what the actors say now. */
 export type VoteDeps = { glue: Glue; llm: Llm; cache?: RetrievalCache; fastNoMs?: number; log?: (line: string) => void };
@@ -58,9 +57,13 @@ export function systemPrompt(role: Role): string {
 const round9 = (value: number) => Math.round(value * 1e9) / 1e9;
 const show = (value: number) => String(Math.round(value * 10) / 10);
 
-/** The margin pulls the line in from critical, but never under the operating maximum. The actors use the same line. */
-export function thresholdFor(limit: Limit, marginPct: number): number {
-  return round9(Math.max(limit.critical * (1 - marginPct / 100), limit.max));
+/**
+ * The margin pulls the line in from critical. A reading already at or past that line, like the tank's normal 75 °C at a
+ * wide margin, cannot be brought under it by any change, so there the operating maximum is the line. The actors always use it.
+ */
+export function thresholdFor(limit: Limit, marginPct: number, now?: number): number {
+  const line = limit.critical * (1 - marginPct / 100);
+  return round9(now !== undefined && now >= line ? Math.max(line, limit.max) : line);
 }
 
 /** Metrics this voter must predict. A valve on a shared header also predicts the header. */
@@ -153,7 +156,7 @@ async function gatherContext(deps: VoteDeps, notified: Proposal, componentId: Co
   const crossPlant = own.plantId !== proposal.plantId;
   const pool = relevantEvents(similar, proposal.to, proposerLimit).filter((e) => crossPlant || ownRows(e, own).length > 0);
   const thresholds = Object.fromEntries(
-    Object.entries(own.limits).map(([metric, limit]) => [metric, thresholdFor(limit, own.marginPct)]),
+    Object.entries(own.limits).map(([metric, limit]) => [metric, thresholdFor(limit, own.marginPct, own.metrics[metric])]),
   );
   const closeBy = closeDistance(proposerLimit);
   const moved = sameDirection(pool, proposal);
@@ -282,7 +285,7 @@ export function parseAnswer(text: string, context: VoteContext): Parsed {
   if (missing.length) return { ok: false, error: `predicted is missing ${missing.join(", ")}` };
   for (const [metric, limit] of Object.entries(context.own.limits)) {
     const value = answer.predicted[metric];
-    if (value < 0 || value > PLAUSIBLE_MULTIPLE * limit.critical) return { ok: false, error: `predicted ${metric} ${value} is not plausible` };
+    if (value < PLAUSIBLE_SHARE_OF_MIN * limit.min || value < 0 || value > PLAUSIBLE_MULTIPLE * limit.critical) return { ok: false, error: `predicted ${metric} ${value} is not plausible` };
   }
   if (answer.vote === "no" && !noIsSupported(context, answer.predicted)) {
     return { ok: false, error: "a no needs a predicted value at or past a threshold; give the prediction that supports your vote" };
@@ -348,10 +351,16 @@ function agentNote(text: string): string {
   return line.length > MAX_AGENT_NOTE_CHARS ? `${line.slice(0, MAX_AGENT_NOTE_CHARS - 1)}…` : line;
 }
 
-type NoAnswer = "timeout" | "malformed";
+type NoAnswer = "timeout" | "malformed" | "skipped";
+
+const WHY_NO_ANSWER: Record<NoAnswer, string> = {
+  timeout: "the model did not answer in time",
+  malformed: "malformed prediction from the model",
+  skipped: "no model call",
+};
 
 function provenance(reply: LlmReply | null, missing: NoAnswer): { prefix: string; suffix: string } {
-  if (!reply) return { prefix: `[decided from retrieved evidence; ${missing === "timeout" ? "the model did not answer in time" : "malformed prediction from the model"}] `, suffix: "" };
+  if (!reply) return { prefix: `[decided from retrieved evidence; ${WHY_NO_ANSWER[missing]}] `, suffix: "" };
   const prefix = reply.fallback ? "[GPT fallback: Claude CLI unavailable] " : "";
   return { prefix, suffix: ` [answered by ${reply.provider} ${reply.model}]` };
 }
@@ -455,7 +464,8 @@ function decide(context: VoteContext, answered: Answered | null, missing: NoAnsw
   if (backing.length) {
     grounds = compose([`${ruleReason(backing)};`, thresholdReason(context, predicted, true)]);
   } else if (insufficientHistory(context)) {
-    grounds = `insufficient history: ${context.speaking} of ${context.pool.length} similar runs moved this way, this far and got to the target, ${MIN_SIMILAR} needed`;
+    const history = `insufficient history: ${context.speaking} of ${context.pool.length} similar runs moved this way, this far and got to the target, ${MIN_SIMILAR} needed`;
+    grounds = compose([context.applicable.length ? `${ruleReason(context.applicable)};` : null, history]);
   } else {
     grounds = thresholdReason(context, predicted);
     const low = belowMinimum(context, predicted);
@@ -500,32 +510,39 @@ export async function castVote(deps: VoteDeps, notified: Proposal, componentId: 
   if (!context) return safeNo(notified, componentId, "retrieval failed", DEFAULT_MARGIN_PCT, 0);
   const { proposal } = context;
 
+  // A repeat has fresh memory behind it, so a no the evidence already proves needs no model call. That is what keeps it
+  // under 5 s: with a 2 s sweep, waiting on the model would use up the rest.
+  const proven = provenNo(context);
+  if (proven && context.newest) return assemble(context, null, "skipped");
+
   const asking = askModel(deps, context);
-  const fastNoMs = deps.fastNoMs ?? (context.newest ? FAST_NO_MS : FIRST_NO_MS);
   let timer: ReturnType<typeof setTimeout> | undefined;
-  const raced = provenNo(context)
+  const raced = proven
     ? await Promise.race([
         asking,
         new Promise<"timeout">((resolve) => {
-          timer = setTimeout(() => resolve("timeout"), fastNoMs);
+          timer = setTimeout(() => resolve("timeout"), deps.fastNoMs ?? FIRST_NO_MS);
         }),
       ])
     : await asking;
   clearTimeout(timer);
-  if (raced === null && !provenNo(context)) return safeNo(proposal, componentId, "malformed prediction", context.own.marginPct, context.retrieved.length);
+  if (raced === null && !proven) return safeNo(proposal, componentId, "malformed prediction", context.own.marginPct, context.retrieved.length);
+  return raced === "timeout" || raced === null ? assemble(context, null, raced === "timeout" ? "timeout" : "malformed") : assemble(context, raced, "malformed");
+}
 
-  const answered = raced === "timeout" ? null : raced;
-  const decision = decide(context, answered, raced === "timeout" ? "timeout" : "malformed");
+function assemble(context: VoteContext, answered: Answered | null, missing: NoAnswer): Vote {
+  const { proposal, own } = context;
+  const decision = decide(context, answered, missing);
   // A rule whose condition does not match this change is not evidence, whoever cites it.
   const applicableIds = new Set(context.applicable.map((r) => r.id));
   const cited = (answered?.answer.evidenceRuleIds ?? []).filter((id) => applicableIds.has(id));
   const ruleIds = [...cited, ...applicableIds];
   return voteSchema.parse({
     proposalId: proposal.id,
-    componentId,
-    agentId: `agent:${componentId}`,
+    componentId: own.id,
+    agentId: `agent:${own.id}`,
     ...decision,
-    marginPct: context.own.marginPct,
+    marginPct: own.marginPct,
     evidenceEventIds: orderEvidence(context, decision.vote, answered?.answer.evidenceEventIds ?? []),
     evidenceRuleIds: [...new Set(ruleIds)],
     similarCount: context.retrieved.length,

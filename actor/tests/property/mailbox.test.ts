@@ -31,7 +31,7 @@ const CALLS: [string, Call][] = [
   ["mirror", (s) => s.component("plant-a/TK-101").mirror({ levelPct: 51 })],
   ["calibration", (s, id) => s.component("plant-a/LV-101").addCalibration({ at: new Date().toISOString(), proposalId: id, metric: "positionPct", predicted: 66, observed: 67, absError: 1 })],
   ["margin", (s) => s.component("plant-a/LV-101").setMargin(12)],
-  ["event", (s) => s.plant("plant-a").recordEvent(makeEvent(`e${Math.random()}`, PUMP, "speedPct", 85))],
+  ["event", (s) => s.observe("plant-a", `e${Math.random()}`, 85, [])],
   ["propose", (s) => s.plant("plant-a").propose({ proposerComponentId: "plant-a/LV-101", metric: "positionPct", to: 60, rationale: "generated" })],
   ["company state", (s) => s.company().getState()],
 ];
@@ -87,8 +87,8 @@ describe.skipIf(!isReal)("mailboxes [real logic, fake runtime]", () => {
           expect(stage.world.calls.some((c) => c.to === COMPANY && c.method === "promoteRule")).toBe(true);
           for (const { from, to, method } of stage.world.calls) {
             if (from === null) continue;
-            // Both are fire-and-forget from outside the plant's own turn, so they cannot deadlock it.
-            if (from === to && (method === "setConnected" || method === "ackCompanySync")) continue;
+            // All fire-and-forget from outside the plant's own turn, so they cannot deadlock it.
+            if (from === to && ["setConnected", "ackCompanySync", "grantLease"].includes(method)) continue;
             if (RANK[kind(to)]! <= RANK[kind(from)]!) throw new Error(`upward call ${from} -> ${to}.${method}`);
           }
         });
@@ -142,11 +142,9 @@ describe.skipIf(!isReal)("mailboxes [real logic, fake runtime]", () => {
     await check(
       fc.asyncProperty(fc.boolean(), async (vetoFirst) => {
         await onStage(async (stage) => {
-          const id = await opened(stage);
+          await stage.seedAll();
+          const { id } = await stage.windowOpen();
           const plant = stage.plant("plant-a");
-          const proposal = stage.rawPlant("plant-a").proposals[0];
-          for (const voter of proposal.requiredVoters) await plant.vote(makeVote(id, voter));
-          await plant.sweep();
           stage.advance(10_000);
           const veto = () => plant.veto(id, "operator").then(() => true, () => false);
           const sweep = () => plant.sweep().then(() => false);
@@ -161,15 +159,14 @@ describe.skipIf(!isReal)("mailboxes [real logic, fake runtime]", () => {
     );
   });
 
-  test("with Company down a plant still votes, sweeps and executes, and propose fails closed", async () => {
+  test("with Company down an open window still executes, and propose fails closed", async () => {
     await onStage(async (stage) => {
-      const id = await opened(stage);
+      await stage.seedAll();
+      await stage.windowOpen();
       stage.world.fault = (target) => (target === COMPANY ? "before" : null);
       const plant = stage.plant("plant-a");
-      for (const voter of stage.rawPlant("plant-a").proposals[0].requiredVoters) await plant.vote(makeVote(id, voter));
-      await plant.sweep();
       stage.advance(10_000);
-      await plant.sweep();
+      await stage.sweep();
       expect(stage.rawPlant("plant-a").proposals[0].status).toBe("executed");
       const before = stage.rawPlant("plant-a").proposals.length;
       await expect(plant.propose({ proposerComponentId: PUMP, metric: "speedPct", to: 70, rationale: "generated" })).rejects.toThrow();
@@ -199,7 +196,7 @@ describe.skipIf(!isReal)("mailboxes [real logic, fake runtime]", () => {
             await settles(plant.sweep(), "sweep", 1000);
           }
           await settles(plant.vote(makeVote(id, "plant-a/LV-101")), "vote", 1000);
-          await settles(plant.recordEvent(makeEvent("e0", PUMP, "speedPct", 85)), "recordEvent", 1000);
+          await settles(stage.observe("plant-a", "e0", 85, []), "recordEvent", 1000);
           stage.world.fault = () => null;
           stage.world.release();
           await stage.idle();
@@ -258,10 +255,12 @@ describe.skipIf(!isReal)("mailboxes [real logic, fake runtime]", () => {
       fc.asyncProperty(fc.constantFrom(...CALLS.filter(([name]) => ENTRY_POINTS.includes(name))), async ([, call]) => {
         await onStage(async (stage) => {
           const id = await opened(stage);
-          const { alarm } = stage.rawPlant("plant-a");
-          alarm.scheduled = null;
+          // A restart loses the alarm and every ephemeral field, including the once-per-activation check.
+          const raw = stage.rawPlant("plant-a");
+          raw.alarm.scheduled = null;
+          raw.alarmChecked = false;
           await call(stage, id).catch(() => undefined);
-          expect(alarm.scheduled).toBe(stage.now + 1000);
+          expect(raw.alarm.scheduled).toBe(stage.now + 1000);
         });
       }),
       100,

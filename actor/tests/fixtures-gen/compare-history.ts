@@ -17,7 +17,7 @@ import { assertHistoryEvent } from "../../src/logic/validate";
 
 const NOW = "2026-10-31T20:00:00.000Z";
 const PLANTS: PlantId[] = ["plant-a", "plant-b"];
-const INCIDENT = "LV-101 saturated at 100%, TK-101 high-level alarm LAH-101";
+const LV_CRITICAL = 90;
 const SWEEP_TARGETS = [55, 60, 65, 70, 72, 75, 77, 80, 82, 85, 88, 90, 95];
 const BANDS = [[25, 39], [40, 59], [60, 70], [71, 79], [80, 87], [88, 94], [95, 100]];
 
@@ -199,7 +199,8 @@ async function runCounter(events: HistoryEvent[], tag: string, model: (world: Wo
 
 const voteLine = (votes: Vote[]) => votes.map((v) => (v.vote === "yes" ? "y" : "N")).join("");
 const lvRow = (e: HistoryEvent) => e.effects.find((r) => r.componentId === `${e.plantId}/LV-101` && r.metric === "positionPct");
-const retrievedLine = (events: HistoryEvent[]) => events.map((e) => `${e.after}${e.incident === INCIDENT ? "!" : e.incident ? "~" : ""}`).join(" ") || "none";
+const pastCritical = (e: HistoryEvent) => e.incident !== null && (lvRow(e)?.after ?? 0) >= LV_CRITICAL;
+const retrievedLine = (events: HistoryEvent[]) => events.map((e) => `${e.after}${pastCritical(e) ? "!" : e.incident ? "~" : ""}`).join(" ") || "none";
 const predictedLine = (vote: Vote) => Object.entries(vote.predicted).map(([k, v]) => `${k} ${round(v, 1)}`).join(", ");
 
 function ruleLines(rules: LearnedRule[]): Map<string, string> {
@@ -227,15 +228,16 @@ function shapeFacts(events: HistoryEvent[]): Record<string, string> {
   const ticks = events.filter((e) => e.after >= 80).flatMap((e) => (lvRow(e) ? [lvRow(e)?.ticksToSettle as number] : []));
   const atDesign = (e: HistoryEvent) => e.before >= 48 && e.before <= 52;
   const near85 = pump("plant-a").filter((e) => e.after >= 82 && e.after <= 87.999);
-  const saturated = pump("plant-a").filter((e) => e.incident === INCIDENT);
+  const serious = pump("plant-a").filter(pastCritical);
   const hottest = events.flatMap((e) => e.effects.filter((r) => r.metric === "tempC").map((r) => r.after));
   const dip85 = pump("plant-a").filter((e) => atDesign(e) && e.after >= 83 && e.after <= 87).flatMap((e) => e.effects.filter((r) => r.metric === "tempC").map((r) => r.after));
   return {
     "headerBarg rows that move": `${header.filter((r) => Math.abs(r.after - r.before) > 0.005).length} of ${header.length}`,
     "speeds rounded to 2 decimals": `${events.filter((e) => Math.abs(e.after * 100 - Math.round(e.after * 100)) < 1e-6).length} of ${events.length}`,
     "plant-a events at 82-87": `${near85.length}`,
-    "saturation incidents, lowest speed": `${saturated.length ? Math.min(...saturated.map((e) => round(e.after, 1))) : "none"}`,
-    "saturation incidents from design": `${saturated.filter(atDesign).length}`,
+    "incidents past LV-101 critical, lowest speed": `${serious.length ? Math.min(...serious.map((e) => round(e.after, 1))) : "none"}`,
+    "incidents past LV-101 critical from design": `${serious.filter(atDesign).length}`,
+    "rows where LV-101 reads 100": `${events.filter((e) => (lvRow(e)?.after ?? 0) >= 100).length}`,
     "plant-b highest speed": `${round(Math.max(...pump("plant-b").map((e) => e.after)), 1)}`,
     "LV-101 ticksToSettle at speed >=80": ticks.length ? `${Math.min(...ticks)}-${Math.max(...ticks)}` : "none",
     "TK-101 tempC after a step to 83-87 from design": dip85.length ? `${Math.min(...dip85)}-${Math.max(...dip85)}` : "none",
@@ -267,14 +269,14 @@ async function main() {
     if (!rulesA.size && !rulesB.size) detail.push("  none in either file");
   }
 
-  detail.push("", "DEMO STEPS (votes in order TK-101 LV-101 E-101 TV-101 other-plant-TV-101; ! incident, ~ headroom note)");
+  detail.push("", "DEMO STEPS (votes in order TK-101 LV-101 E-101 TV-101 other-plant-TV-101; ! incident past LV-101 critical, ~ other incident)");
   for (const scenario of DEMO) {
     const left = await runScenario(a, scenario, "a", model);
     const right = await runScenario(b, scenario, "b", model);
     detail.push(`${scenario.label}`, `  retrieved A ${retrievedLine(left.retrieved)}`, `  retrieved B ${retrievedLine(right.retrieved)}`);
     if (left.retrieved.length !== right.retrieved.length) note("RETRIEVAL", `${scenario.key}: A returns ${left.retrieved.length}, B returns ${right.retrieved.length}`);
-    const incidents = (o: Outcome) => o.retrieved.filter((e) => e.incident === INCIDENT).length;
-    if (incidents(left) !== incidents(right)) note("RETRIEVAL", `${scenario.key}: incident events in the top 5, A ${incidents(left)}, B ${incidents(right)}`);
+    const incidents = (o: Outcome) => o.retrieved.filter(pastCritical).length;
+    if (incidents(left) !== incidents(right)) note("RETRIEVAL", `${scenario.key}: incidents past LV-101 critical in the top 5, A ${incidents(left)}, B ${incidents(right)}`);
     left.votes.forEach((voteA, index) => {
       const voteB = right.votes[index];
       const voter = voteA.componentId;

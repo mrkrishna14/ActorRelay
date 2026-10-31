@@ -1,0 +1,780 @@
+{
+ "summary": {
+  "path": "oa-nano",
+  "tag": "win",
+  "concurrency": 10,
+  "rounds": 3,
+  "calls": 30,
+  "success": 30,
+  "jsonStrict": 30,
+  "jsonAfterFenceStrip": 30,
+  "contractClean": 30,
+  "p50": 2046,
+  "p95": 2731,
+  "max": 3184,
+  "roundWallMs": [
+   2774,
+   2332,
+   3186
+  ],
+  "over20s": 0,
+  "over5s": 0,
+  "lvVerdictOk": "6/6",
+  "apiP50": null,
+  "statuses": "200:30",
+  "errors": [],
+  "contractErrors": [],
+  "models": [
+   "gpt-5.4-nano-2026-03-17"
+  ],
+  "openaiLimits": {
+   "limitRequests": "5000",
+   "limitTokens": "2000000",
+   "minRemainingRequests": 4997,
+   "minRemainingTokens": 1999847,
+   "retryAfter": []
+  },
+  "samples": [],
+  "at": "2026-10-31T19:25:32.297Z"
+ },
+ "calls": [
+  {
+   "voter": "plant-a/P-100",
+   "ms": 2226.7473999999997,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1431,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4998",
+    "remainingTokens": "1999890",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 84.9
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/TK-101",
+   "ms": 2249.2788,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1729,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999884",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 84.5,
+    "tempC": 81.5
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/LV-101",
+   "ms": 2290.8889,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1444,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999883",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 90
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/E-101",
+   "ms": 2120.6842,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1439,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999889",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1510
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/TV-101",
+   "ms": 2426.044,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1760,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999896",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 90,
+    "steamKgH": 2580,
+    "headerBarg": 6.5
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/P-100",
+   "ms": 2174.766,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1215,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4998",
+    "remainingTokens": "1999919",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 84.9
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/TK-101",
+   "ms": 2709.3885,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1403,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999859",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 83,
+    "tempC": 80
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/LV-101",
+   "ms": 2251.1551,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1224,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999947",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 89
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/E-101",
+   "ms": 2058.3008,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1223,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999915",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1655
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/TV-101",
+   "ms": 1970.7065,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1361,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999943",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 90,
+    "steamKgH": 2570,
+    "headerBarg": 6.4
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/P-100",
+   "ms": 1870.7110000000002,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1418,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999903",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 99
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/TK-101",
+   "ms": 1663.5552000000002,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1677,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999936",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 84.7,
+    "tempC": 85.9
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/LV-101",
+   "ms": 1593.5897999999997,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1376,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999951",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 90.8
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/E-101",
+   "ms": 2181.7537999999995,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1468,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999860",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1510
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/TV-101",
+   "ms": 2303.5339,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1798,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999858",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 93.5,
+    "steamKgH": 2740,
+    "headerBarg": 6.4
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/P-100",
+   "ms": 1614.5964000000004,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1165,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999969",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 85
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/TK-101",
+   "ms": 2330.9820000000004,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1355,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999907",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 83.5,
+    "tempC": 71
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/LV-101",
+   "ms": 1728.6206000000006,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1218,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999953",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 92
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/E-101",
+   "ms": 1631.7486999999996,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1200,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4998",
+    "remainingTokens": "1999890",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1510
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/TV-101",
+   "ms": 1624.3846000000003,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1369,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999935",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 90.5,
+    "steamKgH": 2500,
+    "headerBarg": 6.3
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/P-100",
+   "ms": 2144.1507,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1474,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999847",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 85
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/TK-101",
+   "ms": 1849.7736999999997,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1725,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999888",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 71.2,
+    "tempC": 71.1
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/LV-101",
+   "ms": 2046.0537000000004,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1443,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999884",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 92
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/E-101",
+   "ms": 1724.0656,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1380,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999948",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1510
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/TV-101",
+   "ms": 1997.7106000000003,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1758,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4998",
+    "remainingTokens": "1999898",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 89.5,
+    "steamKgH": 2920,
+    "headerBarg": 6.5
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/P-100",
+   "ms": 1820.9075999999995,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1215,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999919",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 84.9
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/TK-101",
+   "ms": 2730.7165999999997,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1374,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999888",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 84,
+    "tempC": 70.5
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/LV-101",
+   "ms": 3184.395299999999,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1219,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999952",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 89.9
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/E-101",
+   "ms": 1811.7384000000002,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1222,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "1999916",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1510
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/TV-101",
+   "ms": 1999.1338000000005,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.4-nano-2026-03-17",
+   "tokens": 1409,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4997",
+    "remainingTokens": "1999895",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 90,
+    "steamKgH": 2700,
+    "headerBarg": 6.5
+   },
+   "vote": "no"
+  }
+ ]
+}

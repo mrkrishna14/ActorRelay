@@ -189,7 +189,9 @@ class GlueStore {
   }
 }
 
-export const glueStore = new GlueStore();
+// Kept on globalThis so a dev hot reload of this module cannot leave the page holding a store nobody started.
+const holder = globalThis as typeof globalThis & { actorRelayGlueStore?: GlueStore };
+export const glueStore = (holder.actorRelayGlueStore ??= new GlueStore());
 
 export function useGlue(): Snapshot {
   const snapshot = useSyncExternalStore(glueStore.subscribe, glueStore.getSnapshot, glueStore.getServerSnapshot);

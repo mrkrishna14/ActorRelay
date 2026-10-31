@@ -11,8 +11,6 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "../../..");
 const TARGET = resolve(process.argv[2] ?? join(HERE, "history.json"));
 
-const SATURATED = "LV-101 saturated at 100%, TK-101 high-level alarm LAH-101";
-const HEADROOM = "LV-101 no control headroom";
 const EVENT_KEYS = ["id", "at", "plantId", "componentId", "metric", "before", "after", "upstreamSnapshot", "effects", "incident", "approvedBy", "operator", "proposalId"];
 const EFFECT_KEYS = ["componentId", "metric", "before", "after", "ticksToSettle"];
 const UPSTREAM_KEYS = ["feedM3h", "headerBarg", "feedTempC"];
@@ -154,22 +152,50 @@ check("effects include TV-101 headerBarg, the only row a cross-plant voter can r
 const unrounded = events.filter((e) => [e.before, e.after].some((x) => Math.abs(x * 100 - Math.round(x * 100)) > 1e-6));
 check("speeds have at most 2 decimals, since prompts and the dashboard print them raw", unrounded.length === 0, `${unrounded.length} not rounded${sample(unrounded.map((e) => `${e.id} after ${e.after}`))}`);
 
-section = "TASK2 HARD REQUIREMENTS";
+// TASK2.MD fixed one incident string on every run at 88-100, which most rows contradict. The events keep the same bands,
+// and the INCIDENT TEXT section below holds the wording to what each row shows.
+section = "TASK2 HARD REQUIREMENTS (incident wording replaced, see INCIDENT TEXT)";
+const components = Object.fromEntries(JSON.parse(readFileSync(join(REPO, "shared/plants.json"), "utf8")).plants.flatMap((p) => p.components.map((c) => [c.id, c])));
+const limits = Object.fromEntries(Object.values(components).map((c) => [c.id, c.limits]));
+const lvLimit = limits["plant-a/LV-101"].positionPct;
+const levelLimit = limits["plant-a/TK-101"].levelPct;
 const pumpEvents = events.filter((e) => e.componentId === `${e.plantId}/P-100` && e.metric === "speedPct");
 const plantA = pumpEvents.filter((e) => e.plantId === "plant-a");
 const plantB = pumpEvents.filter((e) => e.plantId === "plant-b");
-const incidents =plantA.filter((e) => between(e.after, 88, 100) && lv(e) && lv(e).after >= 90 && lv(e).ticksToSettle <= 3 && e.incident === SATURATED);
-const band80 = plantA.filter((e) => between(e.after, 80, 87.999) && lv(e) && between(lv(e).after, 85, 91) && (e.incident === null || e.incident === HEADROOM));
+const incidents = plantA.filter((e) => between(e.after, 88, 100) && lv(e) && lv(e).after >= 90 && lv(e).ticksToSettle <= 3 && e.incident !== null);
+const band80 = plantA.filter((e) => between(e.after, 80, 87.999) && lv(e) && between(lv(e).after, 85, 91));
 const band80All = plantA.filter((e) => between(e.after, 80, 87.999));
 const band60 = plantA.filter((e) => between(e.after, 60, 70) && lv(e) && between(lv(e).after, 60, 73) && e.incident === null);
 const band60All = plantA.filter((e) => between(e.after, 60, 70));
 const bHigh = plantB.filter((e) => e.before >= 80 || e.after >= 80);
 const bMid = plantB.filter((e) => between(e.after, 40, 65));
-check("plant-a: >=3 events after 88-100, LV-101 >=90 within 3 ticks, incident text", incidents.length >= 3, `${incidents.length}`);
-check("plant-a: >=3 more events after 80-87, LV-101 85-91, incident null or headroom", band80.length >= 3, `${band80.length} of ${band80All.length} in band`);
+check("plant-a: >=3 events after 88-100, LV-101 >=90 within 3 ticks, with an incident", incidents.length >= 3, `${incidents.length}`);
+check("plant-a: >=3 more events after 80-87, LV-101 85-91", band80.length >= 3, `${band80.length} of ${band80All.length} in band`);
 check("plant-a: >=5 events 60-70, LV-101 60-73, incident null", band60.length >= 5, `${band60.length} of ${band60All.length} in band`);
 check("plant-b: zero events with P-100 at or above 80 (before or after)", bHigh.length === 0, `${bHigh.length}${sample(bHigh.map((e) => e.id))}`);
 check("plant-b: several events at 40-65 (at least 5)", bMid.length >= 5, `${bMid.length}`);
+
+section = "INCIDENT TEXT (every claim must be shown by the event's own rows)";
+const level = (e) => e.effects.find((r) => r.componentId === `${e.plantId}/TK-101` && r.metric === "levelPct");
+const position = (e) => lv(e)?.after ?? -Infinity;
+const worded = pumpEvents.filter((e) => e.incident !== null);
+const falseSaturation = worded.filter((e) => /saturat/i.test(e.incident) && position(e) < 100);
+const falseAlarm = worded.filter((e) => /alarm|LAH-101/i.test(e.incident) && !((level(e)?.after ?? -Infinity) >= levelLimit.max));
+const falseHeadroom = worded.filter((e) => /no control headroom/i.test(e.incident) && position(e) < lvLimit.critical);
+const wrongNumbers = worded.filter((e) => {
+  const reached = /reached ([\d.]+)%/.exec(e.incident);
+  const past = /past its ([\d.]+)% limit/.exec(e.incident);
+  return (reached && Math.abs(Number(reached[1]) - position(e)) > 0.051) || (past && (Number(past[1]) !== lvLimit.max || position(e) < lvLimit.max));
+});
+const silent = pumpEvents.filter((e) => position(e) >= lvLimit.max && e.incident === null);
+const baseless = worded.filter((e) => position(e) < lvLimit.max && !((level(e)?.after ?? -Infinity) >= levelLimit.max));
+const claimed = (list) => `${list.length}${sample(list.map((e) => `${e.id}: ${e.incident}`))}`;
+check("saturation is claimed only where LV-101 reads 100", falseSaturation.length === 0, `${claimed(falseSaturation)}; ${pumpEvents.filter((e) => position(e) >= 100).length} rows read 100`);
+check(`an alarm is claimed only where TK-101 level reads ${levelLimit.max} or more`, falseAlarm.length === 0, `${claimed(falseAlarm)}; highest level ${Math.max(...pumpEvents.map((e) => level(e)?.after ?? -Infinity))}`);
+check(`no control headroom is claimed only at LV-101 ${lvLimit.critical} or more`, falseHeadroom.length === 0, claimed(falseHeadroom));
+check("stated positions and limits match the row", wrongNumbers.length === 0, claimed(wrongNumbers));
+check(`every row at LV-101 ${lvLimit.max} or more has an incident`, silent.length === 0, `${silent.length}${sample(silent.map((e) => e.id))}`);
+check("every incident has a row past a limit behind it", baseless.length === 0, claimed(baseless));
 
 section = "RULE SUPPORT";
 const atOrAbove80 = plantA.filter((e) => e.after >= 80);
@@ -179,8 +205,6 @@ check("rule P-100 >=80 -> LV-101 >=85 within 3 ticks has >=3 supports", supports
 check("that rule has no counterexample in plant-a", counter.length === 0, `${counter.length}${sample(counter.map((e) => e.id))}`);
 
 section = "DEMO RETRIEVAL (reference similar() from TASK1.MD, k=5, not the actor's code)";
-const components = Object.fromEntries(JSON.parse(readFileSync(join(REPO, "shared/plants.json"), "utf8")).plants.flatMap((p) => p.components.map((c) => [c.id, c])));
-const limits = Object.fromEntries(Object.values(components).map((c) => [c.id, c.limits]));
 const combos =SPEED_RANGES.flatMap((range) => Object.entries(UPSTREAM_NORMS).map(([name, norm]) => ({ label: `${name}/${range}`, range, norm })));
 function acrossCombos(name, plantId, to, upstream, test) {
   const failed = combos.filter(({ range, norm }) => !test(similar(events, plantId, to, upstream, range, norm))).map((c) => c.label);
@@ -188,14 +212,15 @@ function acrossCombos(name, plantId, to, upstream, test) {
   check(name, failed.length === 0, `${failed.length ? `fails on ${failed.join(", ")}` : `${combos.length} scorings`}, after ${top}`);
 }
 const allHigh = (top) => top.length === 5 && top.every((e) => e.after >= 80 && lv(e)?.after >= 85);
-const threeIncidents = (top) => top.filter((e) => e.incident === SATURATED).length >= 3;
+const pastCritical = (e) => e.incident !== null && position(e) >= lvLimit.critical;
+const threeIncidents = (top) => top.filter(pastCritical).length >= 3;
 const onlyLvOver = (plantId) => (top) => top.every((e) => e.effects.filter((r) => overThreshold(limits, plantId, r)).every((r) => r.componentId.endsWith("/LV-101")));
 const safe = (plantId) => (top) => top.length === 5 && top.every((e) => e.incident === null && !e.effects.some((r) => overThreshold(limits, plantId, r)));
 acrossCombos("plant-a to 85 from design: all 5 are >=80 with LV-101 >=85 (TASK1 test)", "plant-a", 85, DESIGN_UPSTREAM, allHigh);
-acrossCombos("plant-a to 85 from design: >=3 of 5 carry the incident (demo step 3)", "plant-a", 85, DESIGN_UPSTREAM, threeIncidents);
+acrossCombos("plant-a to 85 from design: >=3 of 5 are incidents past LV-101 critical (demo step 3)", "plant-a", 85, DESIGN_UPSTREAM, threeIncidents);
 acrossCombos("plant-a to 85 from design: only LV-101 crosses its vote threshold", "plant-a", 85, DESIGN_UPSTREAM, onlyLvOver("plant-a"));
 acrossCombos("plant-a to 85 from speed 65: all 5 are >=80 with LV-101 >=85 (demo step 5)", "plant-a", 85, AFTER_65_UPSTREAM, allHigh);
-acrossCombos("plant-a to 85 from speed 65: >=3 of 5 carry the incident (demo step 5)", "plant-a", 85, AFTER_65_UPSTREAM, threeIncidents);
+acrossCombos("plant-a to 85 from speed 65: >=3 of 5 are incidents past LV-101 critical (demo step 5)", "plant-a", 85, AFTER_65_UPSTREAM, threeIncidents);
 acrossCombos("plant-a to 65 from design: all 5 clean, nothing over a vote threshold (demo step 4)", "plant-a", 65, DESIGN_UPSTREAM, safe("plant-a"));
 acrossCombos("plant-b to 85: all 5 below 80 (demo step 6)", "plant-b", 85, PLANT_B_DEMO_UPSTREAM, (top) => top.every((e) => e.after < 80));
 acrossCombos("plant-b to 65: all 5 clean, nothing over a vote threshold", "plant-b", 65, PLANT_B_DEMO_UPSTREAM, safe("plant-b"));
@@ -234,7 +259,7 @@ if (realModules.includes(null)) {
 
   const step3 = rank("plant-a", 85, DESIGN_UPSTREAM);
   check("step 3: to 85 from design returns 5 at >=80 with LV-101 >=85", allHigh(step3), `after ${afters(step3)}`);
-  check("step 3: >=3 of those carry the incident", threeIncidents(step3), `${step3.filter((e) => e.incident === SATURATED).length}`);
+  check("step 3: >=3 of those are incidents past LV-101 critical", threeIncidents(step3), `${step3.filter(pastCritical).length}`);
   check("step 3: voter estimates cross the line on LV-101 only", overLines("plant-a", step3, 85).join() === "LV-101.positionPct", overLines("plant-a", step3, 85).join(", ") || "none");
 
   const step4 = rank("plant-a", 65, DESIGN_UPSTREAM);
@@ -245,7 +270,7 @@ if (realModules.includes(null)) {
   const step5 = rank("plant-a", 85, AFTER_65_UPSTREAM, live);
   const step5Seeded = step5.slice(1);
   check("step 5: the live 65 run comes first, then 4 seeded >=80 with LV-101 >=85", step5[0]?.id === live.id && step5Seeded.length === 4 && step5Seeded.every((e) => e.after >= 80 && lv(e)?.after >= 85), `after ${afters(step5)}`);
-  check("step 5: >=3 of the seeded ones carry the incident", threeIncidents(step5Seeded), `${step5Seeded.filter((e) => e.incident === SATURATED).length}`);
+  check("step 5: >=3 of the seeded ones are incidents past LV-101 critical", threeIncidents(step5Seeded), `${step5Seeded.filter(pastCritical).length}`);
 
   const step6 = rank("plant-b", 85, PLANT_B_DEMO_UPSTREAM);
   check("step 6: plant-b to 85 returns under 3 events, so insufficient history fires", step6.length < 3, `${step6.length} returned, plant-b tops out at ${Math.max(...plantB.map((e) => e.after))}`);

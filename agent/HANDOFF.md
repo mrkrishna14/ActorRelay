@@ -103,7 +103,7 @@ Glue routes used: `GET /component/:id`, `GET /similar?componentId&metric&to&k&up
 
 **Direction.** Evidence for peaks only comes from runs that moved the way the proposal does. In the real history a step down heats the tank past 76.5 °C, and that says nothing about a step up. The table shown to the model marks such runs.
 
-**Threshold.** `max(critical × (1 − marginPct/100), limit.max)`, the same line the actors use. Without the floor, TK-101 `tempC` would sit past its threshold at normal running from margin 12 up, and block everything. The floor also means LV-101's threshold stops moving at 80, so a margin above about 11 no longer tightens it.
+**Threshold.** `critical × (1 − marginPct/100)`, so a wider margin still tightens every vote. If the metric already reads at or past that line, the line is `limit.max` instead. That is the case the actors' floor exists for: TK-101 at a wide margin would otherwise sit past its threshold at normal running and block everything. The actors always floor at `limit.max`, so they stay the outer net and agents are never looser.
 
 **Force-no order.**
 1. A rule: a binding rule, whose consequence is at or past this voter's threshold, or any applicable rule behind a predicted breach. The reason cites the rule.
@@ -116,7 +116,7 @@ Code never turns a `no` into a `yes`. The model's `no` can be sent back once, if
 
 **Malformed.** Bad JSON, a missing limited metric, an implausible value, or a `no` with no prediction behind it gets one re-request. After that, a `no` that evidence already proves is posted with the evidence, labelled `malformed prediction from the model`. Otherwise it is `{vote:"no", reason:"malformed prediction", predicted:{}}`. A failed read of `/component`, `/similar`, `/rules` or `/state` gives `reason:"retrieval failed"`.
 
-**Slow models.** A `no` already proven by evidence or a rule is posted at 6 s on a first block and 1.5 s when a live execution exists, whether or not the model has answered. The reason then starts `[decided from retrieved evidence; the model did not answer in time]`. A `yes` always waits for the model.
+**Slow models.** A first `no` already proven by evidence or a rule is posted at 6 s, whether or not the model has answered, and the reason starts `[decided from retrieved evidence; the model did not answer in time]`. Once a live execution exists, a proven `no` makes no model call at all, and the reason starts `[decided from retrieved evidence; no model call]`. That is what keeps a repeat under 5 s. A `yes` always comes from the model.
 
 **Counters.** The ceiling is `threshold × (1 − margin/100)`, 72.9 for LV-101 at margin 10. A metric that normally runs above that line, like TK-101 `tempC`, uses its threshold instead, and if the doubled margin leaves no target, the plain threshold is the ceiling. When a voter failed and left no prediction, the blockers come from the parent proposal. Candidates are multiples of 5 between `from` and `to` whose highest observed row stays under the ceiling. A candidate needs at least 3 safe runs that reached it, because runs stopping just short of 70 say nothing about 70. Code fixes the target as the largest such candidate, because a free choice sometimes landed on 60 and the demo needs about 65. With none, there is no counter. The model only explains it, and the rationale says `[target set by code; explained by <provider> <model>]`, or that no explanation came. The proposer waits up to 6 s after a block for late votes, so a counter is built from the full vote. Max 2 per root proposal. A forced repeat of a target already countered gets no counter.
 
@@ -132,7 +132,7 @@ Code never turns a `no` into a `yes`. The model's `no` can be sent back once, if
 
 ## Vendor truth
 
-`vote.reason` ends `[answered by <provider> <model>]`, and the same goes for counter rationales. Mechanic roles run on OpenAI (`gpt-6.1-terra`, effort `low`), with `gpt-6-luna` as the rate-limit backup. A direct OpenAI call is labelled OpenAI: no `codex exec` runs here, because it is not installed in WSL and took about 10 s at p95. Claude roles call the installed Claude Code CLI headless. Its login has expired here and cannot be renewed without the user, so every Claude role currently votes through OpenAI with the reason prefix `[GPT fallback: Claude CLI unavailable]`. The CLI is retried every 10 minutes, so a fresh login takes effect without a restart. `claude` is not installed inside WSL, so a login also needs `CLAUDE_BIN` or an install there. **No Claude-role vote has actually run on Claude yet, no Claude CLI latency has been measured, and while this lasts the system runs on one vendor.** `GET :7201/health` reports `claudeCli`.
+`vote.reason` ends `[answered by <provider> <model>]`. A counter rationale ends `[target set by code; explained by <provider> <model>]`, because code picks the target. Mechanic roles run on OpenAI (`gpt-6.1-terra`, effort `low`), with `gpt-6-luna` as the rate-limit backup. A direct OpenAI call is labelled OpenAI: no `codex exec` runs here, because it is not installed in WSL and took about 10 s at p95. Claude roles call the installed Claude Code CLI headless. Its login has expired here and cannot be renewed without the user, so every Claude role currently votes through OpenAI with the reason prefix `[GPT fallback: Claude CLI unavailable]`. The CLI is retried every 10 minutes, so a fresh login takes effect without a restart. `claude` is not installed inside WSL, so a login also needs `CLAUDE_BIN` or an install there. **No Claude-role vote has actually run on Claude yet, no Claude CLI latency has been measured, and while this lasts the system runs on one vendor.** `GET :7201/health` reports `claudeCli`.
 
 ## Verified, and what is stubbed
 
@@ -146,7 +146,9 @@ Code never turns a `no` into a `yes`. The model's `no` can be sent back once, if
 
 - Rate limits: a 429 waits, then tries the backup model, then backs off and re-requests once. If all of that fails the vote is a safe no, shown as `malformed prediction`. Stop eval sweeps on this key during e2e and the demo.
 - Plant-b voters other than LV-101 vote `insufficient history` on 85 until they have 3 close events, so they block too. That is correct per `CLAUDE.MD`.
+- Step-downs of about 10 points or more get a TK-101 `no` at margin 10: on a step down the tank really reaches 77 °C, past the 76.5 threshold. No demo path steps down, and `/reset` returns to 50 without a vote.
+- Run one agent process. A Relay identity serves one connection, so `spawn.ts` refuses to start if the health port already answers.
 - A cross-plant voter's `steamKgH` prediction is replaced by its live value, because its own controller holds that flow.
 - History holds `headerBarg` flat within a run, so the expected header is computed from the steam a change adds, using the simulator's 0.0005 barg per kg/h. If Person 2 retunes that gain, update `HEADER_BARG_PER_KGH` in `retrieval.ts`.
 - `Vote` has no vendor field, so the label lives in `reason`.
-- A `no` from a voter with no usable prediction (`malformed prediction`) gives the counter nothing to bound, so no counter follows it.
+- Under heavy load `/component` can take seconds. A read that times out at 8 s is retried, and a failed retrieval is tried once more. If that fails too the vote is a safe no with empty `predicted`, which is what an e2e shows as `predicted undefined`.

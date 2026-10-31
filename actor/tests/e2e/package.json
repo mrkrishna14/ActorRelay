@@ -1,0 +1,11 @@
+{
+  "name": "actorrelay-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "e2e": "bun run run.ts"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  }
+}

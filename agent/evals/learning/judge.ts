@@ -1,10 +1,12 @@
 // Scores one vote reason. Deterministic checks first, then independent LLM judges.
 // Canaries with hand-assigned labels run in every batch, so a judge that misses the trap is visible in the report.
 import type { ComponentState, HistoryEvent, LearnedRule, Proposal, Vote } from "../../../shared/types.ts";
-import { ownRows } from "../../retrieval.ts";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { closeDistance, ownRows, relevantEvents, speaksFor } from "../../retrieval.ts";
 import { complete, parseJson } from "./llm.ts";
 import { PHYSICS } from "./reference.ts";
-import { World } from "./world.ts";
+import { ROOT, World } from "./world.ts";
 
 export const JUDGES = [
   { model: "gpt-6.1-sol", effort: "medium" },
@@ -29,14 +31,15 @@ rests_only_on_safe_run: true if, once you strip what the safe run contributes, n
 
 logically_sound: true if the verdict follows from the stated premises and they are mutually consistent. False if a premise contradicts the verdict, the direction of a comparison is wrong, a threshold is misused, an inference does not follow, or the reason says something about one plant that only happened in the other. A bare correct threshold comparison ("predicted 88 reaches threshold 81") is sound.
 
-unsupported_claims: list every factual claim the cited evidence, limits, voting contract and physics summary do not support, each as a short quote. A restatement of a cited row's value counts as supported, in any wording. A prediction stated as a prediction is not a factual claim. This includes numbers absent from them, incidents or alarms no cited event records, events attributed to the wrong plant or speed, and claims of what this plant experienced that only another plant did. Empty if none.
+unsupported_claims: list every factual claim the cited evidence, limits, voting contract, physics summary and the packet's own counts do not support, each as a short quote. A count over more runs than are cited is unsupported unless the packet's counts and the cited rows both bear it out. A restatement of a cited row's value counts as supported, in any wording. A prediction stated as a prediction is not a factual claim. This includes numbers absent from them, incidents or alarms no cited event records, events attributed to the wrong plant or speed, and claims of what this plant experienced that only another plant did. Empty if none.
 
 why: one sentence.
 
 Return ONLY JSON: {"safe_run_as_proof":bool,"rests_only_on_safe_run":bool,"logically_sound":bool,"unsupported_claims":[string],"why":string}`;
 
-// The voter's published rules. A reason may state these without citing an event.
-const CONTRACT = "No-go threshold = critical x (1 - marginPct/100). Fewer than 3 similar events means history is insufficient, and a change is then voted no if its target is within 15% of the changed metric's critical limit, or if a prediction is within 15% of its own critical. A rule's text is the rule, including its count.";
+// The contract voters are given, read from the live prompt so judges cannot score against a stale copy.
+const CONTRACT = `${readFileSync(join(ROOT, "agent", "roles", "contract.md"), "utf8").split("Return ONLY")[0].trim()}
+No-go threshold = max(critical x (1 - marginPct/100), operating max). A rule's text is the rule, including its count.`;
 
 function expand(e: HistoryEvent, voter: ComponentState) {
   return {
@@ -52,6 +55,8 @@ function expand(e: HistoryEvent, voter: ComponentState) {
 
 export function packet(p: Proposal, v: Vote, world: World) {
   const c = world.components.get(v.componentId)!;
+  const limit = world.components.get(p.proposerComponentId)!.limits[p.metric];
+  const pool = relevantEvents(world.similar({ componentId: p.proposerComponentId, metric: p.metric, to: p.to, upstreamSnapshot: {}, k: 20 }), p.to, limit);
   return {
     proposal: `${p.proposerComponentId} ${p.metric} ${p.from} -> ${p.to}`,
     plant: p.plantId,
@@ -59,7 +64,9 @@ export function packet(p: Proposal, v: Vote, world: World) {
     vote: v.vote,
     reason: v.reason,
     predicted: v.predicted,
-    similarEventsRetrieved: v.similarCount,
+    similarEventsShownToVoter: v.similarCount,
+    similarRunsInWiderPool: pool.length,
+    runsThatSpeakForThisChange: pool.filter((e) => speaksFor(e, p, closeDistance(limit))).length,
     limits: Object.fromEntries(Object.entries(c.limits).map(([m, l]) => [m, { ...l, noGoThreshold: +(l.critical * (1 - v.marginPct / 100)).toFixed(1) }])),
     citedEvents: v.evidenceEventIds.map((id) => world.event(id)).filter(Boolean).map((e) => expand(e!, c)),
     citedRules: v.evidenceRuleIds.map((id) => world.rule(id)).filter(Boolean).map((r) => ({ id: r!.id, scope: r!.scope, text: r!.text, supportEventIds: r!.supportEventIds.length })),

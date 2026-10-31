@@ -1,14 +1,12 @@
 // Generates shared/history.json by stepping the same model the live plant runs: every number in an event comes from a
-// real 5-tick model run. Only the provenance is invented: operators, approvers, dates, and the incident text.
-// Same seed, same bytes.
+// real 5-tick model run. Only the provenance is invented: operators, approvers and dates. Same seed, same bytes.
 //
 // Run: bun run bridge/gen_history.ts
 // Check: node actor/tests/fixtures-gen/validate-history.mjs shared/history.json
 //
-// INCIDENT TEXT. TASK2.MD requires the text below on runs at P-100 88-100. In the model LV-101 only reaches 100 % when
-// overshoot gets it there, which needs about 97 % speed from the design point. Below that the LV-101 row shows the real
-// 90-99 % and the incident text is fictional provenance, kept because the spec asks for it. The model has no LAH-101
-// alarm either: the level rows are real, the alarm exists only in that text.
+// INCIDENT TEXT. Derived from each run's own rows, so it never claims more than the run showed. LV-101's row is the
+// furthest it travelled, and only a row at 100 says saturated, which takes about 97 % speed from the design point. The
+// model has no LAH-101 alarm, so the alarm clause needs the level row to reach TK-101's limit, and no run here does.
 import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -23,10 +21,10 @@ const WINDOW_START = Date.UTC(2024, 1, 5);
 const WINDOW_END = Date.UTC(2026, 9, 20);
 const MINUTE = 60_000;
 
-const INCIDENT_SATURATED = "LV-101 saturated at 100%, TK-101 high-level alarm LAH-101";
-const INCIDENT_HEADROOM = "LV-101 no control headroom";
-const HEADROOM_LV_PCT = 88;
-const SATURATED_FROM_SPEED = 88;
+// Limits from shared/plants.json.
+const LV_LIMIT_PCT = 80;
+const LV_CRITICAL_PCT = 90;
+const LEVEL_LIMIT_PCT = 70;
 
 // Fictional people on a fictional plant.
 const OPERATORS = ["T. Okonkwo-Hale", "R. Sandoval", "L. Bergstrom", "P. Ivanova", "S. Marchetti", "Y. Takeda", "N. Abernathy", "V. Duarte"];
@@ -34,7 +32,7 @@ const SHIFT_LEADS = ["W. Kowalczyk", "I. Rahmani", "O. Fitzgerald", "E. Lund"];
 
 // [before, after] of P-100 speedPct, each run once with the other plant at design and feed at 25 C.
 // similar() returns the 5 nearest `after`, so these placements decide what the demo retrieves:
-// - Keep the band around 85 thin (84, 86), so that with the three runs at 88 at least 3 of the 5 nearest are incidents.
+// - Keep the band around 85 thin (84, 86), so that with the three runs at 88, 3 of the 5 nearest are past LV-101 critical.
 //   The other band runs sit at 81.5, the highest speed where a step from 40 still takes LV-101 past 85.
 // - The 65 row is the demo's counter-proposal: plenty of clean runs at exactly the target.
 // - 30->70 and 35->71 are real runs with overshoot past 72.9 %, so 70 is not offered as a safe counter.
@@ -102,18 +100,27 @@ function modelRun(spec: Spec): { samples: Snapshot[] } {
   return { samples };
 }
 
-function incidentFor(after: number, lvPeak: number): string | null {
-  if (after >= SATURATED_FROM_SPEED) return INCIDENT_SATURATED;
-  if (after >= 80 && lvPeak >= HEADROOM_LV_PCT) return INCIDENT_HEADROOM;
-  return null;
+/** Says only what this run's own rows show. */
+function incidentFor(effects: HistoryEvent["effects"]): string | null {
+  const after = (tag: string, metric: string) => {
+    const row = effects.find((item) => item.componentId.endsWith(`/${tag}`) && item.metric === metric);
+    if (!row) throw new Error(`no ${tag} ${metric} row`);
+    return row.after;
+  };
+  const position = after("LV-101", "positionPct");
+  const level = after("TK-101", "levelPct");
+  const claims: string[] = [];
+  if (position >= 100) claims.push("LV-101 saturated at 100%, no control headroom");
+  else if (position >= LV_CRITICAL_PCT) claims.push(`LV-101 reached ${position.toFixed(1)}%, past its ${LV_LIMIT_PCT}% limit, no control headroom`);
+  else if (position >= LV_LIMIT_PCT) claims.push(`LV-101 reached ${position.toFixed(1)}%, past its ${LV_LIMIT_PCT}% limit`);
+  if (level >= LEVEL_LIMIT_PCT) claims.push(`TK-101 reached ${level.toFixed(1)}%, high-level alarm LAH-101`);
+  return claims.length ? claims.join("; ") : null;
 }
 
 function buildEvent(spec: Spec): Omit<HistoryEvent, "id"> {
   const rng = rngFor(`${spec.key}:provenance`);
   const { samples } = modelRun(spec);
   const effects = summarizeEffects(spec.plantId, samples);
-  const lv = effects.find((row) => row.componentId.endsWith("/LV-101"));
-  if (!lv) throw new Error(`no LV-101 row for ${spec.key}`);
 
   const operator = spec.anchor || rng() > 0.08 ? pick(rng, OPERATORS) : null;
   const approvedBy = operator === null ? [] : [pick(rng, SHIFT_LEADS)];
@@ -131,7 +138,7 @@ function buildEvent(spec: Spec): Omit<HistoryEvent, "id"> {
     after: spec.after,
     upstreamSnapshot: upstreamSnapshot(spec.plantId, samples[0], spec.feedTempC),
     effects,
-    incident: incidentFor(spec.after, lv.after),
+    incident: incidentFor(effects),
     approvedBy,
     operator,
     proposalId: null,

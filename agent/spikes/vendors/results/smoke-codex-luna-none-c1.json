@@ -1,0 +1,54 @@
+{
+ "summary": {
+  "path": "codex-luna-none",
+  "tag": "smoke",
+  "concurrency": 1,
+  "rounds": 1,
+  "calls": 1,
+  "success": 1,
+  "jsonStrict": 1,
+  "jsonAfterFenceStrip": 1,
+  "contractClean": 0,
+  "p50": 27584,
+  "p95": 27584,
+  "max": 27584,
+  "roundWallMs": [
+   27595
+  ],
+  "over20s": 1,
+  "over5s": 1,
+  "lvVerdictOk": "0/0",
+  "apiP50": null,
+  "statuses": "0:1",
+  "errors": [],
+  "contractErrors": [
+   "wrong similarCount"
+  ],
+  "models": [
+   "gpt-6-luna"
+  ],
+  "samples": [],
+  "at": "2026-10-31T19:24:34.757Z"
+ },
+ "calls": [
+  {
+   "voter": "plant-a/P-100",
+   "ms": 27583.782,
+   "ok": true,
+   "status": 0,
+   "tokens": 13281,
+   "cached": 0,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [
+    "wrong similarCount"
+   ],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 85
+   },
+   "vote": "no"
+  }
+ ]
+}

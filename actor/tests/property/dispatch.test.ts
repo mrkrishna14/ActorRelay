@@ -11,7 +11,9 @@ const TO = 65;
 
 const LEGAL: Record<string, string[]> = {
   accepted: ["accepted", "claimed", "failed"],
-  claimed: ["claimed", "applied", "observed", "failed"],
+  claimed: ["claimed", "applied", "observed", "failed", "unknown"],
+  // Nothing proved the write failed, so a late write, observation or failure report settles it.
+  unknown: ["unknown", "applied", "observed", "failed"],
   applied: ["applied", "observed"],
   observed: ["observed"],
   failed: ["failed"],
@@ -70,6 +72,8 @@ describe.skipIf(!isReal)("dispatch [real logic, fake runtime]", () => {
           let token: string | null = null;
           let dispatches = 0;
           let writes = 0;
+          // A failed execution goes back to the measured value when one was seen, else to from.
+          let healedTo = FROM;
 
           for (const op of ops) {
             const before = structuredClone(executionOf(stage, id));
@@ -82,6 +86,8 @@ describe.skipIf(!isReal)("dispatch [real logic, fake runtime]", () => {
                   token = (out.value as any).token;
                   expect((out.value as any).value).toBe(TO);
                 }
+                const failedNow = before.state === "accepted" && executionOf(stage, id).state === "failed";
+                if (failedNow && Number.isFinite(MEASURED[op.measured])) healedTo = MEASURED[op.measured]!;
                 break;
               }
               case "write": {
@@ -103,7 +109,8 @@ describe.skipIf(!isReal)("dispatch [real logic, fake runtime]", () => {
                 break;
               }
               case "report":
-                await attempt(plant.reportDispatchFailure(id, "simulator refused"));
+                // A second report on a failed execution is finding F11 and has its own test.
+                if (before.state !== "failed") await attempt(plant.reportDispatchFailure(id, "simulator refused"));
                 break;
               case "observe":
                 await attempt(plant.recordEvent(observation(id)));
@@ -129,7 +136,7 @@ describe.skipIf(!isReal)("dispatch [real logic, fake runtime]", () => {
             const speed = stage.rawComponent(PUMP).metrics.speedPct;
             expect(speed).toBe(writes === 1 ? TO : FROM);
             const setpoint = stage.rawPlant("plant-a").setpoints[PUMP].speedPct;
-            expect(setpoint).toBe(after.state === "failed" ? FROM : TO);
+            expect(setpoint).toBe(after.state === "failed" ? healedTo : TO);
             if (after.state === "failed") expect(writes === 0 || before.state !== "applied").toBe(true);
 
             if (token) {
@@ -158,7 +165,7 @@ describe.skipIf(!isReal)("dispatch [real logic, fake runtime]", () => {
           const within = Math.abs(delta) <= 0.01;
           expect(claim.dispatch).toBe(within);
           expect(executionOf(stage, id).state).toBe(within ? "claimed" : "failed");
-          expect(stage.rawPlant("plant-a").setpoints[PUMP].speedPct).toBe(within ? TO : FROM);
+          expect(stage.rawPlant("plant-a").setpoints[PUMP].speedPct).toBe(within ? TO : FROM + delta);
         });
       }),
       100,
@@ -193,16 +200,31 @@ describe.skipIf(!isReal)("dispatch [real logic, fake runtime]", () => {
     });
   });
 
-  test("a claimed dispatch that timed out can no longer write", async () => {
+  test("a claim that times out goes unknown, reverts nothing, and a late write settles it", async () => {
     await onStage(async (stage) => {
       await stage.seedAll();
       const { id } = await stage.accepted(TO);
       const claim = await stage.plant("plant-a").claimDispatch(id);
       stage.advance(20_000);
       await stage.plant("plant-a").sweep();
-      expect(executionOf(stage, id).state).toBe("failed");
-      expect((await attempt(stage.component(PUMP).setMetric("speedPct", TO, id, claim.token))).ok).toBe(false);
-      expect(stage.rawComponent(PUMP).metrics.speedPct).toBe(FROM);
+      expect(executionOf(stage, id).state).toBe("unknown");
+      expect(stage.rawPlant("plant-a").setpoints[PUMP].speedPct).toBe(TO);
+      expect(stage.rawPlant("plant-a").proposals[0].status).toBe("executed");
+      expect((await attempt(stage.component(PUMP).setMetric("speedPct", TO, id, claim.token))).ok).toBe(true);
+      expect(executionOf(stage, id).state).toBe("applied");
+      expect(stage.rawComponent(PUMP).metrics.speedPct).toBe(TO);
+    });
+  });
+
+  test("a late observation settles an unknown dispatch too", async () => {
+    await onStage(async (stage) => {
+      await stage.seedAll();
+      const { id } = await stage.accepted(TO);
+      await stage.plant("plant-a").claimDispatch(id);
+      stage.advance(20_000);
+      await stage.plant("plant-a").sweep();
+      await stage.plant("plant-a").recordEvent(observation(id));
+      expect(executionOf(stage, id).state).toBe("observed");
     });
   });
 

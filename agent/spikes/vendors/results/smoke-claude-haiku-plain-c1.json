@@ -1,0 +1,49 @@
+{
+ "summary": {
+  "path": "claude-haiku-plain",
+  "tag": "smoke",
+  "concurrency": 1,
+  "rounds": 1,
+  "calls": 1,
+  "success": 0,
+  "jsonStrict": 0,
+  "jsonAfterFenceStrip": 0,
+  "contractClean": 0,
+  "p50": null,
+  "p95": null,
+  "max": null,
+  "roundWallMs": [
+   2302
+  ],
+  "over20s": 0,
+  "over5s": 0,
+  "lvVerdictOk": "0/0",
+  "apiP50": null,
+  "statuses": "1:1",
+  "errors": [
+   "Failed to authenticate: OAuth session expired and could not be refreshed"
+  ],
+  "contractErrors": [],
+  "models": [
+   "<synthetic>"
+  ],
+  "samples": [],
+  "at": "2026-10-31T19:24:09.619Z"
+ },
+ "calls": [
+  {
+   "voter": "plant-a/P-100",
+   "ms": 2297.5193,
+   "ok": false,
+   "status": 1,
+   "error": "Failed to authenticate: OAuth session expired and could not be refreshed",
+   "apiMs": 0,
+   "costUsd": 0,
+   "model": "<synthetic>",
+   "models": [],
+   "jsonValid": false,
+   "jsonValidStrict": false,
+   "contractErrors": []
+  }
+ ]
+}

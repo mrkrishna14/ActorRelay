@@ -1,0 +1,86 @@
+{
+ "summary": {
+  "path": "codex-luna-none",
+  "tag": "win-exe",
+  "concurrency": 1,
+  "rounds": 3,
+  "calls": 3,
+  "success": 3,
+  "jsonStrict": 3,
+  "jsonAfterFenceStrip": 3,
+  "contractClean": 3,
+  "p50": 9748,
+  "p95": 23613,
+  "max": 23613,
+  "roundWallMs": [
+   9754,
+   6601,
+   23636
+  ],
+  "over20s": 1,
+  "over5s": 3,
+  "lvVerdictOk": "0/0",
+  "apiP50": null,
+  "statuses": "0:3",
+  "errors": [],
+  "contractErrors": [],
+  "models": [
+   "gpt-6-luna"
+  ],
+  "samples": [],
+  "at": "2026-10-31T19:26:59.210Z"
+ },
+ "calls": [
+  {
+   "voter": "plant-a/P-100",
+   "ms": 9748.3817,
+   "ok": true,
+   "status": 0,
+   "tokens": 13501,
+   "cached": 0,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 85
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/P-100",
+   "ms": 6588.042000000001,
+   "ok": true,
+   "status": 0,
+   "tokens": 13570,
+   "cached": 0,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 85
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/P-100",
+   "ms": 23613.062699999995,
+   "ok": true,
+   "status": 0,
+   "tokens": 13578,
+   "cached": 0,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 85
+   },
+   "vote": "no"
+  }
+ ]
+}

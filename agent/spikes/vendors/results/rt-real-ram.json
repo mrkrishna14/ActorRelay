@@ -1,0 +1,1279 @@
+{
+ "label": "real-ram",
+ "at": "2026-10-31T20:40:47.749Z",
+ "stack": "real glue, simulator, agents, Relay, Terse, OpenAI; private ports; driver plays operator and dashboard only",
+ "env": {
+  "model": "agent default",
+  "effort": "agent default",
+  "pollMs": 1000,
+  "agentPatch": null,
+  "actorPatch": null,
+  "gluePatch": null
+ },
+ "repeat": {
+  "runs": 8,
+  "blocked": 8,
+  "under5s": 3,
+  "total": {
+   "name": "propose to blocked",
+   "n": 5,
+   "p50": 3050,
+   "p95": 14602,
+   "max": 14602
+  },
+  "seen": {
+   "name": "propose to dashboard saw it",
+   "n": 8,
+   "p50": 4406,
+   "p95": 20996,
+   "max": 20996
+  },
+  "prefixes": [
+   "[decided from retrieved evidence; the model did not answer in time]",
+   "[decided from retrieved evidence; the model did not answer in time]",
+   "[decided from retrieved evidence; the model did not answer in time]",
+   "[decided from retrieved evidence; the model did not answer in time]",
+   "[decided from retrieved evidence; the model did not answer in time]",
+   "[decided from retrieved evidence; the model did not answer in time]",
+   "[decided from retrieved evidence; the model did not answer in time]",
+   "[decided from retrieved evidence; the model did not answer in time]"
+  ],
+  "lv101": {
+   "rows": [
+    {
+     "id": "plant-a-p00003-b6c7374c",
+     "total": 8850,
+     "toPropose": 1,
+     "propose": 6231,
+     "publish": 473,
+     "deliver": 152,
+     "context": 484,
+     "decide": 1507,
+     "post": 253,
+     "fanOut": -10,
+     "plantVote": 611,
+     "sweepWait": -379,
+     "seenLag": 583,
+     "load": "43.09"
+    },
+    {
+     "id": "plant-a-p00004-14a04f16",
+     "total": 3050,
+     "toPropose": 1,
+     "propose": 723,
+     "publish": 200,
+     "deliver": 49,
+     "context": 379,
+     "decide": 1524,
+     "post": 258,
+     "fanOut": -94,
+     "plantVote": 271,
+     "sweepWait": -61,
+     "seenLag": 327,
+     "load": "42.40"
+    },
+    {
+     "id": "plant-a-p00005-38db1b2f",
+     "total": 2876,
+     "toPropose": 1,
+     "propose": 707,
+     "publish": 396,
+     "deliver": 78,
+     "context": 442,
+     "decide": 1506,
+     "post": 89,
+     "fanOut": -8,
+     "plantVote": 286,
+     "sweepWait": -225,
+     "seenLag": 1002,
+     "load": "40.52"
+    },
+    {
+     "id": "plant-a-p00007-75998c2b",
+     "total": 2347,
+     "toPropose": 1,
+     "propose": -548,
+     "publish": 1182,
+     "deliver": 1142,
+     "context": 92,
+     "decide": 1452,
+     "post": 77,
+     "fanOut": 7,
+     "plantVote": 558,
+     "sweepWait": -434,
+     "seenLag": 1233,
+     "load": "39.29"
+    },
+    {
+     "id": "plant-a-p00008-0c090874",
+     "total": 14602,
+     "toPropose": 0,
+     "propose": 1387,
+     "publish": 155,
+     "deliver": 89,
+     "context": 1403,
+     "decide": 1580,
+     "post": 553,
+     "fanOut": -238,
+     "plantVote": 8009,
+     "sweepWait": 1819,
+     "seenLag": 6394,
+     "load": "35.38"
+    }
+   ],
+   "stages": [
+    {
+     "name": "total",
+     "n": 5,
+     "p50": 3050,
+     "p95": 14602,
+     "max": 14602
+    },
+    {
+     "name": "toPropose",
+     "n": 5,
+     "p50": 1,
+     "p95": 1,
+     "max": 1
+    },
+    {
+     "name": "propose",
+     "n": 5,
+     "p50": 723,
+     "p95": 6231,
+     "max": 6231
+    },
+    {
+     "name": "publish",
+     "n": 5,
+     "p50": 396,
+     "p95": 1182,
+     "max": 1182
+    },
+    {
+     "name": "deliver",
+     "n": 5,
+     "p50": 89,
+     "p95": 1142,
+     "max": 1142
+    },
+    {
+     "name": "context",
+     "n": 5,
+     "p50": 442,
+     "p95": 1403,
+     "max": 1403
+    },
+    {
+     "name": "decide",
+     "n": 5,
+     "p50": 1507,
+     "p95": 1580,
+     "max": 1580
+    },
+    {
+     "name": "post",
+     "n": 5,
+     "p50": 253,
+     "p95": 553,
+     "max": 553
+    },
+    {
+     "name": "fanOut",
+     "n": 5,
+     "p50": -10,
+     "p95": 7,
+     "max": 7
+    },
+    {
+     "name": "plantVote",
+     "n": 5,
+     "p50": 558,
+     "p95": 8009,
+     "max": 8009
+    },
+    {
+     "name": "sweepWait",
+     "n": 5,
+     "p50": -225,
+     "p95": 1819,
+     "max": 1819
+    },
+    {
+     "name": "seenLag",
+     "n": 5,
+     "p50": 1002,
+     "p95": 6394,
+     "max": 6394
+    }
+   ]
+  }
+ },
+ "ten": {
+  "rounds": 3,
+  "aBlock": {
+   "name": "plant-a propose to blocked",
+   "n": 0,
+   "p50": null,
+   "p95": null,
+   "max": null
+  },
+  "bBlock": {
+   "name": "plant-b propose to blocked",
+   "n": 0,
+   "p50": null,
+   "p95": null,
+   "max": null
+  },
+  "tenVotes": {
+   "name": "first propose to tenth vote seen",
+   "n": 3,
+   "p50": 9186,
+   "p95": 14732,
+   "max": 14732
+  },
+  "statuses": [
+   "plant-a:blocked",
+   "plant-b:blocked",
+   "plant-a:blocked",
+   "plant-b:blocked",
+   "plant-a:blocked",
+   "plant-b:blocked"
+  ],
+  "lv101a": [
+   {
+    "name": "total",
+    "n": 0,
+    "p50": null,
+    "p95": null,
+    "max": null
+   },
+   {
+    "name": "toPropose",
+    "n": 0,
+    "p50": null,
+    "p95": null,
+    "max": null
+   },
+   {
+    "name": "propose",
+    "n": 0,
+    "p50": null,
+    "p95": null,
+    "max": null
+   },
+   {
+    "name": "publish",
+    "n": 0,
+    "p50": null,
+    "p95": null,
+    "max": null
+   },
+   {
+    "name": "deliver",
+    "n": 0,
+    "p50": null,
+    "p95": null,
+    "max": null
+   },
+   {
+    "name": "context",
+    "n": 0,
+    "p50": null,
+    "p95": null,
+    "max": null
+   },
+   {
+    "name": "decide",
+    "n": 0,
+    "p50": null,
+    "p95": null,
+    "max": null
+   },
+   {
+    "name": "post",
+    "n": 0,
+    "p50": null,
+    "p95": null,
+    "max": null
+   },
+   {
+    "name": "fanOut",
+    "n": 0,
+    "p50": null,
+    "p95": null,
+    "max": null
+   },
+   {
+    "name": "plantVote",
+    "n": 0,
+    "p50": null,
+    "p95": null,
+    "max": null
+   },
+   {
+    "name": "sweepWait",
+    "n": 0,
+    "p50": null,
+    "p95": null,
+    "max": null
+   },
+   {
+    "name": "seenLag",
+    "n": 0,
+    "p50": null,
+    "p95": null,
+    "max": null
+   }
+  ]
+ },
+ "setup": {
+  "first": "first 50->85 blocked block=n/ams seen=9564ms by undefined load=56.55 votes=E-101:yes,TV-101:yes,TV-101:yes,TK-101:yes,LV-101:no",
+  "counter": "counter 50->65 veto_window block=n/ams seen=12440ms by undefined load=56.12 votes=LV-101:yes,TK-101:yes,TV-101:yes,E-101:yes,TV-101:yes"
+ },
+ "failures": [],
+ "actorCommit": "d4d976b 2026-10-31 13:34:37 -0700 Harden actors against forged input and lost dispatches",
+ "actorCalls": [
+  {
+   "name": "Component.mirror",
+   "n": 1889,
+   "p50": 396,
+   "p95": 1239,
+   "max": 2550
+  },
+  {
+   "name": "Plant.getState",
+   "n": 261,
+   "p50": 461,
+   "p95": 3062,
+   "max": 4513
+  },
+  {
+   "name": "Company.loadSeed",
+   "n": 1,
+   "p50": 5972,
+   "p95": 5972,
+   "max": 5972
+  },
+  {
+   "name": "Company.getState",
+   "n": 175,
+   "p50": 29,
+   "p95": 157,
+   "max": 1777
+  },
+  {
+   "name": "Plant.loadSeed",
+   "n": 2,
+   "p50": 1169,
+   "p95": 1276,
+   "max": 1276
+  },
+  {
+   "name": "Component.loadSeed",
+   "n": 10,
+   "p50": 921,
+   "p95": 997,
+   "max": 997
+  },
+  {
+   "name": "Plant.propose",
+   "n": 17,
+   "p50": 936,
+   "p95": 6231,
+   "max": 6231
+  },
+  {
+   "name": "Plant.similar",
+   "n": 19,
+   "p50": 612,
+   "p95": 1416,
+   "max": 1416
+  },
+  {
+   "name": "Plant.vote",
+   "n": 90,
+   "p50": 1329,
+   "p95": 8000,
+   "max": 8014
+  },
+  {
+   "name": "Plant.execute",
+   "n": 1,
+   "p50": 533,
+   "p95": 533,
+   "max": 533
+  },
+  {
+   "name": "Component.getState",
+   "n": 88,
+   "p50": 2700,
+   "p95": 3225,
+   "max": 3429
+  },
+  {
+   "name": "Plant.claimDispatch",
+   "n": 1,
+   "p50": 334,
+   "p95": 334,
+   "max": 334
+  },
+  {
+   "name": "Component.setMetric",
+   "n": 1,
+   "p50": 401,
+   "p95": 401,
+   "max": 401
+  },
+  {
+   "name": "Plant.recordEvent",
+   "n": 1,
+   "p50": 497,
+   "p95": 497,
+   "max": 497
+  },
+  {
+   "name": "Component.addCalibration",
+   "n": 10,
+   "p50": 323,
+   "p95": 1035,
+   "max": 1035
+  }
+ ],
+ "agentReads": [
+  {
+   "name": "/state",
+   "n": 185,
+   "p50": 3,
+   "p95": 47,
+   "max": 6633
+  },
+  {
+   "name": "/component",
+   "n": 153,
+   "p50": 3,
+   "p95": 26,
+   "max": 42
+  },
+  {
+   "name": "/similar",
+   "n": 19,
+   "p50": 614,
+   "p95": 1418,
+   "max": 1418
+  },
+  {
+   "name": "/rules",
+   "n": 182,
+   "p50": 14,
+   "p95": 72,
+   "max": 122
+  },
+  {
+   "name": "/calibration",
+   "n": 10,
+   "p50": 330,
+   "p95": 1041,
+   "max": 1041
+  }
+ ],
+ "openai": {
+  "name": "openai ok",
+  "n": 87,
+  "p50": 2601,
+  "p95": 3336,
+  "max": 5145
+ },
+ "openaiStatuses": [
+  "200:87"
+ ],
+ "relayVotePost": {
+  "name": "agent relay vote post",
+  "n": 85,
+  "p50": 481,
+  "p95": 1984,
+  "max": 2469
+ },
+ "relayProposalPost": {
+  "name": "glue relay proposal post",
+  "n": 34,
+  "p50": 440,
+  "p95": 1124,
+  "max": 1170
+ },
+ "dashboardState": {
+  "name": "GET /state at 1 Hz",
+  "n": 358,
+  "p50": 4,
+  "p95": 46,
+  "max": 7475
+ },
+ "glueErrors": [],
+ "agentErrors": [
+  "claude probe failed: Executable not found in $PATH: \"claude\""
+ ],
+ "proposals": [
+  {
+   "id": "plant-a-p00001-a03db64a",
+   "plantId": "plant-a",
+   "label": "first",
+   "from": 50,
+   "to": 85,
+   "t0": 1793479071907,
+   "respondedAt": 1793479073198,
+   "requiredVoters": [
+    "plant-a/TK-101",
+    "plant-a/LV-101",
+    "plant-a/E-101",
+    "plant-a/TV-101",
+    "plant-b/TV-101"
+   ],
+   "load": "56.55",
+   "status": "blocked",
+   "seenAt": 1793479081471,
+   "allVotesSeenAt": 1793479081471,
+   "votes": [
+    {
+     "componentId": "plant-a/E-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-b/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/TK-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/LV-101",
+     "vote": "no",
+     "prefix": ""
+    }
+   ]
+  },
+  {
+   "id": "plant-a-p00002-6bf182ef",
+   "plantId": "plant-a",
+   "label": "counter",
+   "from": 50,
+   "to": 65,
+   "t0": 1793479086178,
+   "respondedAt": 1793479086178,
+   "requiredVoters": [
+    "plant-a/TK-101",
+    "plant-a/LV-101",
+    "plant-a/E-101",
+    "plant-a/TV-101",
+    "plant-b/TV-101"
+   ],
+   "load": "56.12",
+   "allVotesSeenAt": 1793479095615,
+   "votes": [
+    {
+     "componentId": "plant-a/LV-101",
+     "vote": "yes",
+     "prefix": ""
+    },
+    {
+     "componentId": "plant-a/TK-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/E-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-b/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    }
+   ],
+   "status": "veto_window",
+   "seenAt": 1793479098618
+  },
+  {
+   "id": "plant-a-p00003-b6c7374c",
+   "plantId": "plant-a",
+   "label": "repeat-0",
+   "from": 65,
+   "to": 85,
+   "t0": 1793479119529,
+   "respondedAt": 1793479126235,
+   "requiredVoters": [
+    "plant-a/TK-101",
+    "plant-a/LV-101",
+    "plant-a/E-101",
+    "plant-a/TV-101",
+    "plant-b/TV-101"
+   ],
+   "load": "43.09",
+   "status": "blocked",
+   "seenAt": 1793479128962,
+   "blockedAt": 1793479128379,
+   "blockedBy": "agent:plant-a/LV-101",
+   "allVotesSeenAt": 1793479129543,
+   "votes": [
+    {
+     "componentId": "plant-a/LV-101",
+     "vote": "no",
+     "prefix": "[decided from retrieved evidence; the model did not answer in time]"
+    },
+    {
+     "componentId": "plant-a/E-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/TK-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-b/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    }
+   ]
+  },
+  {
+   "id": "plant-a-p00004-14a04f16",
+   "plantId": "plant-a",
+   "label": "repeat-1",
+   "from": 65,
+   "to": 85,
+   "t0": 1793479132188,
+   "respondedAt": 1793479133113,
+   "requiredVoters": [
+    "plant-a/TK-101",
+    "plant-a/LV-101",
+    "plant-a/E-101",
+    "plant-a/TV-101",
+    "plant-b/TV-101"
+   ],
+   "load": "42.40",
+   "status": "blocked",
+   "seenAt": 1793479135565,
+   "blockedAt": 1793479135238,
+   "blockedBy": "agent:plant-a/LV-101",
+   "allVotesSeenAt": 1793479137545,
+   "votes": [
+    {
+     "componentId": "plant-a/LV-101",
+     "vote": "no",
+     "prefix": "[decided from retrieved evidence; the model did not answer in time]"
+    },
+    {
+     "componentId": "plant-a/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/E-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-b/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/TK-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    }
+   ]
+  },
+  {
+   "id": "plant-a-p00005-38db1b2f",
+   "plantId": "plant-a",
+   "label": "repeat-2",
+   "from": 65,
+   "to": 85,
+   "t0": 1793479138712,
+   "respondedAt": 1793479139818,
+   "requiredVoters": [
+    "plant-a/TK-101",
+    "plant-a/LV-101",
+    "plant-a/E-101",
+    "plant-a/TV-101",
+    "plant-b/TV-101"
+   ],
+   "load": "40.52",
+   "status": "blocked",
+   "seenAt": 1793479142590,
+   "blockedAt": 1793479141588,
+   "blockedBy": "agent:plant-a/LV-101",
+   "allVotesSeenAt": 1793479145703,
+   "votes": [
+    {
+     "componentId": "plant-a/LV-101",
+     "vote": "no",
+     "prefix": "[decided from retrieved evidence; the model did not answer in time]"
+    },
+    {
+     "componentId": "plant-a/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/E-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-b/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/TK-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    }
+   ]
+  },
+  {
+   "id": "plant-a-p00006-b63a7955",
+   "plantId": "plant-a",
+   "label": "repeat-3",
+   "from": 65,
+   "to": 85,
+   "t0": 1793479148359,
+   "respondedAt": 1793479149243,
+   "requiredVoters": [
+    "plant-a/TK-101",
+    "plant-a/LV-101",
+    "plant-a/E-101",
+    "plant-a/TV-101",
+    "plant-b/TV-101"
+   ],
+   "load": "37.21",
+   "status": "blocked",
+   "seenAt": 1793479152765,
+   "allVotesSeenAt": 1793479156793,
+   "votes": [
+    {
+     "componentId": "plant-a/LV-101",
+     "vote": "no",
+     "prefix": "[decided from retrieved evidence; the model did not answer in time]"
+    },
+    {
+     "componentId": "plant-a/E-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-b/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/TK-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    }
+   ]
+  },
+  {
+   "id": "plant-a-p00007-75998c2b",
+   "plantId": "plant-a",
+   "label": "repeat-4",
+   "from": 65,
+   "to": 85,
+   "t0": 1793479158801,
+   "respondedAt": 1793479159437,
+   "requiredVoters": [
+    "plant-a/TK-101",
+    "plant-a/LV-101",
+    "plant-a/E-101",
+    "plant-a/TV-101",
+    "plant-b/TV-101"
+   ],
+   "load": "39.29",
+   "status": "blocked",
+   "seenAt": 1793479162381,
+   "blockedAt": 1793479161148,
+   "blockedBy": "agent:plant-a/LV-101",
+   "allVotesSeenAt": 1793479165373,
+   "votes": [
+    {
+     "componentId": "plant-a/LV-101",
+     "vote": "no",
+     "prefix": "[decided from retrieved evidence; the model did not answer in time]"
+    },
+    {
+     "componentId": "plant-a/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/E-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/TK-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-b/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    }
+   ]
+  },
+  {
+   "id": "plant-a-p00008-0c090874",
+   "plantId": "plant-a",
+   "label": "repeat-5",
+   "from": 65,
+   "to": 85,
+   "t0": 1793479168395,
+   "respondedAt": 1793479169941,
+   "requiredVoters": [
+    "plant-a/TK-101",
+    "plant-a/LV-101",
+    "plant-a/E-101",
+    "plant-a/TV-101",
+    "plant-b/TV-101"
+   ],
+   "load": "35.38",
+   "status": "blocked",
+   "seenAt": 1793479189391,
+   "blockedAt": 1793479182997,
+   "blockedBy": "agent:plant-a/LV-101",
+   "allVotesSeenAt": 1793479189391,
+   "votes": [
+    {
+     "componentId": "plant-a/LV-101",
+     "vote": "no",
+     "prefix": "[decided from retrieved evidence; the model did not answer in time]"
+    },
+    {
+     "componentId": "plant-a/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/TK-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/E-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-b/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    }
+   ]
+  },
+  {
+   "id": "plant-a-p00009-fc924c95",
+   "plantId": "plant-a",
+   "label": "repeat-6",
+   "from": 65,
+   "to": 85,
+   "t0": 1793479187722,
+   "respondedAt": 1793479190297,
+   "requiredVoters": [
+    "plant-a/TK-101",
+    "plant-a/LV-101",
+    "plant-a/E-101",
+    "plant-a/TV-101",
+    "plant-b/TV-101"
+   ],
+   "load": "37.43",
+   "status": "blocked",
+   "seenAt": 1793479196083,
+   "allVotesSeenAt": 1793479199051,
+   "votes": [
+    {
+     "componentId": "plant-a/LV-101",
+     "vote": "no",
+     "prefix": "[decided from retrieved evidence; the model did not answer in time]"
+    },
+    {
+     "componentId": "plant-a/E-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/TK-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-b/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    }
+   ]
+  },
+  {
+   "id": "plant-a-p00010-63a79add",
+   "plantId": "plant-a",
+   "label": "repeat-7",
+   "from": 65,
+   "to": 85,
+   "t0": 1793479200845,
+   "respondedAt": 1793479203354,
+   "requiredVoters": [
+    "plant-a/TK-101",
+    "plant-a/LV-101",
+    "plant-a/E-101",
+    "plant-a/TV-101",
+    "plant-b/TV-101"
+   ],
+   "load": "38.81",
+   "status": "blocked",
+   "seenAt": 1793479207080,
+   "allVotesSeenAt": 1793479210149,
+   "votes": [
+    {
+     "componentId": "plant-a/LV-101",
+     "vote": "no",
+     "prefix": "[decided from retrieved evidence; the model did not answer in time]"
+    },
+    {
+     "componentId": "plant-a/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/E-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/TK-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-b/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    }
+   ]
+  },
+  {
+   "id": "plant-a-p00011-fe1902af",
+   "plantId": "plant-a",
+   "label": "ten-a-0",
+   "from": 65,
+   "to": 85,
+   "t0": 1793479212397,
+   "respondedAt": 1793479213688,
+   "requiredVoters": [
+    "plant-a/TK-101",
+    "plant-a/LV-101",
+    "plant-a/E-101",
+    "plant-a/TV-101",
+    "plant-b/TV-101"
+   ],
+   "load": "35.66",
+   "status": "blocked",
+   "seenAt": 1793479218259,
+   "allVotesSeenAt": 1793479217792,
+   "votes": [
+    {
+     "componentId": "plant-a/LV-101",
+     "vote": "no",
+     "prefix": "[decided from retrieved evidence; the model did not answer in time]"
+    },
+    {
+     "componentId": "plant-a/E-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/TK-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-b/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    }
+   ]
+  },
+  {
+   "id": "plant-b-p00001-b64b497b",
+   "plantId": "plant-b",
+   "label": "ten-b-0",
+   "from": 50,
+   "to": 85,
+   "t0": 1793479212397,
+   "respondedAt": 1793479214328,
+   "requiredVoters": [
+    "plant-b/TK-101",
+    "plant-b/LV-101",
+    "plant-b/E-101",
+    "plant-b/TV-101",
+    "plant-a/TV-101"
+   ],
+   "load": "35.66",
+   "status": "blocked",
+   "seenAt": 1793479218253,
+   "allVotesSeenAt": 1793479218794,
+   "votes": [
+    {
+     "componentId": "plant-b/TK-101",
+     "vote": "no",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-b/E-101",
+     "vote": "no",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-b/LV-101",
+     "vote": "no",
+     "prefix": ""
+    },
+    {
+     "componentId": "plant-a/TV-101",
+     "vote": "no",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-b/TV-101",
+     "vote": "no",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    }
+   ]
+  },
+  {
+   "id": "plant-b-p00002-0e383208",
+   "plantId": "plant-b",
+   "label": "ten-b-1",
+   "from": 50,
+   "to": 85,
+   "t0": 1793479220196,
+   "respondedAt": 1793479221538,
+   "requiredVoters": [
+    "plant-b/TK-101",
+    "plant-b/LV-101",
+    "plant-b/E-101",
+    "plant-b/TV-101",
+    "plant-a/TV-101"
+   ],
+   "load": "35.11",
+   "status": "blocked",
+   "seenAt": 1793479225853,
+   "allVotesSeenAt": 1793479234928,
+   "votes": [
+    {
+     "componentId": "plant-b/E-101",
+     "vote": "no",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/TV-101",
+     "vote": "no",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-b/LV-101",
+     "vote": "no",
+     "prefix": ""
+    },
+    {
+     "componentId": "plant-b/TK-101",
+     "vote": "no",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-b/TV-101",
+     "vote": "no",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    }
+   ]
+  },
+  {
+   "id": "plant-a-p00012-db8f0e33",
+   "plantId": "plant-a",
+   "label": "ten-a-1",
+   "from": 65,
+   "to": 85,
+   "t0": 1793479220196,
+   "respondedAt": 1793479222218,
+   "requiredVoters": [
+    "plant-a/TK-101",
+    "plant-a/LV-101",
+    "plant-a/E-101",
+    "plant-a/TV-101",
+    "plant-b/TV-101"
+   ],
+   "load": "35.11",
+   "status": "blocked",
+   "seenAt": 1793479224903,
+   "allVotesSeenAt": 1793479228886,
+   "votes": [
+    {
+     "componentId": "plant-a/LV-101",
+     "vote": "no",
+     "prefix": "[decided from retrieved evidence; the model did not answer in time]"
+    },
+    {
+     "componentId": "plant-a/E-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/TK-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-b/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    }
+   ]
+  },
+  {
+   "id": "plant-b-p00004-5f0eeae4",
+   "plantId": "plant-b",
+   "label": "ten-b-2",
+   "from": 50,
+   "to": 85,
+   "t0": 1793479237827,
+   "respondedAt": 1793479238513,
+   "requiredVoters": [
+    "plant-b/TK-101",
+    "plant-b/LV-101",
+    "plant-b/E-101",
+    "plant-b/TV-101",
+    "plant-a/TV-101"
+   ],
+   "load": "33.27",
+   "status": "blocked",
+   "seenAt": 1793479241957,
+   "allVotesSeenAt": 1793479244958,
+   "votes": [
+    {
+     "componentId": "plant-b/E-101",
+     "vote": "no",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-b/TK-101",
+     "vote": "no",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-b/LV-101",
+     "vote": "no",
+     "prefix": ""
+    },
+    {
+     "componentId": "plant-a/TV-101",
+     "vote": "no",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-b/TV-101",
+     "vote": "no",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    }
+   ]
+  },
+  {
+   "id": "plant-a-p00013-9181c5c2",
+   "plantId": "plant-a",
+   "label": "ten-a-2",
+   "from": 65,
+   "to": 85,
+   "t0": 1793479237827,
+   "respondedAt": 1793479238916,
+   "requiredVoters": [
+    "plant-a/TK-101",
+    "plant-a/LV-101",
+    "plant-a/E-101",
+    "plant-a/TV-101",
+    "plant-b/TV-101"
+   ],
+   "load": "33.27",
+   "status": "blocked",
+   "seenAt": 1793479242942,
+   "allVotesSeenAt": 1793479247013,
+   "votes": [
+    {
+     "componentId": "plant-a/LV-101",
+     "vote": "no",
+     "prefix": "[decided from retrieved evidence; the model did not answer in time]"
+    },
+    {
+     "componentId": "plant-a/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/TK-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-b/TV-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    },
+    {
+     "componentId": "plant-a/E-101",
+     "vote": "yes",
+     "prefix": "[GPT fallback: Claude CLI unavailable]"
+    }
+   ]
+  }
+ ]
+}

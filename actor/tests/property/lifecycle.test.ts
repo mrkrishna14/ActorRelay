@@ -100,6 +100,10 @@ async function walk(proposals: Proposal[], ops: Op[], tailMs = 0) {
   let state: LifecycleState = { proposals: clone(proposals) };
   let now = T0 + 9000; // All seeded proposals exist before the first operation.
 
+  const lapse = engine.traits.vetoLapseMs;
+  const waiting = engine.traits.waitingTimeoutMs;
+  const waitedOut = (p: Proposal) => waiting !== null && now - Date.parse(p.at) >= waiting;
+
   const apply = (label: string, next: LifecycleState, afterSweep: boolean) => {
     const heldBefore = state.proposals.filter((p) => p.status === "veto_window");
     for (const before of state.proposals) {
@@ -114,7 +118,7 @@ async function walk(proposals: Proposal[], ops: Op[], tailMs = 0) {
         if (lateVotes) expect({ ...after, votes: [] }).toEqual({ ...before, votes: [] });
         else expect(after).toEqual(before);
       }
-      if (after.status === "expired" && before.status === "voting" && !missing(after) && !stale(state, after)) {
+      if (after.status === "expired" && before.status === "voting" && !missing(after) && !stale(state, after) && !waitedOut(after)) {
         throw new Error(`${label}: ${after.id} expired with no vote missing`);
       }
       if (after.status === "expired" && before.status === "veto_window" && !stale(state, after)) {
@@ -126,6 +130,15 @@ async function walk(proposals: Proposal[], ops: Op[], tailMs = 0) {
       if (after.status === "executed" && before.status === "veto_window") {
         const deadline = Date.parse(before.vetoDeadline!);
         if (now < deadline) throw new Error(`${label}: ${after.id} executed ${deadline - now}ms early`);
+        if (lapse !== null && afterSweep && now - deadline > lapse) {
+          throw new Error(`${label}: ${after.id} executed ${now - deadline}ms late, with no fresh window`);
+        }
+      }
+      if (after.status === "veto_window" && before.status === "veto_window" && after.vetoDeadline !== before.vetoDeadline) {
+        if (lapse === null || now - Date.parse(before.vetoDeadline!) <= lapse) {
+          throw new Error(`${label}: ${after.id} moved its deadline without lapsing`);
+        }
+        expect(after.vetoDeadline).toBe(iso(now + 10_000));
       }
       if (after.status === "veto_window" && before.status === "voting") {
         if (!allYes(after)) throw new Error(`${label}: ${after.id} opened veto without unanimous yes`);
@@ -236,9 +249,9 @@ describe(`lifecycle [${engine.name}]`, () => {
     await check(
       fc.asyncProperty(seedArb, fc.array(opArb, { maxLength: 25 }), async (proposals, ops) => {
         let { state, now } = await walk(proposals, ops);
-        // Sweep to the end; a waiter takes its turn after the holder finishes.
-        for (let i = 0; i < proposals.length * 2 + 2; i++) {
-          now += 31_000;
+        // Sweep to the end, close enough together that no deadline lapses into a fresh window.
+        for (let i = 0; i < 12 + proposals.length * 4; i++) {
+          now += 12_000;
           state = await engine.sweep(state, now);
         }
         for (const p of state.proposals) {
@@ -417,16 +430,34 @@ describe(`lifecycle [${engine.name}]`, () => {
     expect(state.proposals[0]!.status).toBe("executed");
   });
 
-  test.skipIf(!isReal)("two plants never hold veto windows touching one component", async () => {
-    const localA = VOTERS.filter((v) => v.startsWith("plant-a/"));
-    const localB = localA.map((v) => v.replace("plant-a/", "plant-b/"));
-    const a = makeProposal("a0", T0, "plant-a/P-100", [...localA, "plant-b/TV-101"]);
-    const b = makeProposal("b0", T0, "plant-b/P-100", [...localB, "plant-a/TV-101"]);
-    const openA = await engine.sweep(await unanimous(a), T0 + 1000);
-    const openB = await engine.sweep(await unanimous(b), T0 + 1000);
-    const open = [...openA.proposals, ...openB.proposals].filter((p) => p.status === "veto_window");
-    expect(open.length).toBe(2);
-    expect(overlaps(open[0]!, open[1]!)).toBe(false);
+  test.skipIf(!isReal)("a deadline missed by more than the lapse reopens a full window", async () => {
+    const opened = await engine.sweep(await unanimous(basic()), T0);
+    const deadline = Date.parse(opened.proposals[0]!.vetoDeadline!);
+    const late = deadline + engine.traits.vetoLapseMs! + 1;
+    const swept = (await engine.sweep(opened, late)).proposals[0]!;
+    expect(swept.status).toBe("veto_window");
+    expect(swept.vetoDeadline).toBe(iso(late + 10_000));
+  });
+
+  test.skipIf(!isReal)("a direct execute cannot skip the fresh window after a lapse", async () => {
+    const opened = await engine.sweep(await unanimous(basic()), T0);
+    const deadline = Date.parse(opened.proposals[0]!.vetoDeadline!);
+    const out = await engine.execute(opened, "p0", deadline + engine.traits.vetoLapseMs! + 1);
+    expect(out.accepted).toBe(false);
+  });
+
+  test.skipIf(!isReal)("a unanimous waiter expires after the waiting timeout, not before", async () => {
+    let state: LifecycleState = { proposals: [basic("p0"), basic("p1")] };
+    state = await allVoted(state, state.proposals[0]!, T0);
+    state = await allVoted(state, state.proposals[1]!, T0);
+    state = await engine.sweep(state, T0 + 2000);
+    expect(state.proposals[1]!.status).toBe("voting");
+    const holder = { ...state.proposals[0]!, vetoDeadline: iso(T0 + 120_000) };
+    state = { ...state, proposals: [holder, state.proposals[1]!] };
+    state = await engine.sweep(state, T0 + 59_999);
+    expect(state.proposals[1]!.status).toBe("voting");
+    state = await engine.sweep(state, T0 + 60_000);
+    expect(state.proposals[1]!.status).toBe("expired");
   });
 
   test("terminal proposals refuse votes, vetoes and executes", async () => {

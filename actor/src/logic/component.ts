@@ -18,6 +18,11 @@ export function computeStatus(metrics: Record<string, number>, limits: Record<st
     return status
 }
 
+export function sameReadings(a: Record<string, number>, b: Record<string, number>): boolean {
+    const keys = Object.keys(a)
+    return keys.length === Object.keys(b).length && keys.every(key => Object.hasOwn(b, key) && a[key] === b[key])
+}
+
 export function clampMargin(pct: number): number {
     return Math.min(MARGIN_MAX, Math.max(MARGIN_MIN, pct))
 }

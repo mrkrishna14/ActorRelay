@@ -1,0 +1,511 @@
+{
+ "summary": {
+  "path": "oa-luna-priority",
+  "tag": "win",
+  "concurrency": 10,
+  "rounds": 2,
+  "calls": 20,
+  "success": 16,
+  "jsonStrict": 15,
+  "jsonAfterFenceStrip": 15,
+  "contractClean": 15,
+  "p50": 1993,
+  "p95": 3799,
+  "max": 3799,
+  "roundWallMs": [
+   3944,
+   2085
+  ],
+  "over20s": 0,
+  "over5s": 0,
+  "lvVerdictOk": "3/3",
+  "apiP50": null,
+  "statuses": "200:16 429:4",
+  "errors": [
+   "Rate limit reached for gpt-6-luna in organization org-<redacted> on tokens per min (TPM): Limit 2000000, Used 2000000, Requested 1310. Please try again in 39ms. Visit https://platform.op",
+   "Rate limit reached for gpt-6-luna in organization org-<redacted> on tokens per min (TPM): Limit 2000000, Used 2000000, Requested 1316. Please try again in 39ms. Visit https://platform.op",
+   "Rate limit reached for gpt-6-luna in organization org-<redacted> on tokens per min (TPM): Limit 2000000, Used 2000000, Requested 1317. Please try again in 39ms. Visit https://platform.op",
+   "Rate limit reached for gpt-6-luna in organization org-<redacted> on tokens per min (TPM): Limit 2000000, Used 2000000, Requested 1123. Please try again in 33ms. Visit https://platform.op"
+  ],
+  "contractErrors": [],
+  "models": [
+   "gpt-6-luna"
+  ],
+  "openaiLimits": {
+   "limitRequests": "5000",
+   "limitTokens": "2000000",
+   "minRemainingRequests": 4943,
+   "minRemainingTokens": 0,
+   "retryAfter": [
+    "1",
+    "1",
+    "1"
+   ]
+  },
+  "samples": [
+   "{\"proposalId\":\"prop-mvwswkwb-0-0\",\"componentId\":\"plant-a/TK-101\",\"agentId\":\"agent:plant-a/TK-101\",\"vote\":\"no\",\"reason\":\"The 85% feed change is supported by five"
+  ],
+  "at": "2026-10-31T19:35:35.522Z"
+ },
+ "calls": [
+  {
+   "voter": "plant-a/P-100",
+   "ms": 2429.9604,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6-luna",
+   "tokens": 1350,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4953",
+    "remainingTokens": "170321",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 85
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-a/TK-101",
+   "ms": 3799.2981,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6-luna",
+   "tokens": 1965,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4943",
+    "remainingTokens": "121532",
+    "retryAfter": null
+   },
+   "jsonValid": false,
+   "jsonValidStrict": false,
+   "contractErrors": [],
+   "sample": "{\"proposalId\":\"prop-mvwswkwb-0-0\",\"componentId\":\"plant-a/TK-101\",\"agentId\":\"agent:plant-a/TK-101\",\"vote\":\"no\",\"reason\":\"The 85% feed change is supported by five"
+  },
+  {
+   "voter": "plant-a/LV-101",
+   "ms": 2357.5617,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6-luna",
+   "tokens": 1399,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4944",
+    "remainingTokens": "167517",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 89.9
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/E-101",
+   "ms": 2299.1727,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6-luna",
+   "tokens": 1358,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4960",
+    "remainingTokens": "152989",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1510
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-a/TV-101",
+   "ms": 1992.9722000000002,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6-luna",
+   "tokens": 1707,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4949",
+    "remainingTokens": "161642",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 89.9,
+    "steamKgH": 2570,
+    "headerBarg": 6
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/P-100",
+   "ms": 1820.7918,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6-luna",
+   "tokens": 1128,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4946",
+    "remainingTokens": "180953",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 85
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/TK-101",
+   "ms": 2011.3691,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6-luna",
+   "tokens": 1300,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4943",
+    "remainingTokens": "176966",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 61,
+    "tempC": 71
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/LV-101",
+   "ms": 2558.8266,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6-luna",
+   "tokens": 1200,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4943",
+    "remainingTokens": "152043",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 89.9
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/E-101",
+   "ms": 1983.4587,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6-luna",
+   "tokens": 1149,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4944",
+    "remainingTokens": "193097",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1510
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/TV-101",
+   "ms": 2180.0906999999997,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6-luna",
+   "tokens": 1364,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4949",
+    "remainingTokens": "147793",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 84.9,
+    "steamKgH": 2570,
+    "headerBarg": 6
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/P-100",
+   "ms": 693.5754000000002,
+   "ok": false,
+   "status": 429,
+   "error": "Rate limit reached for gpt-6-luna in organization org-<redacted> on tokens per min (TPM): Limit 2000000, Used 2000000, Requested 1310. Please try again in 39ms. Visit https://platform.op",
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4987",
+    "remainingTokens": "0",
+    "retryAfter": "1"
+   },
+   "jsonValid": false,
+   "jsonValidStrict": false,
+   "contractErrors": []
+  },
+  {
+   "voter": "plant-a/TK-101",
+   "ms": 1756.7282999999998,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6-luna",
+   "tokens": 1670,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4993",
+    "remainingTokens": "0",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 72.2,
+    "tempC": 71
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/LV-101",
+   "ms": 573.1464999999994,
+   "ok": false,
+   "status": 429,
+   "error": "Rate limit reached for gpt-6-luna in organization org-<redacted> on tokens per min (TPM): Limit 2000000, Used 2000000, Requested 1316. Please try again in 39ms. Visit https://platform.op",
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4982",
+    "remainingTokens": "0",
+    "retryAfter": "1"
+   },
+   "jsonValid": false,
+   "jsonValidStrict": false,
+   "contractErrors": []
+  },
+  {
+   "voter": "plant-a/E-101",
+   "ms": 557.9359000000004,
+   "ok": false,
+   "status": 429,
+   "error": "Rate limit reached for gpt-6-luna in organization org-<redacted> on tokens per min (TPM): Limit 2000000, Used 2000000, Requested 1317. Please try again in 39ms. Visit https://platform.op",
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4981",
+    "remainingTokens": "0",
+    "retryAfter": "1"
+   },
+   "jsonValid": false,
+   "jsonValidStrict": false,
+   "contractErrors": []
+  },
+  {
+   "voter": "plant-a/TV-101",
+   "ms": 2082.7400000000002,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6-luna",
+   "tokens": 1725,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "0",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 88,
+    "steamKgH": 2570,
+    "headerBarg": 6
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/P-100",
+   "ms": 652.7709000000004,
+   "ok": false,
+   "status": 429,
+   "error": "Rate limit reached for gpt-6-luna in organization org-<redacted> on tokens per min (TPM): Limit 2000000, Used 2000000, Requested 1123. Please try again in 33ms. Visit https://platform.op",
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4957",
+    "remainingTokens": "0",
+    "retryAfter": "1"
+   },
+   "jsonValid": false,
+   "jsonValidStrict": false,
+   "contractErrors": []
+  },
+  {
+   "voter": "plant-b/TK-101",
+   "ms": 1536.2849999999999,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6-luna",
+   "tokens": 1274,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4997",
+    "remainingTokens": "0",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 58.1,
+    "tempC": 71
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/LV-101",
+   "ms": 1443.9062000000004,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6-luna",
+   "tokens": 1181,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4997",
+    "remainingTokens": "0",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 84.9
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/E-101",
+   "ms": 1472.1544000000004,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6-luna",
+   "tokens": 1175,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4997",
+    "remainingTokens": "0",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1510
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/TV-101",
+   "ms": 1549.4109000000003,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6-luna",
+   "tokens": 1331,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4990",
+    "remainingTokens": "0",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 84.9,
+    "steamKgH": 2570,
+    "headerBarg": 6
+   },
+   "vote": "no"
+  }
+ ]
+}

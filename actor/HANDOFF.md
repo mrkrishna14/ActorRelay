@@ -84,7 +84,7 @@ All are async. Inputs are validated at the actor; agent output is treated as dat
 **Component**
 - `getState()` returns `ComponentState` plus `calibration`.
 - `loadSeed(state)`
-- `mirror(metrics)` merges finite metrics, recomputes status (`warning` at `max`, `critical` at `critical`), sets `lastTick`.
+- `mirror(metrics)` merges finite metrics, recomputes status (`warning` at `max`, `critical` at `critical`), sets `lastTick`. A steady reading commits only every 10 s; `getState` always shows the live `lastTick`.
 - `setMetric(metric, value, proposalId, token)` needs a token from `Plant.claimDispatch`.
 - `addCalibration(entry)` must match a real observed vote by this component; `absError` is recomputed. Margin moves only on a full window of 5 limited entries since the last move: above 10% of range +5, below 3% -2, within 5..25.
 - `setMargin(pct)` clamps to 5..25. Glue exposes no route to it.
@@ -146,19 +146,20 @@ Codes: `not_seeded`, `invalid_seed`, `invalid_metrics`, `invalid_metric`, `inval
 
 ## Socket state
 
-`@Emittable` carries the contract fields with two differences, because the base class and the `tick()` method own those names: there is no `id` (use the id you connected with), and the tick counter is `tickCount`. `getState()` returns the exact contract shape. `Component` also broadcasts `{type: "component", state}` after every mutation.
+`@Emittable` carries the contract fields with two differences, because the base class and the `tick()` method own those names: there is no `id` (use the id you connected with), and the tick counter is `tickCount`, which updates only every 30 ticks. `getState()` returns the exact contract shape. `Component` also broadcasts `{type: "component", state}` after every mutation.
 
 ## Alarms and mailboxes
 
 - One 1 s alarm per Plant; every second tick sweeps. Local alarms do not survive a runtime restart, so the first call after activation re-arms a lost alarm. After a restart, a Plant ticks only once something calls it; glue's `/state` poll does that.
 - Call direction is one way: Component to Plant to Company. Nothing inside a Plant awaits glue or Component, and the alarm path awaits nothing external. Company sync, leases and glue callbacks are fire-and-forget, with state recorded only on acknowledgement.
+- `tick` is a heartbeat, so it commits only every 30 ticks and can step back by up to 30 after a restart. `getState().tick` is live. Idle Plants and steady Components therefore commit almost nothing, which keeps mailboxes off fsync.
 - Each Plant call moves its full persisted state, about 185 KB with stand-in history, so call rate matters. Do not poll a Plant faster than 1 Hz.
 
 ## Tests
 
 | Suite | Runs on | Latest result |
 |---|---|---|
-| `tests/logic/logic.test.ts` | pure functions, no runtime | 47 pass, 0 fail, current code |
+| `tests/logic/logic.test.ts` | pure functions, no runtime | 48 pass, 0 fail, current code |
 | `tests/runtime/runtime.test.ts` | real `terse actor dev`, fake glue inside the test | see below |
 | `tests/runtime/durability.ts` | real server plus kill -9 | not yet completed by this suite |
 

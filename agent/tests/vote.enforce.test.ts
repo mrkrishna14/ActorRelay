@@ -20,10 +20,19 @@ test("threshold is critical less margin, exactly 81 for LV-101 at margin 10", ()
   expect(thresholdFor({ min: 10, max: 80, critical: 90 }, 10)).toBe(81);
 });
 
-test("a wide margin never pulls the threshold under the operating maximum, as in the actors", () => {
-  expect(thresholdFor({ min: 10, max: 80, critical: 90 }, 25)).toBe(80);
-  expect(thresholdFor({ min: 70, max: 80, critical: 85 }, 10)).toBe(80);
-  expect(thresholdFor({ min: 70, max: 80, critical: 85 }, 15)).toBe(80);
+test("a wider margin pulls the threshold in, past the operating maximum if it has to", () => {
+  expect(thresholdFor({ min: 10, max: 80, critical: 90 }, 25, 50)).toBe(67.5);
+  expect(thresholdFor({ min: 0, max: 2700, critical: 3000 }, 25, 1533)).toBe(2250);
+  expect(thresholdFor({ min: 70, max: 80, critical: 85 }, 10, 75)).toBe(76.5);
+});
+
+test("a reading already past the line uses the operating maximum, so normal running is never a violation", () => {
+  expect(thresholdFor({ min: 70, max: 80, critical: 85 }, 15, 75)).toBe(80);
+  expect(thresholdFor({ min: 10, max: 80, critical: 90 }, 25, 70)).toBe(80);
+});
+
+test("with no reading the strict line stands", () => {
+  expect(thresholdFor({ min: 70, max: 80, critical: 85 }, 15)).toBe(72.25);
 });
 
 test("a margin outside the actors' range is refused at the boundary", () => {
@@ -78,6 +87,14 @@ describe("malformed output", () => {
     expect(vote.reason).toContain("3000");
   });
 
+  test("a prediction nowhere near the operating band is noise, and gets sent back", async () => {
+    const llm = new ScriptedLlm((_, call) => (call === 1 ? answer("yes", { levelPct: 0, tempC: 0 }) : answer("yes", { levelPct: 50, tempC: 74 })));
+    const vote = await castVote(deps(new FakeGlue(), llm), makeProposal({ to: 65 }), "plant-a/TK-101");
+    expect(llm.requests).toHaveLength(2);
+    expect(llm.requests[1].user).toContain("is not plausible");
+    expect(vote.predicted).toEqual({ levelPct: 50, tempC: 74 });
+  });
+
   test("a model failure on both attempts is a safe no, after a pause between them", async () => {
     const at: number[] = [];
     const llm = new ScriptedLlm(() => {
@@ -113,13 +130,14 @@ describe("safety lives in code", () => {
     expect(vote.vote).toBe("no");
   });
 
-  test("a wider margin moves the threshold, down to the operating maximum", async () => {
+  test("a wider margin moves the threshold", async () => {
     const glue = new FakeGlue();
     const own = glue.components.get("plant-a/LV-101");
-    if (own) own.marginPct = 11;
-    const vote = await castVote(deps(glue, new ScriptedLlm(() => answer("yes", { positionPct: 80.5 }))), makeProposal({ to: 65 }), "plant-a/LV-101");
+    if (own) own.marginPct = 25;
+    const vote = await castVote(deps(glue, new ScriptedLlm(() => answer("yes", { positionPct: 68 }))), makeProposal({ to: 65 }), "plant-a/LV-101");
     expect(vote.vote).toBe("no");
-    expect(vote.marginPct).toBe(11);
+    expect(vote.marginPct).toBe(25);
+    expect(vote.reason).toContain("67.5");
   });
 
   test("a widened margin on TK-101 does not block normal running", async () => {
@@ -286,6 +304,16 @@ describe("safety lives in code", () => {
     expect(vote.vote).toBe("no");
     expect(vote.reason).toContain(rule.id);
     expect(vote.reason).not.toContain("insufficient history");
+  });
+
+  test("with the model down, a rule under the threshold is still named beside insufficient history", async () => {
+    const glue = new FakeGlue();
+    const rule = companyRule({ consequence: { componentId: "plant-a/LV-101", metric: "positionPct", op: ">=", value: 80, withinTicks: 3 } });
+    glue.companyRules.push(rule);
+    const vote = await castVote(deps(glue, new ScriptedLlm(() => "garbage")), makeProposal({ plantId: "plant-b", to: 85 }), "plant-b/LV-101");
+    expect(vote.vote).toBe("no");
+    expect(vote.reason).toContain(rule.id);
+    expect(vote.reason).toContain("insufficient history");
   });
 
   test("plant and company copies of one pattern print once", async () => {
@@ -459,6 +487,25 @@ describe("the repeated block", () => {
     expect(vote.vote).toBe("no");
     expect(vote.evidenceEventIds[0]).toBe(run.id);
     expect(vote.evidenceEventIds.length).toBeGreaterThanOrEqual(4);
+  });
+
+  test("a repeat the evidence already proves makes no model call, and says so", async () => {
+    const { glue, run } = afterSafeRun();
+    const llm = new ScriptedLlm(() => answer("yes", { positionPct: 40 }));
+    const vote = await castVote(deps(glue, llm), makeProposal({ from: 65, to: 85 }), "plant-a/LV-101");
+    expect(llm.requests).toHaveLength(0);
+    expect(vote.vote).toBe("no");
+    expect(vote.reason.startsWith("[decided from retrieved evidence; no model call]")).toBe(true);
+    expect(vote.evidenceEventIds[0]).toBe(run.id);
+    expect(vote.predicted.positionPct).toBeGreaterThanOrEqual(81);
+  });
+
+  test("a safe change after a live run still asks the model", async () => {
+    const { glue } = afterSafeRun();
+    const llm = new ScriptedLlm(() => answer("yes", { positionPct: 66 }));
+    const vote = await castVote(deps(glue, llm), makeProposal({ from: 50, to: 65 }), "plant-a/LV-101");
+    expect(llm.requests).toHaveLength(1);
+    expect(vote.vote).toBe("yes");
   });
 
   test("rests the no on unsafe runs and the prediction, and calls the safe run what it is", async () => {

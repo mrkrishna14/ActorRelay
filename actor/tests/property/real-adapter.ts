@@ -5,6 +5,7 @@
 import { setSystemTime } from "bun:test";
 import { FakeActor } from "./fake-runtime";
 import {
+  makeProposal,
   plantsJson,
   seedComponents,
   type CalibrationState,
@@ -86,6 +87,8 @@ function plantFor(state: LifecycleState) {
     setpoints: state.setpoints ?? setpoints,
     executions: state.executions ?? {},
     proposals: state.proposals,
+    // Leases have their own suite, so the lifecycle suites run with every lease already held.
+    leases: state.proposals.map((p) => p.id),
   });
   return plant;
 }
@@ -142,6 +145,8 @@ export const engine: Engine = {
   traits: {
     similarLive: { dropBeyond: 0.15 },
     calibrationFreshWindow: true,
+    vetoLapseMs: 6_000,
+    waitingTimeoutMs: 60_000,
     lateVetoWins: true,
     blockedRecordsLateVotes: true,
     staleExpires: true,
@@ -229,20 +234,35 @@ export const engine: Engine = {
     const plant = new Plant();
     plant.id = "plant-a";
     FakeActor.registry.set("Plant:plant-a", plant);
-    Object.assign(plant, baseFields(ctx.components), { history, rules, proposals: [], setpoints: {} });
+    // recordEvent takes observations of real runs only, so each generated event gets the
+    // executed proposal it would have had. dispatch.test.ts walks that path for real.
+    const run = {
+      ...makeProposal(event.id, nowMs, event.componentId, [], { metric: event.metric, from: event.before, to: event.after }),
+      status: "executed" as const,
+    };
+    Object.assign(plant, baseFields(ctx.components), {
+      history,
+      rules,
+      proposals: [run],
+      // recordEvent checks each effect row against the metrics this plant knows.
+      setpoints: Object.fromEntries(ctx.components.map((c) => [c.id, c.metrics])),
+      executions: { [event.id]: { proposalId: event.id, state: "applied" } },
+    });
     const actor = resetCompany({
       "plant-a": [...new Set(ctx.components.map((c) => c.model))],
       "plant-b": [...new Set(ctx.otherPlantComponents.map((c) => c.model))],
     });
     actor.rules = company;
     try {
-      await act(nowMs, () => plant.recordEvent(event));
+      const observed = { proposalId: event.id, effects: event.effects, upstreamSnapshot: event.upstreamSnapshot };
+      await act(nowMs, () => plant.recordEvent(observed));
       await pushed(plant);
     } catch (error) {
       refusal(error);
     }
-    return { planted: plant.rules, company: actor.rules };
+    return { planted: plant.rules, company: actor.rules, history: plant.history };
   },
+  eventId: (id) => `event-${id}`,
   async submitRule(rule: LearnedRule, history: HistoryEvent[], ctx: RuleContext) {
     const plant = new Plant();
     plant.id = "plant-a";

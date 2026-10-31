@@ -1,98 +1,105 @@
 # Learning eval: repeat block and plant-b rule citation
 
-Status 12:56 Pacific, 2026-10-31. Tested `agent/vote.ts` as of 12:49 (sha256 `ac49d4cfe3e8`) and `agent/learn.ts`.
+Status 13:35 Pacific, 2026-10-31. Tested commit `69dfe6b` (`agent/vote.ts` sha256 `d64e91a571ad`), default model `gpt-6.1-terra` effort low.
 
-**Verdict.** Both moments are real, not scripted. The repeat block is honest and held up in every run. Plant-b cites the rule on the correct grounds, but two open items can still lose it on stage: fix 5 below, and the dashboard caption bug.
+**Verdict.** Both moments work on real physics and real model calls, and every reason read as honest. All four items left open at 12:56 are closed, apart from one low-priority line. ar-agents has uncommitted `vote.ts` changes that this report does not cover.
 
 ## What ran
 | Part | Status |
 |---|---|
-| `vote.ts`, `learn.ts`, role prompts | Real |
-| LLM calls | Real: `gpt-6-luna` effort none, with an 8-run confirmation on `gpt-6.1-sol` effort low |
-| `rankSimilar`, `deriveRules`, `toCompanyRule`, `applyCalibration` | Real functions, called in process |
-| Glue, actor processes, Relay | **In-memory stand-ins** (`world.ts`) |
-| Plant | **Not run.** No live sim exists yet. Observed values are stand-in history rows with 0.5 % noise |
-| History | **Stand-in** `actor/tests/fixtures-gen/history.json`, not Person 2's file |
+| `vote.ts`, `learn.ts`, `llm.ts`, role prompts | Real, commit above |
+| Model calls | Real: `gpt-6.1-terra` low, plus `gpt-6-luna` none, its 429 backup |
+| `rankSimilar`, `deriveRules`, `toCompanyRule`, `applyCalibration` | Real functions, in process |
+| Observed values | **Real tank model**, `bridge/tank_model.ts`, stepped the way `live_sim` does |
+| Captions | Real `web/lib/derive.ts` over real rule and vote state |
+| Glue, actor processes, Relay | **In-memory stand-ins**. ar-verify covers the real ones |
+| History | `shared/history.json` from `bridge/gen_history.ts`, untracked at test time |
 | Claude roles | **Labelled GPT fallback.** No Claude reasoning was measured |
 
-Each run follows the demo order in one world: plant-b votes before the rule exists, block at 85, execute at 65, repeat 85, plant-b votes at 85, then controls.
-
 ## Final numbers
-16 runs, seed 30000, during a real rate-limit storm (123 HTTP 429s in the run). Brackets are 95 % Wilson intervals.
+Scoring run: terra, 10 runs, seed 90000, the model's text always included. Demo-paced: terra, 5 runs one at a time, fast-no 1500 as in production. 0 HTTP 429s in both. Brackets are 95 % Wilson intervals.
 
-| Moment 1: repeat 85, LV-101 | Result |
-|---|---|
-| Blocked, LV-101 no | 16/16 |
-| `evidenceEventIds[0]` is the newest execution | 16/16 [81-100] |
-| "Not proof that this change is unsafe" reaches the dashboard | 16/16 |
-| Judges: safe run as proof / rests only on safe run | 0/16 / 0/16 |
-| Judges: logically sound / unsupported claim | 16/16 / 0/16 |
-| Every check clean | **16/16** [81-100] |
+| Moment 1: repeat 85, LV-101 | Scoring | Demo-paced |
+|---|---|---|
+| Blocked, LV-101 no | 10/10 | 5/5 |
+| `evidenceEventIds[0]` is the newest execution | 10/10 [72-100] | 5/5 |
+| All five voters: same | 50/50 | 25/25 |
+| "Not proof" note in the reason | 10/10 | 5/5 |
+| Every check clean, both judges find nothing | **10/10** [72-100] | not judged |
 
-| Moment 2: plant-b 85, LV-101 | Result |
-|---|---|
-| Blocked, LV-101 no | 16/16 |
-| Company rule in `evidenceRuleIds` and named in the reason | 16/16 [81-100] |
-| Grounds are "insufficient history" | 0/16 |
-| Model note still says history is insufficient | 12/16, judged contradictory in 2 |
-| Every check clean | **14/16** [64-97] |
-| Before the rule exists: no, grounds insufficient history | 16/16 |
-| Control at 65: yes, rule not cited | 16/16 |
+| Moment 2: plant-b 85, LV-101 | Scoring | Demo-paced |
+|---|---|---|
+| Blocked, LV-101 no | 10/10 | 5/5 |
+| Company rule in `evidenceRuleIds` and named | 10/10 [72-100] | 5/5 |
+| Grounds are "insufficient history" | 0/10 | 0/5 |
+| Model note mentions insufficient history | 0/10 | 0/5 |
+| Every check clean | **10/10** [72-100] | not judged |
+| Before the rule exists: no, insufficient history | 10/10 | 5/5 |
+| Control at 65: yes, rule not cited | 10/10 | 5/5 |
 
-The scorer printed 13/16 for the last clean row. One miss was its own false match on the word "rule-based", fixed afterwards.
+Counter 65 passed unanimously 15/15. On `gpt-6-luna`, same `vote.ts`, 24 runs: moment 1 clean 24/24, moment 2 clean 23/24. The miss was a judge objecting to "no plant-b runs", which is true.
 
-Second model, `gpt-6.1-sol`, same code, 8 runs: moment 1 clean 8/8, rule cited and named 8/8, insufficient grounds 0/8, plant-b clean 7/8. The scorer printed 5/8; two misses were its own, on the 76.5 near-critical line the voter is given, and are fixed. The third is fix 7.
+On the demo path LV-101 refuses in about 1.6 s, and in 5/5 that is before the model answers, so its reason is composed by code and labelled "[decided from retrieved evidence; the model did not answer in time]".
 
-**The trap.** Across 252 judged reasons (48 and 24 in these runs, 180 in the 12-run all-voter pass), no judge found a safe run presented as proof, or a conclusion resting only on a safe run. Seven hand-labelled canaries ran in each pass; the three trap canaries were caught, so the zero is not a blind judge. The trap was still live in the code at first: the 700-character cap cut the "not proof" note in 30/30 reasons, ending "it is the latest observation, no…".
+**The trap.** Across 102 LV-101 reasons judged on this code, no judge found a safe run presented as proof or a conclusion resting only on one, and all 102 were logically sound. Seven hand-labelled canaries, including three trap cases, passed in every pass.
+PANEL_RESULT
 
-## Calibration on the executed 65 run
-| Metric | n | MAE | % of range | Bias | Worst |
-|---|---|---|---|---|---|
-| LV-101 positionPct | 14 | 1.5 | 2.2 | +1.1 | 4.0 |
-| TK-101 tempC | 12 | 0.8 | 7.5 | +0.5 | 1.3 |
-| TK-101 levelPct | 12 | 0.4 | 0.8 | +0.4 | 1.2 |
-| E-101 dutyKw | 14 | 42 | 3.3 | +23 | 123 |
-| TV-101 steamKgH | 9 | 64 | 2.4 | +31 | 190 |
-| TV-101 positionPct | 9 | 0.8 | 1.0 | +0.4 | 2.8 |
+## The four open items
+| Item | Status | Evidence |
+|---|---|---|
+| Rule cliff | **Closed**, one line left | A rule floor under the threshold now backs the no. Reachable gap: model down and floor under threshold, where the rule is in `evidenceRuleIds` but not named in the text. Real data binds: lowest supporting LV-101 is 86.9, headroom 1.9 |
+| 429 backoff | **Closed** | `askModel` backs off, and `callOpenAi` waits as told, then tries `gpt-6-luna`. A 400 ms limit window no longer loses a yes vote |
+| Prompt line | **Closed** | Note mentions insufficient history 4/8 before, 0/10 now |
+| Plant-b caption | **Closed** | `web/lib/derive.ts` reads the source plant from the rule text. Both captions fire on real state, and the "It learned" band now says "its latest observation, not proof" |
 
-Entries are exact: predicted matches the vote 109/109, observed matches the effect row 79/79, absError is consistent 109/109.
-These errors show the plumbing works and that predictions track history. They do not show accuracy against the plant, because observed values are near-copies of history. Agents predict the peak, so a positive bias is expected: `gpt-6.1-sol` showed +3.6 on LV-101 (MAE 3.6, 5.1 % of range).
-Margin bootstrap (`margin.ts`, real `applyCalibration`): on this data TK-101 reached margin 12 in 0.0 % of trials after 10 executions. On the earlier fast-path run it reached 12 in 3.2 % after 3 and 19.2 % after 10, and at 12 it force-votes no on everything. Reset between rehearsals.
+`checks.ts` runs these with no OpenAI calls: 12 of 13 pass; the one failure is the line above.
 
-## Fixes
-| # | Defect | Measured | Status |
-|---|---|---|---|
-| 1 | Cap cut the "not proof" note | 30/30 | Fixed, 16/16 now kept |
-| 2 | Duplicate rule count | Cosmetic | Fixed |
-| 3 | "Rests on the prediction alone" beside the rule | 30/30 | Fixed |
-| 4 | 85 rule on a yes vote at 65 | 22/30 | Fixed, 0/16 |
-| 6a | LLM failure dropped all evidence | Stub, 2/2 moments lost | Fixed, `outage.ts` passes both |
-| 5 | `bindingRules` cliff | Grounds insufficient 6/6, rule named 0/6 | **Open** |
-| 6b | No backoff, so 429s kill yes votes | Counter 8/16 | **Open** |
-| 7 | Model note calls history insufficient | 12/16 | **Open**, one prompt line |
-| 8 | Caption gates on a field company rules null | Never renders | **Open**, fix sent to ar-actors, ASK on board |
+## Calibration, against the real tank model
+Terra, executed 65 run, n = 10. Entries are exact: predicted matches the vote 100/100, observed matches the effect row 90/90.
 
-Fix 5 depends on real data. `deriveRules` floors to 5s and the stand-in's lowest supporting LV-101 value is exactly 85.0. At 84.9 the rule becomes `>= 80`, below threshold 81, and plant-b reverts to "insufficient history".
-On 6b: all 21 no votes on the counter were `malformed`, from 429s on the shared key. With an unsaturated key the counter passed 50/50 on earlier code. `gpt-6.1-sol` hit the same limit (72 429s, counter 5/8), so a second model alone will not fix this. Keep other sessions off the key during the demo.
+| Metric | MAE | % of range | Bias | Observed |
+|---|---|---|---|---|
+| LV-101 positionPct | 3.3 | 4.7 | +3.3 | 66.5 |
+| TK-101 tempC | 1.1 | 11.5 | +0.9 | 73.3 |
+| TK-101 levelPct | 0.0 | 0.1 | 0.0 | 50.6 |
+| E-101 dutyKw | 22 | 1.7 | -7 | 1169 |
+| TV-101 steamKgH | 38 | 1.4 | -12 | 1995 |
+| TV-101 positionPct | 0.6 | 0.8 | -0.2 | 58.3 |
+
+- LV-101's +3.3 is double counting: terra adds the overshoot from `physics.md` to rows that already are peaks. One sentence in `contract.md` took MAE to 0.0 and TK-101 tempC to 4.2 % in a 5-run A/B, with safety unchanged. Sent to ar-agents, not landed.
+- That 0.0 is recall of an identical history row, because history comes from the same model. It is not predictive skill.
+- TK-101 tempC error is structural: agents predict the peak (75), the bridge reports tick 5 (73.3).
+
+Real overshoot scales with the step: 50→65 peaks at 66.5 (+1.5), 65→85 at 86.7 (+1.7), 50→85 at 88.1 (+3.1). All clear threshold 81 at 85.
+
+## Rehearsals with no reset
+`chain.ts`, six safe steps then both moments, 3 chains on terra and 3 on `gpt-6-luna`: 36/36 steps executed, no false blocks, both moments held every time. Accurate recall narrows margins: down to 8 on terra (6 on `plant-b/TV-101`), and as low as 6 on `gpt-6-luna`. Reset between rehearsals.
 
 ## Say this on stage
-- Do not say "blocked faster". First block and repeat both land at about 2.5 s. What changes is the citation.
+- Do not say "blocked faster". The first block and the repeat take about the same time. What changes is the citation.
 - Plant-b would block without the rule: LV-101 says no before it exists, and the other four voters say no on insufficient history. The rule changes why, not whether.
 - The rule comes from plant-a's seeded history at reset, not from the live 65 run. "Learned from plant-a" is true; "learned a minute ago" is not.
-
-`glue/e2e.ts` step 6 also passes on `/insufficient history/i`, so a green e2e does not prove moment 2.
+- LV-101's refusal is evidence and rules composed by code in about 1.6 s. Do not narrate it as the model's own reasoning.
 
 ## Corrections
-My 12:41 report of conflicting counts ("seen 23 / seen 16") was a harness artifact: the harness skipped the rule derivation in `Plant.loadSeed`. Retracted on the board and to both owners.
+- At 12:41 I reported conflicting counts ("seen 23 / seen 16"). It was a harness artifact from skipping the rule derivation in `Plant.loadSeed`.
+- At 12:52 I proposed keeping `condition.componentId` in company rules. A contract test pins it to null, so the fix went to the dashboard instead.
+- The 12:56 calibration numbers were against stand-in rows and are replaced by the table above.
+
+## Load
+Every OpenAI call shares a sliding 60 s budget (`LEARNING_TPM`), metered from provider usage. Heaviest single run peaked at 200k tokens a minute, and concurrent runs were capped at 250k combined. No 429s since 13:10.
 
 ## Reproduce
 From `agent/`. Raw output goes to `evals/learning/out/`, which is gitignored.
 ```bash
-bun run evals/learning/run.ts --pipeline real --runs 16 --parallel 4 --judge-lv-only --seed 30000
+bun run evals/learning/checks.ts
 ```
 ```bash
-bun run evals/learning/run.ts --pipeline real --runs 6 --parallel 2 --history-shape settled --no-judge --seed 9000
+bun run evals/learning/run.ts --pipeline real --runs 10 --parallel 2 --judge-lv-only --plant-model --dump-packets --seed 90000
 ```
 ```bash
-bun run evals/learning/outage.ts
+bun run evals/learning/run.ts --pipeline real --runs 5 --serial --fast-no 1500 --no-judge --plant-model --seed 91000
+```
+```bash
+bun run evals/learning/chain.ts 3
 ```

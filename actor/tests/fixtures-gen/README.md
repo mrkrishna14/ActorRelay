@@ -39,7 +39,7 @@ Demo retrieval is checked two ways. `REAL CODE` runs `rankSimilar`, `deriveRules
 - `upstreamSnapshot` is the state before the change: `feedM3h`, `headerBarg`, `feedTempC`.
 - `effects` has 7 rows on the 4 other components in the same plant: TK-101 `levelPct` and `tempC`, LV-101 `positionPct`, E-101 `dutyKw`, TV-101 `positionPct`, `steamKgH` and `headerBarg`. There are no cross-plant rows, so plant-b/TV-101 has no row of its own in plant-a events.
 - LV-101 `after` is the highest position in the 5-tick window and `ticksToSettle` is the tick it got there. Every other row is the value at tick 5.
-- `incident` is how the run ended, which can be later than the 5-tick window. An event at speed 88-94 shows LV-101 at 91-99 while the text says it saturated at 100%. TK-101 `levelPct` stays near 52-55 in these rows, below the alarm. Only events at 96 and above show LV-101 at 100 in the row.
+- `incident` says only what the event's own rows show, the same way as `bridge/gen_history.ts`. A row at LV-101 80 or more reads `LV-101 reached 87.0%, past its 80% limit`. At 90 or more it adds `no control headroom`, and only a row at 100 says saturated. An alarm is claimed only if the level row reaches TK-101's 70% limit, which no row here does.
 
 ## Decisions worth checking against the real file
 

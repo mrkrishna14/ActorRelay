@@ -1,0 +1,533 @@
+{
+ "summary": {
+  "path": "oa-53codex-low",
+  "tag": "win",
+  "concurrency": 10,
+  "rounds": 2,
+  "calls": 20,
+  "success": 20,
+  "jsonStrict": 20,
+  "jsonAfterFenceStrip": 20,
+  "contractClean": 20,
+  "p50": 6788,
+  "p95": 12670,
+  "max": 14168,
+  "roundWallMs": [
+   14253,
+   11805
+  ],
+  "over20s": 0,
+  "over5s": 18,
+  "lvVerdictOk": "4/4",
+  "apiP50": null,
+  "statuses": "200:20",
+  "errors": [],
+  "contractErrors": [],
+  "models": [
+   "gpt-5.3-codex"
+  ],
+  "openaiLimits": {
+   "limitRequests": "5000",
+   "limitTokens": "1000000",
+   "minRemainingRequests": 4997,
+   "minRemainingTokens": 614274,
+   "retryAfter": []
+  },
+  "samples": [],
+  "at": "2026-10-31T19:37:39.759Z"
+ },
+ "calls": [
+  {
+   "voter": "plant-a/P-100",
+   "ms": 6808.4492,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.3-codex",
+   "tokens": 1709,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "859217",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 85
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-a/TK-101",
+   "ms": 6826.848400000001,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.3-codex",
+   "tokens": 2048,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "636113",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 72.3,
+    "tempC": 71.1
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/LV-101",
+   "ms": 5637.8937000000005,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.3-codex",
+   "tokens": 1629,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "614665",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 89.4
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/E-101",
+   "ms": 5709.6139,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.3-codex",
+   "tokens": 1618,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "619621",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1510
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-a/TV-101",
+   "ms": 7326.8828,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.3-codex",
+   "tokens": 2089,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4997",
+    "remainingTokens": "644620",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 72,
+    "steamKgH": 2580,
+    "headerBarg": 5.8
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/P-100",
+   "ms": 6657.9461,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.3-codex",
+   "tokens": 1555,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4998",
+    "remainingTokens": "633809",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 86
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/TK-101",
+   "ms": 14167.901600000001,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.3-codex",
+   "tokens": 2198,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "982558",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 60.5,
+    "tempC": 71
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/LV-101",
+   "ms": 5383.0968,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.3-codex",
+   "tokens": 1486,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "614274",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 89.9
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/E-101",
+   "ms": 6591.7504,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.3-codex",
+   "tokens": 1509,
+   "cached": 0,
+   "limits": {
+    "limitRequests": null,
+    "limitTokens": null,
+    "remainingRequests": null,
+    "remainingTokens": null,
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1510
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/TV-101",
+   "ms": 12670.4797,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.3-codex",
+   "tokens": 2252,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "733745",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 72.5,
+    "steamKgH": 2760,
+    "headerBarg": 5.7
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/P-100",
+   "ms": 7407.514499999999,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.3-codex",
+   "tokens": 1768,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "747192",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 85
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-a/TK-101",
+   "ms": 6838.6985,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.3-codex",
+   "tokens": 2063,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4998",
+    "remainingTokens": "738958",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 72.6,
+    "tempC": 71.1
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/LV-101",
+   "ms": 3369.3783000000003,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.3-codex",
+   "tokens": 1462,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "682406",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 89.5
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/E-101",
+   "ms": 6658.7572,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.3-codex",
+   "tokens": 1717,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "735372",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1510
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-a/TV-101",
+   "ms": 11136.408899999999,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.3-codex",
+   "tokens": 2393,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4998",
+    "remainingTokens": "808183",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 72,
+    "steamKgH": 2580,
+    "headerBarg": 5.8
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/P-100",
+   "ms": 6788.102200000001,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.3-codex",
+   "tokens": 1516,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "965947",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 86
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/TK-101",
+   "ms": 11801.774399999998,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.3-codex",
+   "tokens": 2095,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "818179",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 61.5,
+    "tempC": 71
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/LV-101",
+   "ms": 4903.221,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.3-codex",
+   "tokens": 1457,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "708135",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 88.9
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/E-101",
+   "ms": 6135.1777,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.3-codex",
+   "tokens": 1540,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "728081",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1505
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/TV-101",
+   "ms": 9969.921600000001,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-5.3-codex",
+   "tokens": 2041,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "790348",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 86.1,
+    "steamKgH": 2760,
+    "headerBarg": 5.7
+   },
+   "vote": "no"
+  }
+ ]
+}

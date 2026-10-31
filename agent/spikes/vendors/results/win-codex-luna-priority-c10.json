@@ -1,0 +1,400 @@
+{
+ "summary": {
+  "path": "codex-luna-priority",
+  "tag": "win",
+  "concurrency": 10,
+  "rounds": 2,
+  "calls": 20,
+  "success": 20,
+  "jsonStrict": 20,
+  "jsonAfterFenceStrip": 20,
+  "contractClean": 20,
+  "p50": 5851,
+  "p95": 12666,
+  "max": 13894,
+  "roundWallMs": [
+   13919,
+   10737
+  ],
+  "over20s": 0,
+  "over5s": 14,
+  "lvVerdictOk": "4/4",
+  "apiP50": null,
+  "statuses": "0:20",
+  "errors": [
+   "Reconnecting... 3/5 (rate limit exceeded: Rate limit reached for gpt-6-luna in organization org-<redacted> on tokens per min (TPM): Limit 2000000, Used 2000000, Requested 13609. Please try again in 408ms. Visit https://platform.openai.com/account/rate-limits to learn more.)",
+   "Reconnecting... 3/5 (rate limit exceeded: Rate limit reached for gpt-6-luna in organization org-<redacted> on tokens per min (TPM): Limit 2000000, Used 1999033, Requested 13506. Please try again in 376ms. Visit https://platform.openai.com/account/rate-limits to learn more.)",
+   "Reconnecting... 3/5 (rate limit exceeded: Rate limit reached for gpt-6-luna in organization org-<redacted> on tokens per min (TPM): Limit 2000000, Used 1990782, Requested 13596. Please try again in 131ms. Visit https://platform.openai.com/account/rate-limits to learn more.)",
+   "Reconnecting... 3/5 (rate limit exceeded: Rate limit reached for gpt-6-luna in organization org-<redacted> on tokens per min (TPM): Limit 2000000, Used 1990427, Requested 13810. Please try again in 127ms. Visit https://platform.openai.com/account/rate-limits to learn more.)"
+  ],
+  "contractErrors": [],
+  "models": [
+   "gpt-6-luna"
+  ],
+  "samples": [],
+  "at": "2026-10-31T19:35:54.278Z"
+ },
+ "calls": [
+  {
+   "voter": "plant-a/P-100",
+   "ms": 13894.2176,
+   "ok": true,
+   "status": 0,
+   "error": "Reconnecting... 3/5 (rate limit exceeded: Rate limit reached for gpt-6-luna in organization org-<redacted> on tokens per min (TPM): Limit 2000000, Used 2000000, Requested 13609. Please try again in 408ms. Visit https://platform.openai.com/account/rate-limits to learn more.)",
+   "tokens": 26112,
+   "cached": 12953,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 85
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/TK-101",
+   "ms": 5772.7371,
+   "ok": true,
+   "status": 0,
+   "tokens": 13629,
+   "cached": 0,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 71.2,
+    "tempC": 71.1
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/LV-101",
+   "ms": 5851.4565999999995,
+   "ok": true,
+   "status": 0,
+   "tokens": 13058,
+   "cached": 0,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 88
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/E-101",
+   "ms": 9916.287699999999,
+   "ok": true,
+   "status": 0,
+   "error": "Reconnecting... 3/5 (rate limit exceeded: Rate limit reached for gpt-6-luna in organization org-<redacted> on tokens per min (TPM): Limit 2000000, Used 1999033, Requested 13506. Please try again in 376ms. Visit https://platform.openai.com/account/rate-limits to learn more.)",
+   "tokens": 13049,
+   "cached": 0,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1510
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-a/TV-101",
+   "ms": 6509.6789,
+   "ok": true,
+   "status": 0,
+   "tokens": 13795,
+   "cached": 0,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 71.5,
+    "steamKgH": 2575,
+    "headerBarg": 6
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/P-100",
+   "ms": 12665.5372,
+   "ok": true,
+   "status": 0,
+   "error": "Reconnecting... 3/5 (rate limit exceeded: Rate limit reached for gpt-6-luna in organization org-<redacted> on tokens per min (TPM): Limit 2000000, Used 1990782, Requested 13596. Please try again in 131ms. Visit https://platform.openai.com/account/rate-limits to learn more.)",
+   "tokens": 25971,
+   "cached": 12940,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 85
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/TK-101",
+   "ms": 11011.4403,
+   "ok": true,
+   "status": 0,
+   "error": "Reconnecting... 3/5 (rate limit exceeded: Rate limit reached for gpt-6-luna in organization org-<redacted> on tokens per min (TPM): Limit 2000000, Used 1990427, Requested 13810. Please try again in 127ms. Visit https://platform.openai.com/account/rate-limits to learn more.)",
+   "tokens": 13370,
+   "cached": 0,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 62.2,
+    "tempC": 71
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/LV-101",
+   "ms": 5008.9902999999995,
+   "ok": true,
+   "status": 0,
+   "tokens": 12873,
+   "cached": 0,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 84.9
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/E-101",
+   "ms": 5200.0175,
+   "ok": true,
+   "status": 0,
+   "tokens": 12981,
+   "cached": 0,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1510
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/TV-101",
+   "ms": 4751.7787,
+   "ok": true,
+   "status": 0,
+   "tokens": 13158,
+   "cached": 0,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 89.9,
+    "steamKgH": 2570,
+    "headerBarg": 6
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/P-100",
+   "ms": 10537.919999999998,
+   "ok": true,
+   "status": 0,
+   "error": "Reconnecting... 5/5 (rate limit exceeded: Rate limit reached for gpt-6-luna in organization org-<redacted> on tokens per min (TPM): Limit 2000000, Used 1993819, Requested 13869. Please try again in 230ms. Visit https://platform.openai.com/account/rate-limits to learn more.)",
+   "tokens": 13411,
+   "cached": 0,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 85
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/TK-101",
+   "ms": 3997.7199999999993,
+   "ok": true,
+   "status": 0,
+   "tokens": 13699,
+   "cached": 0,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 71.2,
+    "tempC": 71
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/LV-101",
+   "ms": 9809.856899999999,
+   "ok": true,
+   "status": 0,
+   "error": "Reconnecting... 5/5 (rate limit exceeded: Rate limit reached for gpt-6-luna in organization org-<redacted> on tokens per min (TPM): Limit 2000000, Used 1995076, Requested 13875. Please try again in 268ms. Visit https://platform.openai.com/account/rate-limits to learn more.)",
+   "tokens": 13416,
+   "cached": 0,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 89.4
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/E-101",
+   "ms": 10169.496900000002,
+   "ok": true,
+   "status": 0,
+   "error": "Reconnecting... 3/5 (rate limit exceeded: Rate limit reached for gpt-6-luna in organization org-<redacted> on tokens per min (TPM): Limit 2000000, Used 1998772, Requested 13876. Please try again in 379ms. Visit https://platform.openai.com/account/rate-limits to learn more.)",
+   "tokens": 13455,
+   "cached": 0,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1513
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-a/TV-101",
+   "ms": 4238.6639,
+   "ok": true,
+   "status": 0,
+   "tokens": 13814,
+   "cached": 0,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 84.9,
+    "steamKgH": 2575,
+    "headerBarg": 6
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/P-100",
+   "ms": 4028.0910999999996,
+   "ok": true,
+   "status": 0,
+   "tokens": 13196,
+   "cached": 0,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 85
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/TK-101",
+   "ms": 9073.9437,
+   "ok": true,
+   "status": 0,
+   "error": "Reconnecting... 3/5 (rate limit exceeded: Rate limit reached for gpt-6-luna in organization org-<redacted> on tokens per min (TPM): Limit 2000000, Used 2000000, Requested 13810. Please try again in 414ms. Visit https://platform.openai.com/account/rate-limits to learn more.)",
+   "tokens": 13404,
+   "cached": 0,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 60.1,
+    "tempC": 71
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/LV-101",
+   "ms": 9752.4079,
+   "ok": true,
+   "status": 0,
+   "error": "Reconnecting... 5/5 (rate limit exceeded: Rate limit reached for gpt-6-luna in organization org-<redacted> on tokens per min (TPM): Limit 2000000, Used 1988376, Requested 13719. Please try again in 62ms. Visit https://platform.openai.com/account/rate-limits to learn more.)",
+   "tokens": 13246,
+   "cached": 0,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 84.9
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/E-101",
+   "ms": 4110.428500000002,
+   "ok": true,
+   "status": 0,
+   "tokens": 13233,
+   "cached": 0,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1510
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/TV-101",
+   "ms": 4578.851999999999,
+   "ok": true,
+   "status": 0,
+   "tokens": 13440,
+   "cached": 0,
+   "model": "gpt-6-luna",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 84.9,
+    "steamKgH": 2570,
+    "headerBarg": 6
+   },
+   "vote": "no"
+  }
+ ]
+}

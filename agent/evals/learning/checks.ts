@@ -110,7 +110,7 @@ async function executeSafeRun({ world, glue, cache }: ReturnType<typeof demoWorl
   const rule = w.world.companyRules.find((r) => r.model === "outlet-valve-A")!;
   check("caption: company rule ids are null, as the contract test pins", rule.condition.componentId === null);
   check("caption: source plant is in the rule text", rule.text.match(/first learned in (plant-[ab])/)?.[1] === "plant-a");
-  const pages = sourceFiles(join(ROOT, "web"));
+  const pages = sourceFiles(join(ROOT, "web")).filter((f) => !f.endsWith(".test.ts") && !f.endsWith(".test.tsx"));
   const gated = pages.filter((f) => /condition\??\.componentId/.test(readFileSync(f, "utf8")));
   if (!pages.length) console.log("SKIP caption: web/ has not landed");
   else check(`caption: no web source gates on condition.componentId (${pages.length} files)`, gated.length === 0);
@@ -141,7 +141,10 @@ async function executeSafeRun({ world, glue, cache }: ReturnType<typeof demoWorl
   // The "not proof" note and the rule only reach the audience if the panel renders the reason.
   const views = [...sourceFiles(join(ROOT, "web", "components")), ...sourceFiles(join(ROOT, "web", "app"))];
   if (!views.length) console.log("SKIP display: web/components and web/app have not landed");
-  else check(`display: a view renders vote.reason (${views.length} files)`, views.some((f) => /\.reason\b/.test(readFileSync(f, "utf8"))));
+  else {
+    check(`display: a view renders vote.reason (${views.length} files)`, views.some((f) => /\.reason\b/.test(readFileSync(f, "utf8"))));
+    check("display: the It learned caption says the safe run is not proof", views.some((f) => /not proof/.test(readFileSync(f, "utf8"))));
+  }
 }
 
 console.log(failed ? `${failed} checks failed` : "all checks passed");

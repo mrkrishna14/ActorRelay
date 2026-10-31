@@ -1,0 +1,386 @@
+{
+ "summary": {
+  "path": "codex-terra-low-early",
+  "tag": "win",
+  "concurrency": 10,
+  "rounds": 2,
+  "calls": 20,
+  "success": 20,
+  "jsonStrict": 20,
+  "jsonAfterFenceStrip": 20,
+  "contractClean": 20,
+  "p50": 6128,
+  "p95": 9544,
+  "max": 10816,
+  "roundWallMs": [
+   11035,
+   9677
+  ],
+  "over20s": 0,
+  "over5s": 17,
+  "lvVerdictOk": "4/4",
+  "apiP50": null,
+  "statuses": "0:20",
+  "errors": [],
+  "contractErrors": [],
+  "models": [
+   "gpt-6.1-terra"
+  ],
+  "samples": [],
+  "at": "2026-10-31T19:37:34.149Z"
+ },
+ "calls": [
+  {
+   "voter": "plant-a/P-100",
+   "ms": 7541.42,
+   "ok": true,
+   "status": 0,
+   "tokens": 13582,
+   "cached": 0,
+   "model": "gpt-6.1-terra",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 85
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-a/TK-101",
+   "ms": 7215.1413,
+   "ok": true,
+   "status": 0,
+   "tokens": 13882,
+   "cached": 0,
+   "model": "gpt-6.1-terra",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 74.8,
+    "tempC": 71.1
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/LV-101",
+   "ms": 6270.4963,
+   "ok": true,
+   "status": 0,
+   "tokens": 13495,
+   "cached": 0,
+   "model": "gpt-6.1-terra",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 89.4
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/E-101",
+   "ms": 5328.4295,
+   "ok": true,
+   "status": 0,
+   "tokens": 13526,
+   "cached": 0,
+   "model": "gpt-6.1-terra",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1513
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-a/TV-101",
+   "ms": 6558.4443,
+   "ok": true,
+   "status": 0,
+   "tokens": 13881,
+   "cached": 0,
+   "model": "gpt-6.1-terra",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 81,
+    "steamKgH": 2568,
+    "headerBarg": 6
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/P-100",
+   "ms": 6993.911300000001,
+   "ok": true,
+   "status": 0,
+   "tokens": 13387,
+   "cached": 0,
+   "model": "gpt-6.1-terra",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 50
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/TK-101",
+   "ms": 7113.8285000000005,
+   "ok": true,
+   "status": 0,
+   "tokens": 13612,
+   "cached": 0,
+   "model": "gpt-6.1-terra",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 61.4,
+    "tempC": 71
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/LV-101",
+   "ms": 4625.2733,
+   "ok": true,
+   "status": 0,
+   "tokens": 13382,
+   "cached": 0,
+   "model": "gpt-6.1-terra",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 89.9
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/E-101",
+   "ms": 6128.3255,
+   "ok": true,
+   "status": 0,
+   "tokens": 13345,
+   "cached": 0,
+   "model": "gpt-6.1-terra",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1510
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/TV-101",
+   "ms": 10815.78,
+   "ok": true,
+   "status": 0,
+   "tokens": 13794,
+   "cached": 0,
+   "model": "gpt-6.1-terra",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 84.7,
+    "steamKgH": 2827,
+    "headerBarg": 6
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/P-100",
+   "ms": 5712.251600000001,
+   "ok": true,
+   "status": 0,
+   "tokens": 13550,
+   "cached": 0,
+   "model": "gpt-6.1-terra",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 85
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-a/TK-101",
+   "ms": 6003.692700000001,
+   "ok": true,
+   "status": 0,
+   "tokens": 13876,
+   "cached": 0,
+   "model": "gpt-6.1-terra",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 74.8,
+    "tempC": 71.1
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/LV-101",
+   "ms": 5295.452700000002,
+   "ok": true,
+   "status": 0,
+   "tokens": 13487,
+   "cached": 0,
+   "model": "gpt-6.1-terra",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 89.4
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/E-101",
+   "ms": 5369.8499999999985,
+   "ok": true,
+   "status": 0,
+   "tokens": 13549,
+   "cached": 0,
+   "model": "gpt-6.1-terra",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1521.5
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-a/TV-101",
+   "ms": 7198.352999999999,
+   "ok": true,
+   "status": 0,
+   "tokens": 13908,
+   "cached": 0,
+   "model": "gpt-6.1-terra",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 81,
+    "steamKgH": 2570,
+    "headerBarg": 6
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/P-100",
+   "ms": 4303.0303,
+   "ok": true,
+   "status": 0,
+   "tokens": 13330,
+   "cached": 0,
+   "model": "gpt-6.1-terra",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 50
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/TK-101",
+   "ms": 8144.6939,
+   "ok": true,
+   "status": 0,
+   "tokens": 13639,
+   "cached": 0,
+   "model": "gpt-6.1-terra",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 60.1,
+    "tempC": 71
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/LV-101",
+   "ms": 4353.820900000001,
+   "ok": true,
+   "status": 0,
+   "tokens": 13327,
+   "cached": 0,
+   "model": "gpt-6.1-terra",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 88.9
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/E-101",
+   "ms": 5562.178,
+   "ok": true,
+   "status": 0,
+   "tokens": 13345,
+   "cached": 0,
+   "model": "gpt-6.1-terra",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1510
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/TV-101",
+   "ms": 9543.957100000001,
+   "ok": true,
+   "status": 0,
+   "tokens": 13854,
+   "cached": 0,
+   "model": "gpt-6.1-terra",
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 86,
+    "steamKgH": 2570,
+    "headerBarg": 5
+   },
+   "vote": "no"
+  }
+ ]
+}

@@ -1,0 +1,780 @@
+{
+ "summary": {
+  "path": "oa-sol-low",
+  "tag": "win",
+  "concurrency": 10,
+  "rounds": 3,
+  "calls": 30,
+  "success": 30,
+  "jsonStrict": 30,
+  "jsonAfterFenceStrip": 30,
+  "contractClean": 30,
+  "p50": 4870,
+  "p95": 8812,
+  "max": 9149,
+  "roundWallMs": [
+   9220,
+   8666,
+   8816
+  ],
+  "over20s": 0,
+  "over5s": 13,
+  "lvVerdictOk": "6/6",
+  "apiP50": null,
+  "statuses": "200:30",
+  "errors": [],
+  "contractErrors": [],
+  "models": [
+   "gpt-6.1-sol"
+  ],
+  "openaiLimits": {
+   "limitRequests": "5000",
+   "limitTokens": "1000000",
+   "minRemainingRequests": 4997,
+   "minRemainingTokens": 999720,
+   "retryAfter": []
+  },
+  "samples": [],
+  "at": "2026-10-31T19:25:50.728Z"
+ },
+ "calls": [
+  {
+   "voter": "plant-a/P-100",
+   "ms": 7289.3399,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1487,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999814",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 85
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/TK-101",
+   "ms": 5320.6286,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1704,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999889",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 74.8,
+    "tempC": 71.1
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/LV-101",
+   "ms": 4523.4558,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1362,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999945",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 89.4
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/E-101",
+   "ms": 3549.2291,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1373,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999935",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1510
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-a/TV-101",
+   "ms": 5618.2501,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1778,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999858",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 81,
+    "steamKgH": 2570,
+    "headerBarg": 6
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/P-100",
+   "ms": 5722.8449,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1223,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4997",
+    "remainingTokens": "999891",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 85
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/TK-101",
+   "ms": 9149.046,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1486,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999756",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 60.1,
+    "tempC": 71
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/LV-101",
+   "ms": 3150.6602,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1182,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999969",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 89.9
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/E-101",
+   "ms": 5188.2364,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1239,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999879",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1510
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/TV-101",
+   "ms": 6912.4103,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1533,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999751",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 86.1,
+    "steamKgH": 2570,
+    "headerBarg": 5.8
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/P-100",
+   "ms": 5799.0759,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1497,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999806",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 85
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/TK-101",
+   "ms": 5937.832999999999,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1764,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999831",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 74.8,
+    "tempC": 71.1
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/LV-101",
+   "ms": 3402.0558999999994,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1358,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4998",
+    "remainingTokens": "999951",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 89.4
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/E-101",
+   "ms": 3673.0528000000013,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1384,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999926",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1527.45
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-a/TV-101",
+   "ms": 4995.880499999999,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1793,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999845",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 81,
+    "steamKgH": 2570,
+    "headerBarg": 6
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/P-100",
+   "ms": 4390.0044,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1217,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999899",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 85
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/TK-101",
+   "ms": 5321.844999999999,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1373,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999871",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 60.1,
+    "tempC": 71
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/LV-101",
+   "ms": 3313.2428999999993,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1196,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999956",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 89.9
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/E-101",
+   "ms": 4384.0172999999995,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1231,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999889",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1510
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/TV-101",
+   "ms": 8661.887700000001,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1548,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999738",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 86,
+    "steamKgH": 2750,
+    "headerBarg": 5.8
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/P-100",
+   "ms": 5187.463299999999,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1430,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999871",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 85
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-a/TK-101",
+   "ms": 4274.962599999999,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1706,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999887",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 74.8,
+    "tempC": 71.1
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/LV-101",
+   "ms": 3951.1446000000033,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1359,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999948",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 89.4
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-a/E-101",
+   "ms": 4422.418600000001,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1366,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999942",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1510
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-a/TV-101",
+   "ms": 4869.991600000001,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1771,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999865",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 81,
+    "steamKgH": 2568,
+    "headerBarg": 6
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/P-100",
+   "ms": 4352.1918000000005,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1176,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999938",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 50
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/TK-101",
+   "ms": 4941.020499999999,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1391,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999851",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "levelPct": 61.4,
+    "tempC": 71
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/LV-101",
+   "ms": 3557.665499999999,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1197,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999954",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": true,
+   "predicted": {
+    "positionPct": 88.9
+   },
+   "vote": "no"
+  },
+  {
+   "voter": "plant-b/E-101",
+   "ms": 4567.575999999997,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1229,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4998",
+    "remainingTokens": "999889",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "dutyKw": 1510
+   },
+   "vote": "yes"
+  },
+  {
+   "voter": "plant-b/TV-101",
+   "ms": 8812.408799999997,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6.1-sol",
+   "tokens": 1564,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "1000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "999720",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "positionPct": 86,
+    "steamKgH": 2570,
+    "headerBarg": 5.3
+   },
+   "vote": "no"
+  }
+ ]
+}

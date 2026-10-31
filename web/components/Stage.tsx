@@ -20,7 +20,7 @@ export function Stage(props: ComponentProps<typeof PidStage>) {
     <div className="relative h-full">
       {shown === "3d" ? <Plant3D {...props} onUnavailable={onUnavailable} /> : <PidStage {...props} />}
       {noWebGl ? null : (
-        <div className="absolute right-3 top-3 z-30 flex border border-white/15 bg-[#071018]/85 backdrop-blur-md">
+        <div className="absolute bottom-3 right-3 z-30 flex border border-white/15 bg-[#071018]/85 backdrop-blur-md">
           {(["3d", "pid"] as const).map((option) => (
             <button key={option} onClick={() => setView(option)} className={`px-3 py-1 font-semibold ${shown === option ? "bg-ice text-[#04121c]" : "text-ink-2 hover:text-ink"}`}>
               {option === "3d" ? "3D plant" : "P&ID"}

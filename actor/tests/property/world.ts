@@ -4,7 +4,7 @@
 import { setSystemTime } from "bun:test";
 import { FakeActor, World } from "./fake-runtime";
 import { actors } from "./real-adapter";
-import { clone, makeVote, plantsJson, T0, type ComponentState, type HistoryEvent, type Proposal } from "./harness";
+import { clone, makeProposal, makeVote, plantsJson, T0, type ComponentState, type HistoryEvent, type Proposal } from "./harness";
 
 const { Plant, Company, Component } = actors as any;
 
@@ -70,8 +70,17 @@ export class Stage {
     return this;
   }
 
-  // Walks a proposal to accepted, the point where a dispatch can begin.
-  async accepted(to = 65, plantId = "plant-a"): Promise<Proposal> {
+  // Puts a run on the record the only way recordEvent allows, as the observation of an executed
+  // proposal, without walking each one through voting and dispatch. dispatch.test.ts does that.
+  async observe(plantId: string, id: string, after: number, effects: HistoryEvent["effects"]) {
+    const raw = this.rawPlant(plantId);
+    const run = { ...makeProposal(id, this.now, `${plantId}/P-100`, [], { from: 50, to: after }), status: "executed" as const };
+    raw.proposals = [...raw.proposals, run];
+    raw.executions = { ...raw.executions, [id]: { proposalId: id, state: "applied" } };
+    return this.plant(plantId).recordEvent({ proposalId: id, effects });
+  }
+
+  async unanimous(to = 65, plantId = "plant-a"): Promise<Proposal> {
     const plant = this.plant(plantId);
     const proposal = await plant.propose({
       proposerComponentId: `${plantId}/P-100`,
@@ -80,9 +89,27 @@ export class Stage {
       rationale: "generated",
     });
     for (const voter of proposal.requiredVoters) await plant.vote(makeVote(proposal.id, voter));
-    await plant.sweep();
+    return proposal;
+  }
+
+  async sweep(plantId = "plant-a") {
+    await this.plant(plantId).sweep();
+    await this.idle();
+  }
+
+  // One sweep asks Company for the lease, the next opens the window.
+  async windowOpen(to = 65, plantId = "plant-a"): Promise<Proposal> {
+    const proposal = await this.unanimous(to, plantId);
+    await this.sweep(plantId);
+    await this.sweep(plantId);
+    return proposal;
+  }
+
+  // Walks a proposal to accepted, the point where a dispatch can begin.
+  async accepted(to = 65, plantId = "plant-a"): Promise<Proposal> {
+    const proposal = await this.windowOpen(to, plantId);
     this.advance(10_000);
-    await plant.sweep();
+    await this.sweep(plantId);
     return proposal;
   }
 }

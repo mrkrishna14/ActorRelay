@@ -1,0 +1,309 @@
+@import "tailwindcss";
+
+/* The type scale starts at 18px on purpose: text-xs and text-sm do not exist in this project. */
+@theme {
+  --text-*: initial;
+  --text-base: 18px;
+  --text-base--line-height: 24px;
+  --text-lg: 20px;
+  --text-lg--line-height: 26px;
+  --text-xl: 24px;
+  --text-xl--line-height: 30px;
+  --text-2xl: 30px;
+  --text-2xl--line-height: 36px;
+  --text-3xl: 40px;
+  --text-3xl--line-height: 44px;
+  --text-4xl: 64px;
+  --text-4xl--line-height: 68px;
+
+  --font-sans: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+
+  --color-ground: #080c10;
+  --color-panel: #0d1318;
+  --color-raised: #131b22;
+  --color-lift: #1a242d;
+  --color-hairline: #26323d;
+  --color-rule: #3a4a58;
+
+  --color-ink: #eaf0f5;
+  --color-ink-2: #b4c2ce;
+  --color-ink-3: #8c9dac;
+
+  /* Not a status colour: identity, selection and anything learned in this session. */
+  --color-ice: #93dbff;
+
+  /* Status only. Green yes/ok/executed, amber warning/voting, red no/critical/blocked/vetoed. */
+  --color-ok: #46dca0;
+  --color-warn: #ffbb52;
+  --color-bad: #ff6262;
+  --color-vote: #a7b4bf;
+}
+
+:root {
+  color-scheme: dark;
+  --tint-ok: rgb(70 220 160 / 0.12);
+  --tint-warn: rgb(255 187 82 / 0.14);
+  --tint-bad: rgb(255 98 98 / 0.14);
+  --tint-ice: rgb(147 219 255 / 0.12);
+}
+
+/* Layered so Tailwind utilities always win over these on a conflict. */
+@layer base {
+  html,
+  body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: var(--color-ground);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 18px;
+    line-height: 24px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  button:focus-visible {
+    outline: 2px solid var(--color-ice);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* The page is authored at 1920 wide and scaled to the window, so the layout on a projector is the layout that was checked. */
+  .stage {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1920px;
+    transform-origin: 0 0;
+    display: flex;
+    flex-direction: column;
+    background:
+      radial-gradient(1400px 700px at 46% 0%, rgb(147 219 255 / 0.05), transparent 70%),
+      var(--color-ground);
+  }
+
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  /* Engraved panel labels. */
+  .plate {
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ink-3);
+  }
+
+  .panel {
+    position: relative;
+    min-height: 0;
+    min-width: 0;
+    background: var(--color-panel);
+  }
+
+  /* Bezel ticks at the panel corners: the one decorative habit of the whole interface. */
+  .panel::before,
+  .panel::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .panel::before {
+    top: 0;
+    left: 0;
+    border-top: 1px solid var(--color-rule);
+    border-left: 1px solid var(--color-rule);
+  }
+  .panel::after {
+    right: 0;
+    bottom: 0;
+    border-right: 1px solid var(--color-rule);
+    border-bottom: 1px solid var(--color-rule);
+  }
+
+  /* A stamped word: how a decision reads on this screen. */
+  .stamp {
+    display: inline-flex;
+    align-items: center;
+    height: 34px;
+    padding: 0 12px;
+    border: 2px solid currentColor;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .stamp-ok {
+    color: var(--color-ok);
+    background: var(--tint-ok);
+  }
+  .stamp-warn {
+    color: var(--color-warn);
+    background: var(--tint-warn);
+  }
+  .stamp-bad {
+    color: var(--color-bad);
+    background: var(--tint-bad);
+  }
+  .stamp-off {
+    color: var(--color-ink-2);
+    background: var(--color-raised);
+  }
+  .stamp-ice {
+    color: var(--color-ice);
+    background: var(--tint-ice);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    padding: 1px 8px;
+    border: 1px solid var(--color-rule);
+    background: var(--color-raised);
+    color: var(--color-ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .chip:hover {
+    border-color: var(--color-ice);
+  }
+  .chip-session {
+    border-color: var(--color-ice);
+    background: var(--tint-ice);
+  }
+
+  .scroll {
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-rule) transparent;
+  }
+
+  /* ---------- P&ID ---------- */
+
+  .pid-field {
+    background-color: #0a1015;
+    background-image: radial-gradient(rgb(147 219 255 / 0.1) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-position: 11px 11px;
+  }
+
+  .pid-host,
+  .pid-host > svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .pid-host > svg {
+    font-family: var(--font-sans);
+  }
+
+  .pid-host g[data-tag] {
+    cursor: pointer;
+  }
+
+  .voter-outline {
+    fill: none;
+    stroke-width: 5;
+  }
+  .voter-outline.is-voting {
+    stroke: var(--color-vote);
+  }
+  .voter-outline.is-yes {
+    stroke: var(--color-ok);
+  }
+  .voter-outline.is-no {
+    stroke: var(--color-bad);
+  }
+  .voter-outline.is-idle {
+    stroke: var(--color-rule);
+  }
+  .voter-outline.is-selected {
+    stroke: var(--color-ice);
+    stroke-width: 2.5;
+    stroke-dasharray: 10 8;
+  }
+  .voter-outline.is-proposer {
+    stroke: var(--color-ice);
+    stroke-width: 4;
+  }
+  .voter-outline.pulsing {
+    animation: outline-pulse 1.3s ease-in-out infinite;
+  }
+
+  @keyframes outline-pulse {
+    0%,
+    100% {
+      stroke-opacity: 1;
+      stroke-width: 5;
+    }
+    50% {
+      stroke-opacity: 0.35;
+      stroke-width: 10;
+    }
+  }
+
+  /* ---------- moments ---------- */
+
+  .caption-in {
+    animation: caption-in 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  @keyframes caption-in {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .rule-in {
+    animation: rule-in 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  @keyframes rule-in {
+    from {
+      opacity: 0;
+      transform: translateX(-36px);
+      background: var(--tint-ice);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .voter-outline.pulsing,
+    .caption-in,
+    .rule-in {
+      animation: none;
+    }
+  }
+}

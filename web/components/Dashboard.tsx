@@ -94,7 +94,7 @@ export function Dashboard() {
           {plantView ? (
             <>
               <section className="panel flex min-h-0 flex-col">
-                <Plate right={<span className="plate">P&amp;ID TK-101</span>}>
+                <Plate right={<span className="plate">Unit TK-101</span>}>
                   <span className="text-ink">{plant?.name ?? plantView}</span>
                 </Plate>
                 <div className="min-h-0 flex-1">

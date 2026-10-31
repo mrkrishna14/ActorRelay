@@ -1,0 +1,64 @@
+{
+ "summary": {
+  "path": "oa-luna-none",
+  "tag": "smoke",
+  "concurrency": 1,
+  "rounds": 1,
+  "calls": 1,
+  "success": 1,
+  "jsonStrict": 1,
+  "jsonAfterFenceStrip": 1,
+  "contractClean": 1,
+  "p50": 2747,
+  "p95": 2747,
+  "max": 2747,
+  "roundWallMs": [
+   2750
+  ],
+  "over20s": 0,
+  "over5s": 0,
+  "lvVerdictOk": "0/0",
+  "apiP50": null,
+  "statuses": "200:1",
+  "errors": [],
+  "contractErrors": [],
+  "models": [
+   "gpt-6-luna"
+  ],
+  "openaiLimits": {
+   "limitRequests": "5000",
+   "limitTokens": "2000000",
+   "minRemainingRequests": 4999,
+   "minRemainingTokens": 2000000,
+   "retryAfter": []
+  },
+  "samples": [],
+  "at": "2026-10-31T19:24:09.857Z"
+ },
+ "calls": [
+  {
+   "voter": "plant-a/P-100",
+   "ms": 2747.0272,
+   "ok": true,
+   "status": 200,
+   "model": "gpt-6-luna",
+   "tokens": 1066,
+   "cached": 0,
+   "limits": {
+    "limitRequests": "5000",
+    "limitTokens": "2000000",
+    "remainingRequests": "4999",
+    "remainingTokens": "2000000",
+    "retryAfter": null
+   },
+   "jsonValid": true,
+   "jsonValidStrict": true,
+   "contractErrors": [],
+   "verdictOk": null,
+   "predicted": {
+    "speedPct": 85
+   },
+   "vote": "no"
+  }
+ ]
+}

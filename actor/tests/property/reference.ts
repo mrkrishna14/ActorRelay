@@ -259,7 +259,7 @@ function promoteAfterEvent(
   ctx: RuleContext,
   nowMs: number,
 ): RuleResult {
-  if (history.some((e) => e.id === event.id)) return { planted: rules, company };
+  if (history.some((e) => e.id === event.id)) return { planted: rules, company, history };
   const all = [...history, event];
   const pool = all.filter(
     (e) => e.componentId === event.componentId && e.metric === event.metric,
@@ -324,7 +324,7 @@ function promoteAfterEvent(
       );
     }
   }
-  return { planted, company: shared };
+  return { planted, company: shared, history: all };
 }
 
 function submitRule(rule: LearnedRule, history: HistoryEvent[]): boolean {
@@ -373,6 +373,8 @@ export const engine: Engine = {
   traits: {
     similarLive: actorTraits ? { dropBeyond: 0.15 } : null,
     calibrationFreshWindow: actorTraits,
+    vetoLapseMs: null,
+    waitingTimeoutMs: null,
     lateVetoWins: false,
     blockedRecordsLateVotes: false,
     staleExpires: false,
@@ -390,6 +392,7 @@ export const engine: Engine = {
   sweep,
   execute,
   promoteAfterEvent,
+  eventId: (id) => id,
   submitRule,
   submitCompanyRule,
 };

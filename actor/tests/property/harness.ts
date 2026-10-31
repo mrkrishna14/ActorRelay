@@ -59,11 +59,12 @@ export const T0 = Date.parse("2026-10-31T12:00:00.000Z");
 export const finite = (min = -1e4, max = 1e4) =>
   fc.double({ min, max, noNaN: true, noDefaultInfinity: true });
 
-// Mid-range predictions for every limited metric, which is what a valid yes must carry.
+// A valid yes must predict every limited metric. These sit low in range: the seed's normal tempC
+// of 75 is already within 15% of critical, which with no similar history turns a yes into a no.
 function safePredictions(componentId: string): Record<string, number> {
   const limits = seedComponents.find((c) => c.id === componentId)?.limits ?? {};
   return Object.fromEntries(
-    Object.entries(limits).map(([metric, l]) => [metric, l.min + (l.max - l.min) / 2]),
+    Object.entries(limits).map(([metric, l]) => [metric, l.min + (l.max - l.min) / 10]),
   );
 }
 
@@ -171,6 +172,7 @@ export type RuleContext = {
 export type RuleResult = {
   planted: LearnedRule[];
   company: LearnedRule[];
+  history: HistoryEvent[];
 };
 
 // Documented departures from the plain TASK1 reading. Each stays stricter than, or adds
@@ -181,6 +183,10 @@ export type Traits = {
   similarLive: { dropBeyond: number } | null;
   // Calibration needs five fresh entries after a margin change before it can move again.
   calibrationFreshWindow: boolean;
+  // A deadline missed by more than this reopens a full window instead of executing.
+  vetoLapseMs: number | null;
+  // A unanimous proposal still waiting for a window after this long expires.
+  waitingTimeoutMs: number | null;
   // A veto after the deadline still lands if the sweep has not executed yet.
   lateVetoWins: boolean;
   // A blocked proposal keeps recording slower voters; its status never moves.
@@ -229,6 +235,8 @@ export interface Engine {
     ctx: RuleContext,
     nowMs: number,
   ): Awaitable<RuleResult>;
+  // The id a generated event ends up with once it is on the record.
+  eventId(id: string): string;
   submitRule(rule: LearnedRule, history: HistoryEvent[], ctx: RuleContext): Awaitable<boolean>;
   submitCompanyRule(rule: LearnedRule, ctx: RuleContext): Awaitable<boolean>;
 }

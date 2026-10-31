@@ -1,0 +1,108 @@
+{
+ "label": "idle-stack",
+ "at": "2026-10-31T20:27:39.188Z",
+ "mirrorMs": 0,
+ "sizes": {
+  "plantStateBytes": 185909,
+  "historyEvents": 180,
+  "rules": 3,
+  "load": "26.28"
+ },
+ "results": [
+  {
+   "name": "Component.getState",
+   "n": 12,
+   "p50": 13,
+   "p95": 38,
+   "max": 38
+  },
+  {
+   "name": "Company.getState",
+   "n": 12,
+   "p50": 9,
+   "p95": 42,
+   "max": 42
+  },
+  {
+   "name": "Plant.getState",
+   "n": 12,
+   "p50": 366,
+   "p95": 908,
+   "max": 908
+  },
+  {
+   "name": "Plant.similar",
+   "n": 12,
+   "p50": 105,
+   "p95": 135,
+   "max": 135
+  },
+  {
+   "name": "Plant.rulesFor",
+   "n": 12,
+   "p50": 117,
+   "p95": 579,
+   "max": 579
+  },
+  {
+   "name": "Plant.setConnected",
+   "n": 12,
+   "p50": 1492,
+   "p95": 6058,
+   "max": 6058
+  },
+  {
+   "name": "Plant.propose",
+   "n": 8,
+   "p50": 1154,
+   "p95": 1599,
+   "max": 1599
+  },
+  {
+   "name": "Plant.vote",
+   "n": 8,
+   "p50": 1015,
+   "p95": 1789,
+   "max": 1789
+  },
+  {
+   "name": "Component.getState x10",
+   "n": 40,
+   "p50": 99,
+   "p95": 1151,
+   "max": 1183,
+   "wallP50": 133
+  },
+  {
+   "name": "Plant.rulesFor x10",
+   "n": 40,
+   "p50": 886,
+   "p95": 1397,
+   "max": 1589,
+   "wallP50": 1169
+  },
+  {
+   "name": "Plant.similar x10",
+   "n": 40,
+   "p50": 675,
+   "p95": 1012,
+   "max": 1114,
+   "wallP50": 997
+  },
+  {
+   "name": "Plant.getState x5",
+   "n": 15,
+   "p50": 650,
+   "p95": 1054,
+   "max": 1054,
+   "wallP50": 965
+  },
+  {
+   "name": "Plant.vote behind 10 rulesFor",
+   "n": 5,
+   "p50": 1721,
+   "p95": 3157,
+   "max": 3157
+  }
+ ]
+}

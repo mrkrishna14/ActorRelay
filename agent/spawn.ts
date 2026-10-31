@@ -83,7 +83,14 @@ async function joinChannels(client: Client, channels: string[]) {
   }
 }
 
+/** A Relay identity serves one connection, so a second process would leave the older one answering every message. */
+async function refuseSecondProcess() {
+  const running = await fetch(`http://127.0.0.1:${HEALTH_PORT}/health`, { signal: AbortSignal.timeout(1000) }).then(() => true, () => false);
+  if (running) throw new Error(`agents already run on ${HEALTH_PORT}: stop them first`);
+}
+
 async function main() {
+  await refuseSecondProcess();
   const seed = JSON.parse(readFileSync(join(import.meta.dir, "..", "shared", "plants.json"), "utf8")) as { plants: { id: PlantId; components: ComponentState[] }[] };
   const components = seed.plants.flatMap((plant) => plant.components);
   const glue = new HttpGlue();

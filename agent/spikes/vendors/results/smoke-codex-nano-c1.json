@@ -1,0 +1,46 @@
+{
+ "summary": {
+  "path": "codex-nano",
+  "tag": "smoke",
+  "concurrency": 1,
+  "rounds": 1,
+  "calls": 1,
+  "success": 0,
+  "jsonStrict": 0,
+  "jsonAfterFenceStrip": 0,
+  "contractClean": 0,
+  "p50": null,
+  "p95": null,
+  "max": null,
+  "roundWallMs": [
+   27359
+  ],
+  "over20s": 1,
+  "over5s": 1,
+  "lvVerdictOk": "0/0",
+  "apiP50": null,
+  "statuses": "1:1",
+  "errors": [
+   "{\n  \"type\": \"error\",\n  \"error\": {\n    \"type\": \"invalid_request_error\",\n    \"code\": null,\n    \"message\": \"Tool 'tool_search' is not supported with gpt-5.4-nano.\",\n    \"param\": \"tools\"\n  },\n  \"status\": 400\n}"
+  ],
+  "contractErrors": [],
+  "models": [
+   "gpt-5.4-nano"
+  ],
+  "samples": [],
+  "at": "2026-10-31T19:24:34.565Z"
+ },
+ "calls": [
+  {
+   "voter": "plant-a/P-100",
+   "ms": 27332.913,
+   "ok": false,
+   "status": 1,
+   "error": "{\n  \"type\": \"error\",\n  \"error\": {\n    \"type\": \"invalid_request_error\",\n    \"code\": null,\n    \"message\": \"Tool 'tool_search' is not supported with gpt-5.4-nano.\",\n    \"param\": \"tools\"\n  },\n  \"status\": 400\n}",
+   "model": "gpt-5.4-nano",
+   "jsonValid": false,
+   "jsonValidStrict": false,
+   "contractErrors": []
+  }
+ ]
+}

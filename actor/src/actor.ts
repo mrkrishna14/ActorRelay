@@ -24,14 +24,16 @@ import {
     CLAIM_TIMEOUT_MS,
     FETCH_TIMEOUT_MS,
     LEASE_TTL_MS,
+    MIRROR_CHECKPOINT_MS,
     PROPOSAL_CAP,
     SETPOINT_TOLERANCE,
     SWEEP_EVERY_TICKS,
+    TICK_CHECKPOINT_EVERY,
     TICK_MS,
     glueUrl
 } from "./config.js"
 import { COMPANY_ACTOR_ID, agentIdFor, componentActorId, plantOfProposal, proposalIdFor } from "./ids.js"
-import { applyCalibration, clampMargin, computeStatus } from "./logic/component.js"
+import { applyCalibration, clampMargin, computeStatus, sameReadings } from "./logic/component.js"
 import {
     assertCounterAllowed,
     assertExecutable,
@@ -177,6 +179,9 @@ function errorText(error: unknown): string {
     return error instanceof Error ? error.message : String(error)
 }
 
+// The live tick count by actor. A refused call rebuilds the actor instance, which would reset an @Ephemeral field.
+const liveTicks = new Map<string, number>()
+
 // Local alarms do not survive a runtime restart, and a lost alarm reads null, so entry points re-arm only then.
 // An overdue alarm is not lost: its delivery may be queued behind this call. Re-arming it would schedule a second
 // delivery, and under load every call would add one, so the backlog would feed itself.
@@ -188,6 +193,8 @@ export class Component extends Actor {
     @Persisted private componentId = ""
     @Persisted private sinceAdjustment = 0
     @Ephemeral private runFacts: RunFacts | null = null
+    @Ephemeral private liveLastTick: string | null = null
+    @Ephemeral private savedAt = 0
 
     @Persisted @Emittable plantId: PlantId = "plant-a"
     @Persisted @Emittable tag = ""
@@ -221,7 +228,7 @@ export class Component extends Actor {
             sharedResources: this.sharedResources,
             status: this.status,
             marginPct: this.marginPct,
-            lastTick: this.lastTick,
+            lastTick: this.liveLastTick ?? this.lastTick,
             calibration: this.calibration
         }
     }
@@ -248,6 +255,7 @@ export class Component extends Actor {
             this.calibration = []
             this.sinceAdjustment = 0
         })
+        this.liveLastTick = null
         return this.#publishState()
     }
 
@@ -255,11 +263,16 @@ export class Component extends Actor {
         this.#requireSeed()
         if (!isFiniteRecord(metrics)) fail("invalid_metrics", "mirrored metrics must be finite numbers")
         const next = { ...this.metrics, ...metrics }
+        const now = Date.now()
+        this.liveLastTick = new Date(now).toISOString()
+        // A commit costs an fsync and holds the mailbox, so a steady reading is only checkpointed now and then.
+        if (sameReadings(next, this.metrics) && now - this.savedAt < MIRROR_CHECKPOINT_MS) return this.getState()
         await this.db.transaction(async () => {
             this.metrics = next
             this.status = computeStatus(next, this.limits)
-            this.lastTick = nowIso()
+            this.lastTick = this.liveLastTick ?? nowIso()
         })
+        this.savedAt = now
         return this.#publishState()
     }
 
@@ -371,7 +384,7 @@ export class Plant extends Actor {
             history: this.history,
             rules: this.rules,
             audit: this.audit,
-            tick: this.tickCount,
+            tick: this.#liveTick(),
             connected: this.connected
         }
     }
@@ -416,6 +429,7 @@ export class Plant extends Actor {
             this.tickCount = 0
             this.seeded = true
         })
+        liveTicks.delete(this.id)
         this.alarmChecked = false
         this.#ensureAlarm()
         return { components: this.components.length, history: own.length, rules: rules.length }
@@ -694,14 +708,17 @@ export class Plant extends Actor {
 
     async tick(): Promise<number> {
         this.#assertSeeded()
-        this.tickCount = this.tickCount + 1
+        const tick = this.#liveTick() + 1
+        liveTicks.set(this.id, tick)
+        // The count is a heartbeat, not a decision. Committing it every second would keep the mailbox on fsync.
+        if (tick % TICK_CHECKPOINT_EVERY === 0) this.tickCount = tick
         const wasConnected = this.connected
         const plantId = this.id as PlantId
         void postToGlue("/tick", {}).then(connected => {
             if (connected !== wasConnected) return Plant.get(plantId).setConnected(connected).catch(() => undefined)
         })
-        if (this.tickCount % SWEEP_EVERY_TICKS === 0) await this.sweep()
-        return this.tickCount
+        if (tick % SWEEP_EVERY_TICKS === 0) await this.sweep()
+        return tick
     }
 
     async sweep(): Promise<void> {
@@ -791,6 +808,10 @@ export class Plant extends Actor {
     #assertSeeded(): void {
         if (!this.seeded) fail("not_seeded", `${this.id} has no seed`)
         this.#ensureAlarm()
+    }
+
+    #liveTick(): number {
+        return Math.max(liveTicks.get(this.id) ?? 0, this.tickCount)
     }
 
     // Once per activation: a restart loses the alarm, and every alarm read is a round trip to the control plane.

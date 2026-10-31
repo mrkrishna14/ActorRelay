@@ -1,0 +1,122 @@
+{
+ "label": "ram-idle",
+ "at": "2026-10-31T20:30:23.911Z",
+ "mirrorMs": 0,
+ "sizes": {
+  "plantStateBytes": 185910,
+  "historyEvents": 180,
+  "rules": 3,
+  "load": "47.08"
+ },
+ "results": [
+  {
+   "name": "Component.getState",
+   "n": 12,
+   "p50": 19,
+   "p95": 63,
+   "max": 63
+  },
+  {
+   "name": "Company.getState",
+   "n": 12,
+   "p50": 10,
+   "p95": 37,
+   "max": 37
+  },
+  {
+   "name": "Plant.getState",
+   "n": 12,
+   "p50": 166,
+   "p95": 1436,
+   "max": 1436
+  },
+  {
+   "name": "Plant.similar",
+   "n": 12,
+   "p50": 111,
+   "p95": 143,
+   "max": 143
+  },
+  {
+   "name": "Plant.rulesFor",
+   "n": 12,
+   "p50": 90,
+   "p95": 147,
+   "max": 147
+  },
+  {
+   "name": "Plant.setConnected",
+   "n": 12,
+   "p50": 224,
+   "p95": 852,
+   "max": 852
+  },
+  {
+   "name": "Component.mirror",
+   "n": 12,
+   "p50": 182,
+   "p95": 977,
+   "max": 977
+  },
+  {
+   "name": "Component.setMargin",
+   "n": 12,
+   "p50": 14,
+   "p95": 27,
+   "max": 27
+  },
+  {
+   "name": "Plant.propose",
+   "n": 8,
+   "p50": 415,
+   "p95": 970,
+   "max": 970
+  },
+  {
+   "name": "Plant.vote",
+   "n": 8,
+   "p50": 284,
+   "p95": 653,
+   "max": 653
+  },
+  {
+   "name": "Component.getState x10",
+   "n": 40,
+   "p50": 57,
+   "p95": 136,
+   "max": 158,
+   "wallP50": 88
+  },
+  {
+   "name": "Plant.rulesFor x10",
+   "n": 40,
+   "p50": 487,
+   "p95": 897,
+   "max": 975,
+   "wallP50": 733
+  },
+  {
+   "name": "Plant.similar x10",
+   "n": 40,
+   "p50": 552,
+   "p95": 788,
+   "max": 846,
+   "wallP50": 766
+  },
+  {
+   "name": "Plant.getState x5",
+   "n": 15,
+   "p50": 363,
+   "p95": 510,
+   "max": 510,
+   "wallP50": 495
+  },
+  {
+   "name": "Plant.vote behind 10 rulesFor",
+   "n": 5,
+   "p50": 932,
+   "p95": 1477,
+   "max": 1477
+  }
+ ]
+}

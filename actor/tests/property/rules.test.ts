@@ -43,7 +43,7 @@ async function record(events: HistoryEvent[], ctx: RuleContext = CTX) {
     const nowMs = T0 + i * 1000;
     const event = { ...raw, at: iso(nowMs) };
     const result = await engine.promoteAfterEvent(history, rules, company, event, ctx, nowMs);
-    history = [...history, event];
+    history = result.history;
     rules = result.planted;
     company = result.company;
     trace.push({ rules, company });
@@ -91,7 +91,7 @@ describe(`rule promotion [${engine.name}]`, () => {
     expect(trace[1]!.rules.length).toBe(0);
     expect(trace[2]!.rules.length).toBe(1);
     expect(trace[2]!.rules[0]!.timesSeen).toBe(3);
-    expect([...trace[2]!.rules[0]!.supportEventIds].sort()).toEqual(["e0", "e1", "e2"]);
+    expect([...trace[2]!.rules[0]!.supportEventIds].sort()).toEqual(["e0", "e1", "e2"].map(engine.eventId));
   });
 
   test("dedupes on the fourth, keeping id and createdAt and bumping timesSeen", async () => {
@@ -106,9 +106,11 @@ describe(`rule promotion [${engine.name}]`, () => {
   });
 
   test("replaying the same event does not count twice", async () => {
-    const { history, rules, company } = await record([unsafe("e0"), unsafe("e1")]);
-    const again = await engine.promoteAfterEvent(history, rules, company, history[1]!, CTX, T0 + 9000);
+    const events = [unsafe("e0"), unsafe("e1")];
+    const { history, rules, company } = await record(events);
+    const again = await engine.promoteAfterEvent(history, rules, company, events[1]!, CTX, T0 + 9000);
     expect(again.planted.length).toBe(0);
+    expect(again.history.length).toBe(2);
   });
 
   test("random mixes: every rule is backed by real, distinct, unsafe events", async () => {
@@ -265,7 +267,7 @@ describe(`rule promotion [${engine.name}]`, () => {
     expect(demo.consequence.value).toBeGreaterThanOrEqual(80);
     expect(demo.timesSeen).toBeGreaterThanOrEqual(3);
     const similar = engine.similar({
-      history: recorded,
+      history: recorded.map((e) => ({ ...e, proposalId: null })),
       componentId: PUMP,
       metric: "speedPct",
       to: 85,

@@ -13,8 +13,10 @@ const PLANT_B_TOTAL = 120;
 const WINDOW_START = Date.UTC(2024, 0, 8);
 const WINDOW_END = Date.UTC(2026, 9, 24);
 
-const INCIDENT_SATURATED = "LV-101 saturated at 100%, TK-101 high-level alarm LAH-101";
-const INCIDENT_HEADROOM = "LV-101 no control headroom";
+// Limits from shared/plants.json.
+const LV_LIMIT_PCT = 80;
+const LV_CRITICAL_PCT = 90;
+const LEVEL_LIMIT_PCT = 70;
 
 const OPERATORS = ["A. Varga", "B. Osei", "C. Lindqvist", "D. Ferreira", "E. Nakashima", "G. Haddad", "H. Castellan", "J. Whitlow"];
 const SHIFT_LEADS = ["F. Brandvold", "K. Adeyemi-Ross", "M. Tanaguchi", "R. Ostrowicz"];
@@ -104,10 +106,17 @@ function levelAfterPct(after, step, rng) {
   return 50 + (after >= 88 ? 0.05 : 0.02) * step + jitter(rng, 0.2);
 }
 
-function incidentFor(after, lvPeak) {
-  if (after >= 88) return INCIDENT_SATURATED;
-  if (after >= 80 && lvPeak >= 88) return INCIDENT_HEADROOM;
-  return null;
+// Says only what this run's own rows show. Same wording as bridge/gen_history.ts.
+function incidentFor(effects) {
+  const after = (tag, metric) => effects.find((row) => row.componentId.endsWith(`/${tag}`) && row.metric === metric).after;
+  const position = after("LV-101", "positionPct");
+  const level = after("TK-101", "levelPct");
+  const claims = [];
+  if (position >= 100) claims.push("LV-101 saturated at 100%, no control headroom");
+  else if (position >= LV_CRITICAL_PCT) claims.push(`LV-101 reached ${position.toFixed(1)}%, past its ${LV_LIMIT_PCT}% limit, no control headroom`);
+  else if (position >= LV_LIMIT_PCT) claims.push(`LV-101 reached ${position.toFixed(1)}%, past its ${LV_LIMIT_PCT}% limit`);
+  if (level >= LEVEL_LIMIT_PCT) claims.push(`TK-101 reached ${level.toFixed(1)}%, high-level alarm LAH-101`);
+  return claims.length ? claims.join("; ") : null;
 }
 
 function buildEvent(plantId, spec) {
@@ -137,8 +146,19 @@ function buildEvent(plantId, spec) {
     if (!approvedBy.includes(second)) approvedBy.push(second);
   }
 
+  const at = new Date(WINDOW_START + Math.floor(rng() * (WINDOW_END - WINDOW_START) / 60000) * 60000).toISOString();
+  const effects = [
+    row("TK-101", "levelPct", 50 + jitter(rng, 0.2), levelAfterPct(after, step, rng), 1, after > 95 ? 5 : between(rng, 3, 5)),
+    row("TK-101", "tempC", 75 + jitter(rng, 0.1), residualTempC(step) + jitter(rng, 0.1), 2, between(rng, 4, 5)),
+    row("LV-101", "positionPct", before + jitter(rng, 0.2), lvPeak, 1, after >= 80 ? between(rng, 2, 3) : between(rng, 2, 4)),
+    row("E-101", "dutyKw", dutyKw(steamBefore) + jitter(rng, 3), dutyKw(steamAfter) + jitter(rng, 3), 1, between(rng, 2, 4)),
+    row("TV-101", "positionPct", steamValvePct(steamBefore, headerBefore) + jitter(rng, 0.2), steamValvePct(steamAfter, headerAfter) + jitter(rng, 0.2), 1, between(rng, 2, 4)),
+    row("TV-101", "steamKgH", Math.min(3000, steamBefore + jitter(rng, 4)), Math.min(3000, steamAfter + jitter(rng, 4)), 1, between(rng, 2, 4)),
+    row("TV-101", "headerBarg", headerBefore, headerAfter, 2, between(rng, 1, 3)),
+  ];
+
   return {
-    at: new Date(WINDOW_START + Math.floor(rng() * (WINDOW_END - WINDOW_START) / 60000) * 60000).toISOString(),
+    at,
     plantId,
     componentId: `${plantId}/P-100`,
     metric: "speedPct",
@@ -149,16 +169,8 @@ function buildEvent(plantId, spec) {
       headerBarg: round(headerBefore, 2),
       feedTempC: round(feedTempC, 1),
     },
-    effects: [
-      row("TK-101", "levelPct", 50 + jitter(rng, 0.2), levelAfterPct(after, step, rng), 1, after > 95 ? 5 : between(rng, 3, 5)),
-      row("TK-101", "tempC", 75 + jitter(rng, 0.1), residualTempC(step) + jitter(rng, 0.1), 2, between(rng, 4, 5)),
-      row("LV-101", "positionPct", before + jitter(rng, 0.2), lvPeak, 1, after >= 80 ? between(rng, 2, 3) : between(rng, 2, 4)),
-      row("E-101", "dutyKw", dutyKw(steamBefore) + jitter(rng, 3), dutyKw(steamAfter) + jitter(rng, 3), 1, between(rng, 2, 4)),
-      row("TV-101", "positionPct", steamValvePct(steamBefore, headerBefore) + jitter(rng, 0.2), steamValvePct(steamAfter, headerAfter) + jitter(rng, 0.2), 1, between(rng, 2, 4)),
-      row("TV-101", "steamKgH", Math.min(3000, steamBefore + jitter(rng, 4)), Math.min(3000, steamAfter + jitter(rng, 4)), 1, between(rng, 2, 4)),
-      row("TV-101", "headerBarg", headerBefore, headerAfter, 2, between(rng, 1, 3)),
-    ],
-    incident: incidentFor(after, lvPeak),
+    effects,
+    incident: incidentFor(effects),
     approvedBy,
     operator,
     proposalId: null,

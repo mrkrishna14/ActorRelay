@@ -1,5 +1,5 @@
-// Patches a copy of actor/src with one bug at a time and runs the outbox, dispatch and mailbox
-// suites against it through PROP_SRC. Those suites have no reference to run on, so a mutant
+// Patches a copy of actor/src with one bug at a time and runs the suites that drive the real
+// actor classes against it through PROP_SRC. Those suites have no reference to run on, so a mutant
 // counts as caught only when a test that passes on the real code fails on the copy. Tests that
 // are already red are open findings and prove nothing here. A survivor is a gap in the suites.
 //
@@ -44,7 +44,7 @@ const MUTANTS: Mutant[] = [
   {
     name: "observe-without-dispatch",
     file: "actor.ts",
-    from: `if (execution.state !== "claimed" && execution.state !== "applied") fail("not_dispatched", \`\${proposalId} is \${execution.state}\`)`,
+    from: `if (execution.state !== "claimed" && execution.state !== "applied" && execution.state !== "unknown") fail("not_dispatched", \`\${proposalId} is \${execution.state}\`)`,
     to: ``,
   },
   {
@@ -56,17 +56,17 @@ const MUTANTS: Mutant[] = [
   {
     name: "failure-keeps-setpoint",
     file: "actor.ts",
-    from: `this.setpoints = this.#withSetpoint(proposal, proposal.from)`,
+    from: `this.setpoints = this.#withSetpoint(proposal, settled ?? proposal.from)`,
     to: ``,
   },
   {
     name: "sweep-awaits-company",
     file: "actor.ts",
     from: `        await this.#followExecutions(now)
-        this.#syncCompany()`,
+        this.#requestLeases(plan.needLease)`,
     to: `        await this.#followExecutions(now)
         await Company.get(COMPANY_ACTOR_ID).getState()
-        this.#syncCompany()`,
+        this.#requestLeases(plan.needLease)`,
   },
   {
     name: "pushes-overlap",
@@ -154,6 +154,128 @@ const MUTANTS: Mutant[] = [
     ],
   },
   {
+    name: "measured-does-not-heal",
+    file: "actor.ts",
+    from: `const settled = isFiniteNumber(measured) ? measured : undefined`,
+    to: `const settled = undefined`,
+  },
+  {
+    name: "unknown-reverts-setpoint",
+    file: "actor.ts",
+    from: `this.executions = { ...this.executions, [execution.proposalId]: { ...execution, state: "unknown", failure: "dispatch never confirmed" } }`,
+    to: `this.executions = { ...this.executions, [execution.proposalId]: { ...execution, state: "unknown", failure: "dispatch never confirmed" } }
+                    this.setpoints = { ...this.setpoints, [execution.componentId]: { ...this.setpoints[execution.componentId], [execution.metric]: 0 } }`,
+  },
+  {
+    name: "unknown-cannot-settle",
+    file: "actor.ts",
+    from: `if (execution.state !== "claimed" && execution.state !== "unknown") fail("invalid_token", \`execution is \${execution.state}\`)`,
+    to: `if (execution.state !== "claimed") fail("invalid_token", \`execution is \${execution.state}\`)`,
+  },
+  {
+    name: "lease-not-required",
+    file: "logic/proposals.ts",
+    from: `const leaseMissing = leases !== undefined && proposal.crossPlant && !leases.includes(proposal.id)`,
+    to: `const leaseMissing = false`,
+  },
+  {
+    name: "lease-not-exclusive",
+    file: "actor.ts",
+    from: `if (heldElsewhere) return false`,
+    to: ``,
+  },
+  {
+    name: "lease-never-expires",
+    file: "actor.ts",
+    from: `return lease !== undefined && lease.proposalId !== proposalId && lease.expiresAt > now`,
+    to: `return lease !== undefined && lease.proposalId !== proposalId`,
+  },
+  {
+    name: "lease-never-released",
+    file: "actor.ts",
+    from: `for (const proposalId of done) void Company.get(COMPANY_ACTOR_ID).releaseLease(proposalId).catch(() => undefined)`,
+    to: ``,
+  },
+  {
+    name: "late-grant-kept",
+    file: "actor.ts",
+    from: `else if (!open) void Company.get(COMPANY_ACTOR_ID).releaseLease(proposalId).catch(() => undefined)`,
+    to: ``,
+  },
+  {
+    name: "waiter-never-expires",
+    file: "logic/proposals.ts",
+    from: `if (now - Date.parse(proposal.at) >= WAITING_TIMEOUT_MS) {`,
+    to: `if (false) {`,
+  },
+  {
+    name: "lapsed-window-executes",
+    file: "logic/proposals.ts",
+    from: `if (now - Date.parse(proposal.vetoDeadline) > VETO_LAPSE_MS) {`,
+    to: `if (false) {`,
+  },
+  {
+    name: "calibration-unbound",
+    file: "actor.ts",
+    from: `        assertMatchesRun(entry, facts)
+`,
+    to: ``,
+    also: [
+      `        assertMatchesRun(entry, this.runFacts)
+`,
+      ``,
+    ],
+  },
+  {
+    name: "calibration-any-voter",
+    file: "actor.ts",
+    from: `if (vote === undefined) fail("invalid_calibration", \`\${componentId} did not vote on \${entry.proposalId}\`)`,
+    to: `if (vote === undefined) return { proposalId: entry.proposalId, predicted: { [entry.metric]: entry.predicted }, observed: {} }`,
+  },
+  {
+    name: "calibration-replayable",
+    file: "actor.ts",
+    from: `if (this.calibration.some(item => item.proposalId === entry.proposalId && item.metric === entry.metric)) {`,
+    to: `if (false) {`,
+  },
+  {
+    name: "calibration-before-observed",
+    file: "actor.ts",
+    from: `if (proposal.status !== "executed" || event === undefined) fail("invalid_calibration", \`\${entry.proposalId} has no observed run\`)`,
+    to: ``,
+  },
+  {
+    name: "margin-not-reported",
+    file: "actor.ts",
+    from: `        this.marginPct = clampMargin(pct)
+        this.#reportMargin()`,
+    to: `        this.marginPct = clampMargin(pct)`,
+  },
+  {
+    name: "vote-trusts-claimed-margin",
+    file: "logic/proposals.ts",
+    from: `const marginPct = Math.max(vote.marginPct, context?.marginPct ?? 0)`,
+    to: `const marginPct = vote.marginPct`,
+  },
+  {
+    name: "vote-trusts-similar-count",
+    file: "logic/proposals.ts",
+    from: `if (proposerLimit !== undefined && similarCount < MIN_SIMILAR && proposal.to >= proposerLimit.critical * 0.85) {`,
+    to: `if (proposerLimit !== undefined && vote.similarCount < MIN_SIMILAR && proposal.to >= proposerLimit.critical * 0.85) {`,
+  },
+  {
+    name: "rule-does-not-bind",
+    file: "logic/proposals.ts",
+    from: `if (binding !== undefined) return refused(\`learned rule \${binding.id} applies: \${binding.text}\`)`,
+    to: ``,
+  },
+  {
+    name: "no-waits-for-sweep",
+    file: "actor.ts",
+    from: `const refused = vote.vote === "no" && proposal.status === "voting"`,
+    to: `const refused = false`,
+  },
+  {
     name: "duplicate-vote-allowed",
     file: "logic/proposals.ts",
     from: `if (existing !== undefined) fail("duplicate_vote", \`\${vote.componentId} already voted on \${proposal.id}\`)`,
@@ -165,12 +287,12 @@ const here = import.meta.dir;
 const copy = join(here, ".mutants");
 // PROP_SRC selects the code under test, so a run can target a committed snapshot.
 const source = join(here, process.env.PROP_SRC ?? "../../src");
-const SUITES = ["./outbox.test.ts", "./dispatch.test.ts", "./mailbox.test.ts"];
+const SUITES = ["./outbox.test.ts", "./dispatch.test.ts", "./mailbox.test.ts", "./lease.test.ts", "./binding.test.ts", "./lifecycle.test.ts"];
 
 function failing(env: Record<string, string> = {}) {
   const run = Bun.spawnSync([process.execPath, "test", "--timeout", "120000", ...SUITES], {
     cwd: here,
-    env: { ...process.env, PROP_WORLD_RUNS: process.env.PROP_WORLD_RUNS ?? "60", PROP_SKIP_SLOW: "1", ...env },
+    env: { ...process.env, PROP_WORLD_RUNS: process.env.PROP_WORLD_RUNS ?? "60", PROP_RUNS: process.env.PROP_RUNS ?? "300", PROP_SKIP_SLOW: "1", ...env },
     stdout: "pipe",
     stderr: "pipe",
   });
