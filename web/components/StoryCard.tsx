@@ -36,7 +36,7 @@ function tell(proposal: Proposal | undefined, plant: PlantState | undefined, com
     return { step: 1, line: `${proposal.votes.length} of ${proposal.requiredVoters.length} machines have answered: pump ${change}?`, tone: "text-ink" };
   }
   if (proposal.status === "blocked") {
-    const no = proposal.votes.find((vote) => vote.vote === "no");
+    const no = proposal.votes.find((vote) => vote.vote === "no" && vote.evidenceRuleIds.length > 0) ?? proposal.votes.find((vote) => vote.vote === "no");
     const why = no ? refusal(no, components) : null;
     if (no && why) return { step: 2, line: `Blocked. ${plainName(no.componentId)} refused: at ${proposal.to.toFixed(0)}% it would reach ${why.value}%, past its ${why.line}% limit.`, tone: "text-bad" };
     return { step: 2, line: no ? `Blocked. ${plainName(no.componentId)} refused pump ${change}.` : `Blocked: pump ${change}.`, tone: "text-bad" };
