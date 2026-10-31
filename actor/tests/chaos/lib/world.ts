@@ -40,23 +40,27 @@ export class World {
     return this.seed.plants.find((plant: any) => plant.id === id);
   }
 
-  /** Two seeded incident events per plant, so one live event is the third sighting that promotes a rule. */
+  /** Two incidents per plant, so one live event is the third sighting that promotes a rule. Safe runs give every
+   *  target here 3 neighbours within 15% of range, because Plant now counts similar events itself. */
   history(plantId: string): any[] {
-    return [0, 1].map((index) => ({
-      id: `chaos-seed-${plantId}-${index}`,
+    const event = (id: string, after: number, position: number, incident: string | null, index: number) => ({
+      id: `chaos-seed-${plantId}-${id}`,
       at: new Date(Date.now() - 3_600_000 + index * 60_000).toISOString(),
       plantId,
       componentId: `${plantId}/P-100`,
       metric: "speedPct",
       before: 50,
-      after: 85,
+      after,
       upstreamSnapshot: { feedM3h: 15 },
-      effects: [{ componentId: `${plantId}/LV-101`, metric: "positionPct", before: 50, after: 92, ticksToSettle: 3 }],
-      incident: "chaos fixture: LV-101 near saturation",
+      effects: [{ componentId: `${plantId}/LV-101`, metric: "positionPct", before: 50, after: position, ticksToSettle: 3 }],
+      incident,
       approvedBy: [],
       operator: "chaos-fixture",
       proposalId: null,
-    }));
+    });
+    const incidents = [0, 1].map((index) => event(String(index), 85, 92, "chaos fixture: LV-101 near saturation", index));
+    const safe = [55, 58, 61, 64, 67, 70, 73, 76, 79].map((after, index) => event(`safe-${after}`, after, after, null, index + 2));
+    return [...incidents, ...safe];
   }
 
   /** Published reset order: Company, then Plants, then Components. Plants register themselves with Company. */
@@ -90,8 +94,9 @@ export class World {
     const proposalId = (call.body as any).proposalId as string;
     const plantId = plantOfProposal(proposalId);
     const attempt = this.claims.filter((claim) => claim.proposalId === proposalId).length;
+    let execution: any;
     try {
-      await client.call("Plant", plantId, "execute", [proposalId]);
+      execution = await client.call("Plant", plantId, "execute", [proposalId]);
       this.executes.push({ proposalId, ok: true });
     } catch (error: any) {
       this.executes.push({ proposalId, ok: false, error: String(error?.message ?? error) });
@@ -100,7 +105,8 @@ export class World {
     await this.hooks.beforeClaim?.(call);
     let claim: any;
     try {
-      claim = await client.call("Plant", plantId, "claimDispatch", [proposalId]);
+      // As glue does: Plant fails the execution itself if the simulator has moved from the proposal's `from`.
+      claim = await client.call("Plant", plantId, "claimDispatch", [proposalId, this.reading(execution.componentId, execution.metric)]);
       this.claims.push({ proposalId, dispatch: claim?.dispatch === true, attempt });
     } catch (error: any) {
       this.claims.push({ proposalId, dispatch: null, error: String(error?.message ?? error), attempt });
@@ -126,6 +132,13 @@ export class World {
     return this.sim.filter((command) => command.proposalId === proposalId);
   }
 
+  /** What the fake simulator holds: its last accepted command, otherwise the seed value. */
+  reading(componentId: string, metric: string): number {
+    const last = this.sim.findLast((command) => command.componentId === componentId && command.metric === metric);
+    if (last) return last.value;
+    return this.seed.plants.flatMap((plant: any) => plant.components).find((item: any) => item.id === componentId).metrics[metric];
+  }
+
   async propose(plantId = "plant-a", to = 65, metric = "speedPct"): Promise<any> {
     const proposal = await this.ctx.client.call("Plant", plantId, "propose", [
       { proposerComponentId: `${plantId}/P-100`, metric, to, rationale: "chaos scenario proposal" },
@@ -136,7 +149,6 @@ export class World {
   vote(proposal: any, componentId: string, vote: "yes" | "no" = "yes"): any {
     const component = this.seed.plants.flatMap((plant: any) => plant.components).find((item: any) => item.id === componentId);
     const predicted = Object.fromEntries(Object.keys(component.limits).map((metric) => [metric, component.metrics[metric]]));
-    // similarCount above zero: Plant turns a zero-history yes near a critical limit into a no, and TK-101 sits there.
     return {
       proposalId: proposal.id,
       componentId,
@@ -145,9 +157,9 @@ export class World {
       reason: vote === "yes" ? "chaos vote: within envelope" : "chaos vote: over threshold",
       predicted,
       marginPct: 10,
-      evidenceEventIds: this.history(proposal.plantId).map((event) => event.id),
+      evidenceEventIds: this.history(proposal.plantId).slice(0, 3).map((event) => event.id),
       evidenceRuleIds: [],
-      similarCount: 2,
+      similarCount: 3,
     };
   }
 

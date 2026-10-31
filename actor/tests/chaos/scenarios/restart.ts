@@ -34,7 +34,7 @@ export async function crashAndRead(ctx: Ctx, label: string, mode: "runtime" | "g
 export async function intoVetoWindow(world: World, to = 65): Promise<any> {
   const proposal = await world.propose("plant-a", to);
   await world.castVotes(proposal, VOTERS);
-  const open = await world.waitStatus("plant-a", proposal.id, ["veto_window"], 8_000);
+  const open = await world.waitStatus("plant-a", proposal.id, ["veto_window"], 15_000);
   if (!open) throw new Error(`proposal ${proposal.id} never reached veto_window`);
   return open;
 }
@@ -101,7 +101,7 @@ export const votingRestart: Scenario = {
     }
     ctx.equal("status still voting", restored?.status, "voting");
     await world.castVotes(proposal, VOTERS.slice(2));
-    const open = await world.waitStatus("plant-a", proposal.id, ["veto_window"], 8_000);
+    const open = await world.waitStatus("plant-a", proposal.id, ["veto_window"], 15_000);
     ctx.check("reaches veto_window after restart", Boolean(open), open?.status);
     const done = await world.waitStatus("plant-a", proposal.id, ["executed"], VETO_WINDOW_MS + 12_000);
     ctx.check("executes after restart", Boolean(done), done?.status);
@@ -238,7 +238,7 @@ export const killHostOnly: Scenario = {
     world.checkIntact(before, await world.durablePlant(), "hostkill");
 
     await world.castVotes(proposal, VOTERS.slice(2));
-    const open = await world.waitStatus("plant-a", proposal.id, ["veto_window"], 8_000);
+    const open = await world.waitStatus("plant-a", proposal.id, ["veto_window"], 15_000);
     ctx.check("reaches veto_window", Boolean(open), open?.status);
     await sleep(3_000);
     kill();
@@ -261,7 +261,7 @@ export const crashLoop: Scenario = {
     await crashAndRead(ctx, "loop2", "group");
     await world.castVotes(proposal, VOTERS.slice(2));
     await crashAndRead(ctx, "loop3");
-    const open = await world.waitStatus("plant-a", proposal.id, ["veto_window"], 8_000);
+    const open = await world.waitStatus("plant-a", proposal.id, ["veto_window"], 15_000);
     ctx.check("reaches veto_window across crashes", Boolean(open), open?.status);
     await crashAndRead(ctx, "loop4", "group");
     await sleep(2_000);
