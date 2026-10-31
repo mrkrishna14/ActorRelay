@@ -2,7 +2,8 @@
 // Plant, Company and Component classes for anything stateful. Those classes run on a fake
 // in-memory actor base, so this exercises decision logic, NOT Terse persistence, alarms,
 // mailboxes or crash recovery. Every run through here is labelled [real logic, fake runtime].
-import { mock, setSystemTime } from "bun:test";
+import { setSystemTime } from "bun:test";
+import { FakeActor } from "./fake-runtime";
 import {
   plantsJson,
   seedComponents,
@@ -18,36 +19,22 @@ import {
   type SimilarQuery,
 } from "./harness";
 
-const noop = () => undefined;
+// PROP_SRC points the suites at a patched copy of actor/src, for mutation runs.
+const SRC = process.env.PROP_SRC ?? "../../src";
 
-class FakeActor {
-  static registry = new Map<string, FakeActor>();
-  static get(this: new () => FakeActor, id: string) {
-    const key = `${this.name}:${id}`;
-    let instance = FakeActor.registry.get(key);
-    if (!instance) {
-      instance = new this();
-      instance.id = id;
-      FakeActor.registry.set(key, instance);
-    }
-    return instance;
-  }
-  id = "";
-  db = { transaction: async <T>(run: () => Promise<T>) => run() };
-  alarm = { get: () => Number.MAX_SAFE_INTEGER, set: noop };
-  broadcast = noop;
+export const actors = (await import(`${SRC}/actor`)) as any;
+const { Plant, Company } = actors;
+const { applyCalibration, clampMargin, computeStatus } = await import(`${SRC}/logic/component`);
+const { reachableVoters } = await import(`${SRC}/logic/proposals`);
+const { crossPlantVoters } = await import(`${SRC}/logic/rules`);
+const { rankSimilar } = await import(`${SRC}/logic/similar`);
+const { isFiniteNumber, normalizeCalibration } = await import(`${SRC}/logic/validate`);
+
+// A company push runs outside the plant's call, so results are only final once it reports back.
+async function pushed(plant: any) {
+  for (let turn = 0; plant.companySyncing && turn < 2000; turn++) await Promise.resolve();
+  if (plant.companySyncing) throw new Error("company push never reported back");
 }
-
-mock.module("terse-sdk/actor", () => ({ Actor: FakeActor, Persisted: noop, Emittable: noop }));
-globalThis.fetch = (async () => new Response("{}")) as unknown as typeof fetch;
-AbortSignal.timeout = () => new AbortController().signal;
-
-const { Plant, Company } = (await import("../../src/actor")) as any;
-const { applyCalibration, clampMargin, computeStatus } = await import("../../src/logic/component");
-const { reachableVoters } = await import("../../src/logic/proposals");
-const { crossPlantVoters } = await import("../../src/logic/rules");
-const { rankSimilar } = await import("../../src/logic/similar");
-const { isFiniteNumber, normalizeCalibration } = await import("../../src/logic/validate");
 
 // A coded failure is a deliberate refusal. Anything else is a crash and must surface as one.
 const CODED = /^[a-z_]+: /;
@@ -89,6 +76,7 @@ function baseFields(components: ComponentState[]) {
 function plantFor(state: LifecycleState) {
   const plant = new Plant();
   plant.id = state.proposals[0]?.plantId ?? "plant-a";
+  FakeActor.registry.set(`Plant:${plant.id}`, plant);
   const components = seedComponents.filter((c) => c.plantId === plant.id);
   const setpoints: Record<string, Record<string, number>> = {};
   for (const p of state.proposals) {
@@ -240,6 +228,7 @@ export const engine: Engine = {
   async promoteAfterEvent(history, rules, company, event, ctx, nowMs) {
     const plant = new Plant();
     plant.id = "plant-a";
+    FakeActor.registry.set("Plant:plant-a", plant);
     Object.assign(plant, baseFields(ctx.components), { history, rules, proposals: [], setpoints: {} });
     const actor = resetCompany({
       "plant-a": [...new Set(ctx.components.map((c) => c.model))],
@@ -248,6 +237,7 @@ export const engine: Engine = {
     actor.rules = company;
     try {
       await act(nowMs, () => plant.recordEvent(event));
+      await pushed(plant);
     } catch (error) {
       refusal(error);
     }
@@ -256,10 +246,12 @@ export const engine: Engine = {
   async submitRule(rule: LearnedRule, history: HistoryEvent[], ctx: RuleContext) {
     const plant = new Plant();
     plant.id = "plant-a";
+    FakeActor.registry.set("Plant:plant-a", plant);
     Object.assign(plant, baseFields(ctx.components), { history, proposals: [], setpoints: {} });
     resetCompany({});
     try {
       await plant.promoteRule(rule);
+      await pushed(plant);
       return true;
     } catch (error) {
       refusal(error);
