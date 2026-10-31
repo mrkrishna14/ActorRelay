@@ -1,0 +1,464 @@
+[
+  {
+    "id": "fixture-voting",
+    "at": "2026-10-31T18:00:00Z",
+    "plantId": "plant-a",
+    "proposerComponentId": "plant-a/P-100",
+    "proposerAgentId": "fixture:agent:plant-a/P-100",
+    "metric": "speedPct",
+    "from": 50,
+    "to": 65,
+    "rationale": "Static UI example only. This is not an agent decision.",
+    "requiredVoters": [
+      "plant-a/TK-101",
+      "plant-a/LV-101",
+      "plant-a/E-101",
+      "plant-a/TV-101",
+      "plant-b/TV-101"
+    ],
+    "votes": [],
+    "status": "voting",
+    "vetoDeadline": null,
+    "parentProposalId": null,
+    "crossPlant": true
+  },
+  {
+    "id": "fixture-blocked",
+    "at": "2026-10-31T18:00:00Z",
+    "plantId": "plant-a",
+    "proposerComponentId": "plant-a/P-100",
+    "proposerAgentId": "fixture:agent:plant-a/P-100",
+    "metric": "speedPct",
+    "from": 50,
+    "to": 85,
+    "rationale": "Static UI example only. This is not an agent decision.",
+    "requiredVoters": [
+      "plant-a/TK-101",
+      "plant-a/LV-101",
+      "plant-a/E-101",
+      "plant-a/TV-101",
+      "plant-b/TV-101"
+    ],
+    "votes": [
+      {
+        "proposalId": "fixture-blocked",
+        "componentId": "plant-a/TK-101",
+        "agentId": "fixture:plant-a/TK-101",
+        "vote": "yes",
+        "reason": "Static fixture: within limits",
+        "predicted": {
+          "positionPct": 66
+        },
+        "marginPct": 10,
+        "evidenceEventIds": [
+          "fixture-evidence-1"
+        ],
+        "evidenceRuleIds": [],
+        "similarCount": 1
+      },
+      {
+        "proposalId": "fixture-blocked",
+        "componentId": "plant-a/LV-101",
+        "agentId": "fixture:plant-a/LV-101",
+        "vote": "no",
+        "reason": "Static fixture: threshold exceeded",
+        "predicted": {
+          "positionPct": 89
+        },
+        "marginPct": 10,
+        "evidenceEventIds": [
+          "fixture-evidence-1"
+        ],
+        "evidenceRuleIds": [],
+        "similarCount": 1
+      },
+      {
+        "proposalId": "fixture-blocked",
+        "componentId": "plant-a/E-101",
+        "agentId": "fixture:plant-a/E-101",
+        "vote": "yes",
+        "reason": "Static fixture: within limits",
+        "predicted": {
+          "positionPct": 66
+        },
+        "marginPct": 10,
+        "evidenceEventIds": [
+          "fixture-evidence-1"
+        ],
+        "evidenceRuleIds": [],
+        "similarCount": 1
+      },
+      {
+        "proposalId": "fixture-blocked",
+        "componentId": "plant-a/TV-101",
+        "agentId": "fixture:plant-a/TV-101",
+        "vote": "yes",
+        "reason": "Static fixture: within limits",
+        "predicted": {
+          "positionPct": 66
+        },
+        "marginPct": 10,
+        "evidenceEventIds": [
+          "fixture-evidence-1"
+        ],
+        "evidenceRuleIds": [],
+        "similarCount": 1
+      },
+      {
+        "proposalId": "fixture-blocked",
+        "componentId": "plant-b/TV-101",
+        "agentId": "fixture:plant-b/TV-101",
+        "vote": "yes",
+        "reason": "Static fixture: within limits",
+        "predicted": {
+          "positionPct": 66
+        },
+        "marginPct": 10,
+        "evidenceEventIds": [
+          "fixture-evidence-1"
+        ],
+        "evidenceRuleIds": [],
+        "similarCount": 1
+      }
+    ],
+    "status": "blocked",
+    "vetoDeadline": null,
+    "parentProposalId": null,
+    "crossPlant": true
+  },
+  {
+    "id": "fixture-veto_window",
+    "at": "2026-10-31T18:00:00Z",
+    "plantId": "plant-a",
+    "proposerComponentId": "plant-a/P-100",
+    "proposerAgentId": "fixture:agent:plant-a/P-100",
+    "metric": "speedPct",
+    "from": 50,
+    "to": 65,
+    "rationale": "Static UI example only. This is not an agent decision.",
+    "requiredVoters": [
+      "plant-a/TK-101",
+      "plant-a/LV-101",
+      "plant-a/E-101",
+      "plant-a/TV-101",
+      "plant-b/TV-101"
+    ],
+    "votes": [
+      {
+        "proposalId": "fixture-veto_window",
+        "componentId": "plant-a/TK-101",
+        "agentId": "fixture:plant-a/TK-101",
+        "vote": "yes",
+        "reason": "Static fixture: within limits",
+        "predicted": {
+          "positionPct": 66
+        },
+        "marginPct": 10,
+        "evidenceEventIds": [
+          "fixture-evidence-1"
+        ],
+        "evidenceRuleIds": [],
+        "similarCount": 1
+      },
+      {
+        "proposalId": "fixture-veto_window",
+        "componentId": "plant-a/LV-101",
+        "agentId": "fixture:plant-a/LV-101",
+        "vote": "yes",
+        "reason": "Static fixture: within limits",
+        "predicted": {
+          "positionPct": 66
+        },
+        "marginPct": 10,
+        "evidenceEventIds": [
+          "fixture-evidence-1"
+        ],
+        "evidenceRuleIds": [],
+        "similarCount": 1
+      },
+      {
+        "proposalId": "fixture-veto_window",
+        "componentId": "plant-a/E-101",
+        "agentId": "fixture:plant-a/E-101",
+        "vote": "yes",
+        "reason": "Static fixture: within limits",
+        "predicted": {
+          "positionPct": 66
+        },
+        "marginPct": 10,
+        "evidenceEventIds": [
+          "fixture-evidence-1"
+        ],
+        "evidenceRuleIds": [],
+        "similarCount": 1
+      },
+      {
+        "proposalId": "fixture-veto_window",
+        "componentId": "plant-a/TV-101",
+        "agentId": "fixture:plant-a/TV-101",
+        "vote": "yes",
+        "reason": "Static fixture: within limits",
+        "predicted": {
+          "positionPct": 66
+        },
+        "marginPct": 10,
+        "evidenceEventIds": [
+          "fixture-evidence-1"
+        ],
+        "evidenceRuleIds": [],
+        "similarCount": 1
+      },
+      {
+        "proposalId": "fixture-veto_window",
+        "componentId": "plant-b/TV-101",
+        "agentId": "fixture:plant-b/TV-101",
+        "vote": "yes",
+        "reason": "Static fixture: within limits",
+        "predicted": {
+          "positionPct": 66
+        },
+        "marginPct": 10,
+        "evidenceEventIds": [
+          "fixture-evidence-1"
+        ],
+        "evidenceRuleIds": [],
+        "similarCount": 1
+      }
+    ],
+    "status": "veto_window",
+    "vetoDeadline": "2026-10-31T18:00:10Z",
+    "parentProposalId": null,
+    "crossPlant": true
+  },
+  {
+    "id": "fixture-vetoed",
+    "at": "2026-10-31T18:00:00Z",
+    "plantId": "plant-a",
+    "proposerComponentId": "plant-a/P-100",
+    "proposerAgentId": "fixture:agent:plant-a/P-100",
+    "metric": "speedPct",
+    "from": 50,
+    "to": 65,
+    "rationale": "Static UI example only. This is not an agent decision.",
+    "requiredVoters": [
+      "plant-a/TK-101",
+      "plant-a/LV-101",
+      "plant-a/E-101",
+      "plant-a/TV-101",
+      "plant-b/TV-101"
+    ],
+    "votes": [
+      {
+        "proposalId": "fixture-vetoed",
+        "componentId": "plant-a/TK-101",
+        "agentId": "fixture:plant-a/TK-101",
+        "vote": "yes",
+        "reason": "Static fixture: within limits",
+        "predicted": {
+          "positionPct": 66
+        },
+        "marginPct": 10,
+        "evidenceEventIds": [
+          "fixture-evidence-1"
+        ],
+        "evidenceRuleIds": [],
+        "similarCount": 1
+      },
+      {
+        "proposalId": "fixture-vetoed",
+        "componentId": "plant-a/LV-101",
+        "agentId": "fixture:plant-a/LV-101",
+        "vote": "yes",
+        "reason": "Static fixture: within limits",
+        "predicted": {
+          "positionPct": 66
+        },
+        "marginPct": 10,
+        "evidenceEventIds": [
+          "fixture-evidence-1"
+        ],
+        "evidenceRuleIds": [],
+        "similarCount": 1
+      },
+      {
+        "proposalId": "fixture-vetoed",
+        "componentId": "plant-a/E-101",
+        "agentId": "fixture:plant-a/E-101",
+        "vote": "yes",
+        "reason": "Static fixture: within limits",
+        "predicted": {
+          "positionPct": 66
+        },
+        "marginPct": 10,
+        "evidenceEventIds": [
+          "fixture-evidence-1"
+        ],
+        "evidenceRuleIds": [],
+        "similarCount": 1
+      },
+      {
+        "proposalId": "fixture-vetoed",
+        "componentId": "plant-a/TV-101",
+        "agentId": "fixture:plant-a/TV-101",
+        "vote": "yes",
+        "reason": "Static fixture: within limits",
+        "predicted": {
+          "positionPct": 66
+        },
+        "marginPct": 10,
+        "evidenceEventIds": [
+          "fixture-evidence-1"
+        ],
+        "evidenceRuleIds": [],
+        "similarCount": 1
+      },
+      {
+        "proposalId": "fixture-vetoed",
+        "componentId": "plant-b/TV-101",
+        "agentId": "fixture:plant-b/TV-101",
+        "vote": "yes",
+        "reason": "Static fixture: within limits",
+        "predicted": {
+          "positionPct": 66
+        },
+        "marginPct": 10,
+        "evidenceEventIds": [
+          "fixture-evidence-1"
+        ],
+        "evidenceRuleIds": [],
+        "similarCount": 1
+      }
+    ],
+    "status": "vetoed",
+    "vetoDeadline": null,
+    "parentProposalId": null,
+    "crossPlant": true
+  },
+  {
+    "id": "fixture-executed",
+    "at": "2026-10-31T18:00:00Z",
+    "plantId": "plant-a",
+    "proposerComponentId": "plant-a/P-100",
+    "proposerAgentId": "fixture:agent:plant-a/P-100",
+    "metric": "speedPct",
+    "from": 50,
+    "to": 65,
+    "rationale": "Static UI example only. This is not an agent decision.",
+    "requiredVoters": [
+      "plant-a/TK-101",
+      "plant-a/LV-101",
+      "plant-a/E-101",
+      "plant-a/TV-101",
+      "plant-b/TV-101"
+    ],
+    "votes": [
+      {
+        "proposalId": "fixture-executed",
+        "componentId": "plant-a/TK-101",
+        "agentId": "fixture:plant-a/TK-101",
+        "vote": "yes",
+        "reason": "Static fixture: within limits",
+        "predicted": {
+          "positionPct": 66
+        },
+        "marginPct": 10,
+        "evidenceEventIds": [
+          "fixture-evidence-1"
+        ],
+        "evidenceRuleIds": [],
+        "similarCount": 1
+      },
+      {
+        "proposalId": "fixture-executed",
+        "componentId": "plant-a/LV-101",
+        "agentId": "fixture:plant-a/LV-101",
+        "vote": "yes",
+        "reason": "Static fixture: within limits",
+        "predicted": {
+          "positionPct": 66
+        },
+        "marginPct": 10,
+        "evidenceEventIds": [
+          "fixture-evidence-1"
+        ],
+        "evidenceRuleIds": [],
+        "similarCount": 1
+      },
+      {
+        "proposalId": "fixture-executed",
+        "componentId": "plant-a/E-101",
+        "agentId": "fixture:plant-a/E-101",
+        "vote": "yes",
+        "reason": "Static fixture: within limits",
+        "predicted": {
+          "positionPct": 66
+        },
+        "marginPct": 10,
+        "evidenceEventIds": [
+          "fixture-evidence-1"
+        ],
+        "evidenceRuleIds": [],
+        "similarCount": 1
+      },
+      {
+        "proposalId": "fixture-executed",
+        "componentId": "plant-a/TV-101",
+        "agentId": "fixture:plant-a/TV-101",
+        "vote": "yes",
+        "reason": "Static fixture: within limits",
+        "predicted": {
+          "positionPct": 66
+        },
+        "marginPct": 10,
+        "evidenceEventIds": [
+          "fixture-evidence-1"
+        ],
+        "evidenceRuleIds": [],
+        "similarCount": 1
+      },
+      {
+        "proposalId": "fixture-executed",
+        "componentId": "plant-b/TV-101",
+        "agentId": "fixture:plant-b/TV-101",
+        "vote": "yes",
+        "reason": "Static fixture: within limits",
+        "predicted": {
+          "positionPct": 66
+        },
+        "marginPct": 10,
+        "evidenceEventIds": [
+          "fixture-evidence-1"
+        ],
+        "evidenceRuleIds": [],
+        "similarCount": 1
+      }
+    ],
+    "status": "executed",
+    "vetoDeadline": null,
+    "parentProposalId": null,
+    "crossPlant": true
+  },
+  {
+    "id": "fixture-expired",
+    "at": "2026-10-31T18:00:00Z",
+    "plantId": "plant-a",
+    "proposerComponentId": "plant-a/P-100",
+    "proposerAgentId": "fixture:agent:plant-a/P-100",
+    "metric": "speedPct",
+    "from": 50,
+    "to": 65,
+    "rationale": "Static UI example only. This is not an agent decision.",
+    "requiredVoters": [
+      "plant-a/TK-101",
+      "plant-a/LV-101",
+      "plant-a/E-101",
+      "plant-a/TV-101",
+      "plant-b/TV-101"
+    ],
+    "votes": [],
+    "status": "expired",
+    "vetoDeadline": null,
+    "parentProposalId": null,
+    "crossPlant": true
+  }
+]

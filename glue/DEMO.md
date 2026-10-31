@@ -34,7 +34,16 @@ The first command checks state shape, malformed requests, reset, and proposal vi
 ## Live startup order
 1. Start actors using the exact command and deployed configuration in `actor/HANDOFF.md`. That handoff must define the integration adapter's supported routes or supply a client adapter. A URL alone is insufficient proof that the contract matches.
 2. Start the simulation using `bridge/HANDOFF.md`; it must serve port 7300, accept validated simulation setpoints, report observed effects, and support reset.
-3. Start glue with its documented live settings from `glue/HANDOFF.md`. Set `GLUE_MODE=live` and the real actor adapter URL. Configure messaging only according to the actor/agent handoff; do not invent credentials. A missing actor or messaging adapter should be reported unavailable.
+3. Start glue with its documented live settings from `glue/HANDOFF.md` and `glue/.env.example`. Set these, with values from the owners; do not invent credentials:
+   - `GLUE_MODE=live`
+   - `ACTOR_CLIENT_MODULE` or `ACTOR_API_URL` (plus `ACTOR_API_TOKEN` if needed)
+   - `EXECUTION_CALLBACK_TOKEN`, which the Plant actor sends as a bearer token on `/execute-callback`
+   - `RELAY_WORKSPACE_KEY` or `RELAY_AGENT_TOKEN`, plus optional `RELAY_BASE_URL` and `RELAY_SYSTEM_NAME`
+   - `SIM_URL` if the simulation is not on port 7300
+   - `BRIDGE_PUSHES_MIRROR=1` if the bridge pushes `/mirror`; otherwise glue polls the simulation every `GLUE_TICK_MS`
+   - `GLUE_JOURNAL_PATH`, kept across restarts during a run
+
+   Check `http://127.0.0.1:7200/health` before continuing. `integrations.simulation` and `integrations.relay` must be true. `integrations.actors` only means configured, so confirm actors by loading `/state`.
 4. Start the ten agent workers using `agent/HANDOFF.md`.
 5. Start the dashboard and inspect connection status. Verify actual mode before operating.
 
@@ -65,7 +74,8 @@ Reset affects both plants. Confirm that active proposals clear and all ten compo
 | Failure | Operator response |
 |---|---|
 | Dashboard stops | Restart web; inspect API health before retrying an action. A refresh must not submit another proposal. |
-| Glue stops | Restart glue in the same explicit mode. Reconcile pending live commands with actor/gateway state before retries. Mock state is ephemeral. |
+| Glue stops | Restart glue in the same explicit mode with the same `GLUE_JOURNAL_PATH`. Reconcile pending live commands with actor/gateway state before retries. Mock state is ephemeral. |
+| Request returns 502 with `details.accepted: true` | The change was accepted and a follow-up step failed. Do not resubmit. Check `/state`. Queued messages retry automatically once Relay is connected; if Relay failed at startup, restart glue. |
 | Actor service unavailable | Stop supervisory requests; restore the actor service, inspect current proposals, and reconcile outstanding execution before resuming. |
 | Agent or messaging unavailable | Leave pending review unresolved. Restart workers and inspect deduplication; do not manufacture votes. |
 | Simulation stops | Stop new execution; restore the simulation, refresh measurements, and reconcile command outcomes. Reset only as an explicit new demo run. |

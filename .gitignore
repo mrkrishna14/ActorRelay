@@ -32,3 +32,6 @@ Thumbs.db
 
 # TypeScript incremental compiler cache
 *.tsbuildinfo
+
+# Local development server logs
+.runtime/

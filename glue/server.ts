@@ -2,10 +2,22 @@ import {z} from "zod";
 import {schemas,plantId} from "./schemas";
 import {ActorAdapter,ApiError} from "./actors";
 import {MockStore} from "./mock";
-import {publish} from "./relay";
+import {RelayBridge} from "./relay";
+import {Journal} from "./journal";
+import {SimulationAdapter} from "./simulation";
+import {LiveCoordinator,startMirrorDriver} from "./live";
 const mode=process.env.GLUE_MODE??"mock";
 if(!["mock","live"].includes(mode))throw new Error("GLUE_MODE must be mock or live");
 const mock=new MockStore(),actors=new ActorAdapter();
+let coordinator:LiveCoordinator;
+const journal=new Journal();
+const relay=new RelayBridge((path,body)=>coordinator.post(path,body),journal);
+const simulation=new SimulationAdapter();
+coordinator=new LiveCoordinator(actors,simulation,relay,journal);
+const bridgePushes=["1","true"].includes(process.env.BRIDGE_PUSHES_MIRROR??"");
+const integrations=async()=>({actors:mode==="live"&&!!(process.env.ACTOR_API_URL||process.env.ACTOR_CLIENT_MODULE),relay:mode==="live"&&relay.status.connected,simulation:mode==="live"&&await simulation.reachable()});
+export async function startIntegrations(){if(mode==="live")await relay.start();}
+
 const cors={"access-control-allow-origin":process.env.CORS_ORIGIN??"http://localhost:3000","access-control-allow-methods":"GET, POST, OPTIONS","access-control-allow-headers":"Content-Type, Authorization","vary":"Origin"};
 export async function handle(req:Request):Promise<Response>{
  const origin=req.headers.get("origin");
@@ -16,25 +28,23 @@ export async function handle(req:Request):Promise<Response>{
  try{
  const u=new URL(req.url),path=u.pathname;
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:{...cors,"access-control-allow-origin":responseOrigin}});
- if(path==="/health")return json({ok:true,mode,capabilityNote:"Integration flags indicate configuration, not verified upstream readiness",integrations:{actors:mode==="live"&&!!process.env.ACTOR_API_URL,relay:mode==="live"&&!!process.env.RELAY_PUBLISH_URL,simulation:mode==="live"&&!!process.env.SIM_URL},...(mode==="mock"?{mockNotice:"Mock fixtures only; no live reasoning or physics"}:{})});
+ if(path==="/health")return json({ok:true,mode,capabilityNote:"actors means configured, not verified. relay means connected. simulation means the snapshot probe answered within the last few seconds.",integrations:await integrations(),simulationUrl:mode==="live"?simulation.base:undefined,mirrorDriver:mode==="live"?(bridgePushes?"bridge":"glue"):undefined,relayStatus:mode==="live"?relay.status:undefined,...(mode==="mock"?{mockNotice:"Mock fixtures only; no live reasoning or physics"}:{})});
  if(req.method==="GET"){
-  if(path==="/state"){const id=plantId.parse(u.searchParams.get("plantId")??"plant-a");return json(mode==="mock"?mock.state(id):{...await actors.request(path+u.search),mode:"live"});}
-  if(path.startsWith("/component/")){const id=decodeURIComponent(path.slice(11));return json(mode==="mock"?mock.component(id):await actors.request(path));}
-  if(path==="/similar"){const id=z.string().min(1).parse(u.searchParams.get("componentId"));const metric=z.string().min(1).parse(u.searchParams.get("metric"));const to=z.coerce.number().finite().parse(z.string().min(1).parse(u.searchParams.get("to")));const k=z.coerce.number().int().min(1).max(100).parse(u.searchParams.get("k")??5);if(mode==="live")return json(await actors.request(path+u.search));const c=mock.component(id);return json(mock.plants[c.plantId].history.filter((e:any)=>e.componentId===id&&e.metric===metric).sort((a:any,b:any)=>Math.abs(a.after-to)-Math.abs(b.after-to)).slice(0,k));}
-  if(path==="/rules")return json(mode==="mock"?mock.company.rules:await actors.request(path+u.search));
+  if(mode==="live"){if(path==="/state"){plantId.parse(u.searchParams.get("plantId")??"plant-a");return json({...await coordinator.get(path,u),integrations:await integrations()});}return json(await coordinator.get(path,u));}
+  if(path==="/state"){const id=plantId.parse(u.searchParams.get("plantId")??"plant-a");return json(mock.state(id));}
+  if(path.startsWith("/component/")){const id=decodeURIComponent(path.slice(11));return json(mock.component(id));}
+  if(path==="/similar"){const id=z.string().min(1).parse(u.searchParams.get("componentId"));const metric=z.string().min(1).parse(u.searchParams.get("metric"));const to=z.coerce.number().finite().parse(z.string().min(1).parse(u.searchParams.get("to")));const k=z.coerce.number().int().min(1).max(100).parse(u.searchParams.get("k")??5);const c=mock.component(id);return json(mock.plants[c.plantId].history.filter((e:any)=>e.componentId===id&&e.metric===metric).sort((a:any,b:any)=>Math.abs(a.after-to)-Math.abs(b.after-to)).slice(0,k));}
+  if(path==="/rules")return json(mock.company.rules);
   throw new ApiError(404,"Unknown route");
  }
  if(req.method!=="POST")throw new ApiError(405,"Method not allowed");
  const schema=schemas[path];if(!schema)throw new ApiError(404,"Unknown route");
  let raw;try{raw=await req.json();}catch{throw new ApiError(400,"Malformed JSON body");}const b:any=schema.parse(raw);
  if(mode==="live"){
-  // Actor adapter owns validation, authorization, execution tokens and durable outbox.
-  // Never write directly to the simulator from a public callback.
-  if(["/propose","/counter","/observed","/rule"].includes(path)&&!process.env.RELAY_PUBLISH_URL)throw new ApiError(503,"Relay system participant is not configured");
-  const result=await actors.request(path,"POST",b);
-  const event=path==="/propose"||path==="/counter"?"proposal":path==="/observed"?"executed":path==="/rule"?"rule":null;
-  if(event){const p=result.proposal??result;try{await publish(event,result,[p.plantId??"company",...(p.crossPlant?["company"]:[])]);}catch(e){throw new ApiError(502,"Actor mutation accepted but Relay publication failed; reconcile before retrying",{accepted:true,result,cause:String(e)});}}
-  return json(result);
+  if(path==="/execute-callback"&&(!process.env.EXECUTION_CALLBACK_TOKEN||req.headers.get("authorization")!==`Bearer ${process.env.EXECUTION_CALLBACK_TOKEN}`))throw new ApiError(401,"Execution callback requires configured server token");
+  if(["/propose","/counter","/observed","/rule"].includes(path)&&!relay.status.configured)throw new ApiError(503,"Relay participant is not configured");
+  if(path==="/tick"&&bridgePushes)return json({ok:true,mirrored:0,mirrorDriver:"bridge"});
+  return json(await coordinator.post(path,b));
  }
  switch(path){
   case "/reset":mock.reset();return json({ok:true,mode});
@@ -51,4 +61,4 @@ export async function handle(req:Request):Promise<Response>{
  }
  throw new ApiError(404,"Unknown route");
 }catch(e){if(e instanceof z.ZodError)return json({error:"Validation failed",issues:e.issues},400);if(e instanceof ApiError)return json({error:e.message,details:e.details},e.status);console.error(e);return json({error:"Internal server error"},500);}}
-if(import.meta.main){const server=Bun.serve({port:Number(process.env.PORT??7200),hostname:process.env.HOST??"127.0.0.1",fetch:handle});console.log(`ActorRelay glue ${mode} on ${server.url}${mode==="mock"?" — MOCK FIXTURES ONLY":""}`);}
+if(import.meta.main){if(mode==="live"){startIntegrations().catch(error=>console.error("Relay startup failed:",String(error)));setInterval(()=>relay.flush().catch(error=>console.error("Relay outbox retry failed:",String(error))),5000);setInterval(()=>relay.backfill().catch(error=>console.error("Relay backfill failed:",String(error))),15000);if(!bridgePushes){const tickMs=Number(process.env.GLUE_TICK_MS??1000);if(!(tickMs>=100))throw new Error("GLUE_TICK_MS must be at least 100");startMirrorDriver(()=>coordinator.post("/tick",{}),tickMs);}}const server=Bun.serve({port:Number(process.env.PORT??7200),hostname:process.env.HOST??"127.0.0.1",fetch:handle});console.log(`ActorRelay glue ${mode} on ${server.url}${mode==="mock"?" — MOCK FIXTURES ONLY":""}`);}

@@ -5,6 +5,7 @@
     "": {
       "name": "actorrelay-glue",
       "dependencies": {
+        "@agent-relay/sdk": "15.0.1",
         "zod": "^4.1.12",
       },
       "devDependencies": {
@@ -14,6 +15,12 @@
     },
   },
   "packages": {
+    "@agent-relay/sdk": ["@agent-relay/sdk@15.0.1", "", { "dependencies": { "@relaycast/sdk": "^8.0.7", "@relaycast/types": "^8.0.7", "zod": "^4.4.3" } }, "sha512-+I6LMGJnYO3e/yA+8yWOiWeJ43e9qJ6g6/5Hpspecj+qKBY3tIsQB5h47AX1AwTR9GDRXkT8Qp4f/RTj3K+vkg=="],
+
+    "@relaycast/sdk": ["@relaycast/sdk@8.16.0", "", { "dependencies": { "@relaycast/types": "8.16.0", "zod": "^4.3.6" } }, "sha512-c3jXSDR2WAJCaiNsd92N/3sADLDHkFraw4Ogey2sKLtq48D/p/TQLnD9BE5r9Rk5zoZ0Y8Ls4mzceCeVGekFBQ=="],
+
+    "@relaycast/types": ["@relaycast/types@8.16.0", "", { "dependencies": { "zod": "^4.3.6" } }, "sha512-yLho3/MMMCu4+GEt0L67XU/n5HUatq9mDEsNlOZUPcAjHTCbbTNjN7MRfb6y91wKeLvzha0ggHJ3DzxR4mH4GQ=="],
+
     "@types/bun": ["@types/bun@1.4.4", "", { "dependencies": { "bun-types": "1.4.4" } }, "sha512-9wkRDXUXK124pEnAutE6n/l18j+i9GC5IAHK8TmX/2nlySETmky0OU6yL5U8pW1AoKh++AN9auDCr647BfurjQ=="],
 
     "@types/node": ["@types/node@26.6.6", "", { "dependencies": { "undici-types": "~8.9.0" } }, "sha512-MzQj+8Kx3XI40OmUAE6Qoh58ZMNstNNMwn2nfd3qWsfe7nDNSqJNzes4njhz6AHwrSHOffSLwXU6yb474Q4aog=="],

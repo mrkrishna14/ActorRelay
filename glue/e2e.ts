@@ -14,7 +14,8 @@ async function request(path: string, body?: unknown) {
     method: body === undefined ? 'GET' : 'POST',
     headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
-    signal: AbortSignal.timeout(4000),
+    // Live calls cross actors and simulation with 8s upstream timeouts; live /reset also reseeds all ten components.
+    signal: AbortSignal.timeout(!live ? 4000 : path === '/reset' ? 60000 : 15000),
   });
   const text = await response.text();
   let data: any; try { data = JSON.parse(text); } catch { data = { error: text }; }
@@ -65,7 +66,7 @@ async function main() {
     const states = await waitFor(() => Promise.all([state('plant-a'), state('plant-b')]), ss => {
       const ids = new Set(ss.flatMap(s => s.components?.map((c: any) => c.id) ?? []));
       return ids.size === 10;
-    }, 3000, 'ten mirrored components');
+    }, live ? 15000 : 3000, 'ten mirrored components');
     for (const s of states) {
       assert(s.components.filter((c: any) => c.plantId === s.plant.id).length === 5, `${s.plant.id}: expected five components`);
       assert(proposals(s).length === 0, 'Reset must clear proposals');
