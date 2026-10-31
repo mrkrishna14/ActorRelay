@@ -38,7 +38,7 @@ export type MetricLevel = "ok" | "warning" | "critical";
 
 export function metricLevel(value: number, limit: Limit): MetricLevel {
   if (value >= limit.critical) return "critical";
-  if (value > limit.max || value < limit.min) return "warning";
+  if (value >= limit.max || value < limit.min) return "warning";
   return "ok";
 }
 
@@ -72,7 +72,8 @@ export function threadFrom(root: Proposal, proposals: Proposal[]): ProposalNode 
 /** The newest proposal's whole family: a blocked parent with its counters nested under it. */
 export function latestThread(plant: PlantState): ProposalNode | null {
   const sorted = byTime(plant.proposals);
-  const latest = sorted[sorted.length - 1];
+  // An open veto window outranks anything newer: the operator must always have the Veto button while it runs.
+  const latest = sorted.filter((proposal) => proposal.status === "veto_window").at(-1) ?? sorted[sorted.length - 1];
   if (latest === undefined) return null;
   return threadFrom(rootOf(latest, plant.proposals), plant.proposals);
 }
@@ -127,6 +128,12 @@ export function activeProposer(view: PlantId, plants: Plants): string | null {
 
 export function hasOpenProposal(plant: PlantState | undefined): boolean {
   return plant !== undefined && plant.proposals.some(isOpen);
+}
+
+/** The newest executed change has not been observed yet, so a repeat now could not cite it as evidence. */
+export function awaitingObservation(plant: PlantState | undefined): boolean {
+  const executed = plant === undefined ? undefined : byTime(plant.proposals).filter((proposal) => proposal.status === "executed").at(-1);
+  return executed !== undefined && !plant?.history.some((event) => event.proposalId === executed.id);
 }
 
 export function openCrossPlantProposals(plants: Plants): Proposal[] {

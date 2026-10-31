@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { hasOpenProposal } from "@/lib/derive";
+import { awaitingObservation, hasOpenProposal } from "@/lib/derive";
 import { GlueError, propose, reset } from "@/lib/glue";
 import { glueStore } from "@/lib/store";
 import { formatTarget } from "@/lib/format";
@@ -45,7 +45,7 @@ export function OperatorStrip({ plantId, plant, pump, live }: { plantId: PlantId
     );
 
   const speed = pump?.metrics.speedPct;
-  const disabled = !live || open || busy !== null;
+  const disabled = !live || open || awaitingObservation(plant) || busy !== null;
 
   return (
     <div className="flex h-[66px] shrink-0 items-center gap-3 border-t border-rule bg-panel px-4">
