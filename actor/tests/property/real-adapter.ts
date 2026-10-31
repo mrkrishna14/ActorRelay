@@ -20,7 +20,7 @@ import {
 } from "./harness";
 
 // PROP_SRC points the suites at a patched copy of actor/src, for mutation runs.
-const SRC = process.env.PROP_SRC ?? "../../src";
+export const SRC = process.env.PROP_SRC ?? "../../src";
 
 export const actors = (await import(`${SRC}/actor`)) as any;
 const { Plant, Company } = actors;

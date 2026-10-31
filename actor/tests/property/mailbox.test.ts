@@ -1,6 +1,9 @@
 import { afterAll, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import fc from "fast-check";
-import { check, makeEvent, makeVote, plantComponents } from "./harness";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { check, iso, makeEvent, makeVote, plantComponents, T0 } from "./harness";
+import { SRC } from "./real-adapter";
 import { isReal } from "./target";
 import { COMPANY, onStage, settles, type Stage, WORLD_RUNS } from "./world";
 
@@ -33,10 +36,25 @@ const CALLS: [string, Call][] = [
   ["company state", (s) => s.company().getState()],
 ];
 
+// Calls that pass the seeded check. Plain reads such as similar and rulesFor do not re-arm.
+const ENTRY_POINTS = ["vote", "veto", "sweep", "tick", "getState", "execute", "claim", "event", "propose"];
+
 const batchArb = fc.array(fc.constantFrom(...CALLS), { minLength: 1, maxLength: 12 });
 
-async function opened(stage: Stage) {
-  await stage.seedAll();
+// Three seeded unsafe runs, so the plant starts with a rule to push and Company is in play.
+const SEEDED_RULE = [0, 1, 2].map((i) =>
+  makeEvent(
+    `seed${i}`,
+    PUMP,
+    "speedPct",
+    85,
+    [{ componentId: "plant-a/LV-101", metric: "positionPct", before: 50, after: 95, ticksToSettle: 3 }],
+    { at: iso(T0 - 1000 + i) },
+  ),
+);
+
+async function opened(stage: Stage, history = SEEDED_RULE.slice(0, 0)) {
+  await stage.seedAll({ history });
   const proposal = await stage.plant("plant-a").propose({
     proposerComponentId: PUMP,
     metric: "speedPct",
@@ -57,10 +75,16 @@ describe.skipIf(!isReal)("mailboxes [real logic, fake runtime]", () => {
     await check(
       fc.asyncProperty(batchArb, async (batch) => {
         await onStage(async (stage) => {
-          const id = await opened(stage);
+          const id = await opened(stage, SEEDED_RULE);
           const calls = batch.map(([, call]) => call(stage, id).catch(() => undefined));
           await settles(Promise.all(calls), batch.map(([name]) => name).join(", "));
           await stage.idle();
+          // Force one full push, so the Plant and Company paths always run in this case.
+          for (const plant of ["plant-b", "plant-a"]) {
+            await settles(stage.plant(plant).sweep(), `${plant} sweep`);
+            await stage.idle();
+          }
+          expect(stage.world.calls.some((c) => c.to === COMPANY && c.method === "promoteRule")).toBe(true);
           for (const { from, to, method } of stage.world.calls) {
             if (from === null) continue;
             // Both are fire-and-forget from outside the plant's own turn, so they cannot deadlock it.
@@ -71,6 +95,17 @@ describe.skipIf(!isReal)("mailboxes [real logic, fake runtime]", () => {
       }),
       WORLD_RUNS,
     );
+  });
+
+  test("no actor class even refers to one above it", () => {
+    const source = readFileSync(join(import.meta.dir, SRC, "actor.ts"), "utf8");
+    const body = (name: string) => {
+      const start = source.indexOf(`export class ${name} `);
+      const next = source.indexOf("export class ", start + 1);
+      return source.slice(start, next === -1 ? undefined : next);
+    };
+    expect(body("Company")).not.toMatch(/\b(Plant|Component)\.get\(/);
+    expect(body("Plant")).not.toMatch(/\bComponent\.get\(/);
   });
 
   test("concurrent claims dispatch exactly once", async () => {
@@ -195,6 +230,96 @@ describe.skipIf(!isReal)("mailboxes [real logic, fake runtime]", () => {
       await stage.seedCompany();
       const vote = { ...makeVote(id, "plant-a/E-101"), evidenceRuleIds: [rule.id] };
       await expect(plant.vote(vote)).rejects.toThrow("invalid_vote");
+    });
+  });
+
+  test("calls under load never touch an overdue alarm, so they add no deliveries", async () => {
+    await check(
+      fc.asyncProperty(batchArb, fc.integer({ min: 0, max: 30_000 }), async (batch, overdueBy) => {
+        await onStage(async (stage) => {
+          const id = await opened(stage);
+          const { alarm } = stage.rawPlant("plant-a");
+          alarm.scheduled = stage.now - overdueBy;
+          alarm.sets = 0;
+          const scheduled = alarm.scheduled;
+          const calls = batch.map(([, call]) => call(stage, id).catch(() => undefined));
+          await settles(Promise.all(calls), "calls while overdue");
+          await stage.idle();
+          expect(alarm.sets).toBe(0);
+          expect(alarm.scheduled).toBe(scheduled);
+        });
+      }),
+      WORLD_RUNS,
+    );
+  });
+
+  test("a lost alarm is re-armed by the next call into the plant", async () => {
+    await check(
+      fc.asyncProperty(fc.constantFrom(...CALLS.filter(([name]) => ENTRY_POINTS.includes(name))), async ([, call]) => {
+        await onStage(async (stage) => {
+          const id = await opened(stage);
+          const { alarm } = stage.rawPlant("plant-a");
+          alarm.scheduled = null;
+          await call(stage, id).catch(() => undefined);
+          expect(alarm.scheduled).toBe(stage.now + 1000);
+        });
+      }),
+      100,
+    );
+  });
+
+  test("a repeated delivery ticks once and leaves the alarm armed", async () => {
+    await check(
+      fc.asyncProperty(fc.integer({ min: 2, max: 6 }), fc.integer({ min: 0, max: 499 }), async (repeats, gap) => {
+        await onStage(async (stage) => {
+          await stage.seedAll();
+          const plant = stage.plant("plant-a");
+          for (let i = 0; i < repeats; i++) {
+            await plant.onAlarm();
+            stage.advance(Math.min(gap, Math.floor(499 / repeats)));
+          }
+          expect(stage.rawPlant("plant-a").tickCount).toBe(1);
+          expect(stage.rawPlant("plant-a").alarm.scheduled).not.toBeNull();
+        });
+      }),
+      100,
+    );
+  });
+
+  test("deliveries half a tick or more apart all tick", async () => {
+    await check(
+      fc.asyncProperty(fc.array(fc.integer({ min: 500, max: 3000 }), { minLength: 1, maxLength: 8 }), async (gaps) => {
+        await onStage(async (stage) => {
+          await stage.seedAll();
+          const plant = stage.plant("plant-a");
+          await plant.onAlarm();
+          for (const gap of gaps) {
+            stage.advance(gap);
+            await plant.onAlarm();
+          }
+          expect(stage.rawPlant("plant-a").tickCount).toBe(gaps.length + 1);
+        });
+      }),
+      100,
+    );
+  });
+
+  test("a tick that throws still leaves the alarm armed, and the next delivery runs", async () => {
+    await onStage(async (stage) => {
+      await stage.seedAll();
+      const raw = stage.rawPlant("plant-a");
+      const tick = raw.tick;
+      raw.tick = async () => {
+        throw new Error("tick failed");
+      };
+      // A delivery uses up the slot, so only onAlarm itself can arm the next one.
+      raw.alarm.scheduled = null;
+      await stage.plant("plant-a").onAlarm();
+      expect(raw.alarm.scheduled).toBe(stage.now + 1000);
+      raw.tick = tick;
+      stage.advance(1000);
+      await stage.plant("plant-a").onAlarm();
+      expect(raw.tickCount).toBe(1);
     });
   });
 

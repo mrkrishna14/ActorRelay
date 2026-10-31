@@ -64,6 +64,18 @@ export class World {
   }
 }
 
+// One durable slot, as in the real runtime. Null means lost; an overdue value stays set while
+// its delivery waits behind other calls in the mailbox.
+export class FakeAlarm {
+  scheduled: number | null = null;
+  sets = 0;
+  get = () => this.scheduled;
+  set = (ms: number) => {
+    this.scheduled = ms;
+    this.sets += 1;
+  };
+}
+
 export class FakeActor {
   static registry = new Map<string, FakeActor>();
   static world: World | null = null;
@@ -84,7 +96,7 @@ export class FakeActor {
 
   id = "";
   db = { transaction: async <T>(run: () => Promise<T>) => run() };
-  alarm = { get: () => Number.MAX_SAFE_INTEGER, set: noop };
+  alarm = new FakeAlarm();
   broadcast = noop;
 }
 

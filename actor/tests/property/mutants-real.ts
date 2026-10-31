@@ -7,7 +7,7 @@
 import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-type Mutant = { name: string; file: string; from: string; to: string };
+type Mutant = { name: string; file: string; from: string; to: string; also?: [string, string] };
 
 const MUTANTS: Mutant[] = [
   {
@@ -116,6 +116,44 @@ const MUTANTS: Mutant[] = [
     to: ``,
   },
   {
+    name: "alarm-rearms-overdue",
+    file: "actor.ts",
+    from: `if (alarm.get() === null) alarm.set(Date.now() + TICK_MS)`,
+    to: `{ const scheduled = alarm.get(); if (scheduled === null || scheduled <= Date.now()) alarm.set(Date.now() + TICK_MS) }`,
+  },
+  {
+    name: "alarm-lost-stays-lost",
+    file: "actor.ts",
+    from: `if (alarm.get() === null) alarm.set(Date.now() + TICK_MS)`,
+    to: ``,
+  },
+  {
+    name: "duplicate-tick-runs",
+    file: "actor.ts",
+    from: `if (now - this.lastTickAt < TICK_MS / 2) return`,
+    to: ``,
+  },
+  {
+    name: "tick-dedupe-too-wide",
+    file: "actor.ts",
+    from: `if (now - this.lastTickAt < TICK_MS / 2) return`,
+    to: `if (now - this.lastTickAt < TICK_MS * 2) return`,
+  },
+  {
+    name: "alarm-armed-after-tick",
+    file: "actor.ts",
+    from: `        this.alarm.set(now + TICK_MS)
+`,
+    to: ``,
+    also: [
+      `            await this.tick()
+        } catch`,
+      `            await this.tick()
+            this.alarm.set(now + TICK_MS)
+        } catch`,
+    ],
+  },
+  {
     name: "duplicate-vote-allowed",
     file: "logic/proposals.ts",
     from: `if (existing !== undefined) fail("duplicate_vote", \`\${vote.componentId} already voted on \${proposal.id}\`)`,
@@ -125,6 +163,8 @@ const MUTANTS: Mutant[] = [
 
 const here = import.meta.dir;
 const copy = join(here, ".mutants");
+// PROP_SRC selects the code under test, so a run can target a committed snapshot.
+const source = join(here, process.env.PROP_SRC ?? "../../src");
 const SUITES = ["./outbox.test.ts", "./dispatch.test.ts", "./mailbox.test.ts"];
 
 function failing(env: Record<string, string> = {}) {
@@ -149,18 +189,26 @@ console.log(`baseline: ${baseline.names.size} tests already red, ignored below`)
 
 let survived = 0;
 let skipped = 0;
-for (const mutant of MUTANTS.filter((m) => !filter || m.name.includes(filter))) {
+const selected = MUTANTS.filter((m) => !filter || m.name.includes(filter));
+for (const mutant of selected) {
   rmSync(copy, { recursive: true, force: true });
-  cpSync(join(here, "../../src"), join(copy, "src"), { recursive: true });
+  cpSync(source, join(copy, "src"), { recursive: true });
   const path = join(copy, "src", mutant.file);
-  const source = readFileSync(path, "utf8").replace(/\r\n/g, "\n");
-  if (!source.includes(mutant.from)) {
+  const code = readFileSync(path, "utf8").replace(/\r\n/g, "\n");
+  if (!code.includes(mutant.from)) {
     // The code moved: report it rather than count a mutant that never ran.
     console.log(`STALE    ${mutant.name}`);
     skipped += 1;
     continue;
   }
-  writeFileSync(path, source.replace(mutant.from, mutant.to));
+  if (mutant.also && !code.includes(mutant.also[0])) {
+    console.log(`STALE    ${mutant.name}`);
+    skipped += 1;
+    continue;
+  }
+  let patched = code.replace(mutant.from, () => mutant.to);
+  if (mutant.also) patched = patched.replace(mutant.also[0], () => mutant.also![1]);
+  writeFileSync(path, patched);
   const result = failing({ PROP_SRC: "./.mutants/src" });
   const caught = [...result.names].filter((name) => !baseline.names.has(name));
   if (!result.ran) console.log(`caught   ${mutant.name} (the suites could not load it)`);
@@ -171,5 +219,5 @@ for (const mutant of MUTANTS.filter((m) => !filter || m.name.includes(filter))) 
   }
 }
 if (existsSync(copy)) rmSync(copy, { recursive: true, force: true });
-console.log(`mutants: ${MUTANTS.length - survived - skipped} caught, ${survived} survived, ${skipped} stale`);
+console.log(`mutants run ${selected.length}: ${selected.length - survived - skipped} caught, ${survived} survived, ${skipped} stale`);
 process.exit(survived === 0 ? 0 : 1);

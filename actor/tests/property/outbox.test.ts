@@ -9,14 +9,15 @@ const LV = "plant-a/LV-101";
 // These wait out a real call timeout, which mutation runs cannot afford per mutant.
 const SLOW_OFF = process.env.PROP_SKIP_SLOW === "1";
 
-type Mode = "up" | "down" | "ackLost";
+// refusing: Company answers, but promoteRule itself fails, so only delivery is at stake.
+type Mode = "up" | "down" | "ackLost" | "refusing";
 type Step = { kind: "unsafe" | "safe" | "sweepA" | "sweepB" } | { kind: "mode"; mode: Mode };
 
 const stepArb: fc.Arbitrary<Step> = fc.oneof(
   { weight: 4, arbitrary: fc.constant<Step>({ kind: "unsafe" }) },
   { weight: 2, arbitrary: fc.constant<Step>({ kind: "safe" }) },
   { weight: 3, arbitrary: fc.constantFrom<Step>({ kind: "sweepA" }, { kind: "sweepB" }) },
-  { weight: 3, arbitrary: fc.constantFrom<Mode>("up", "down", "ackLost").map((mode): Step => ({ kind: "mode", mode })) },
+  { weight: 3, arbitrary: fc.constantFrom<Mode>("up", "down", "ackLost", "refusing").map((mode): Step => ({ kind: "mode", mode })) },
 );
 
 function run(id: string, after: number, position: number, at: number, plant = "plant-a"): HistoryEvent {
@@ -30,9 +31,11 @@ function run(id: string, after: number, position: number, at: number, plant = "p
   );
 }
 
-const faultFor = (mode: () => Mode) => (target: string) => {
+const faultFor = (mode: () => Mode) => (target: string, method: string) => {
   if (target !== COMPANY) return null;
-  return mode() === "down" ? ("before" as const) : mode() === "ackLost" ? ("after" as const) : null;
+  if (mode() === "down") return "before" as const;
+  if (mode() === "ackLost") return "after" as const;
+  return mode() === "refusing" && method === "promoteRule" ? ("before" as const) : null;
 };
 
 // A company rule is the plant rule with its component ids dropped.
@@ -152,17 +155,26 @@ describe.skipIf(!isReal)("company outbox [real logic, fake runtime]", () => {
   });
 
   test("outages and lost replies leave Company exactly where a clean run leaves it", async () => {
+    // Both plants registered first and unsafe runs favoured, so nearly every case reaches a
+    // rule that Company already holds, which is where a retry can disagree with a clean run.
+    const busyArb = fc.oneof(
+      { weight: 3, arbitrary: fc.constant<Step>({ kind: "unsafe" }) },
+      { weight: 1, arbitrary: fc.constant<Step>({ kind: "sweepA" }) },
+      { weight: 1, arbitrary: fc.constantFrom<Mode>("up", "down", "ackLost", "refusing").map((mode): Step => ({ kind: "mode", mode })) },
+    );
     await check(
-      fc.asyncProperty(fc.array(stepArb, { maxLength: 24 }), async (steps) => {
+      fc.asyncProperty(fc.array(busyArb, { minLength: 3, maxLength: 16 }), async (steps) => {
         const clean = steps.filter((s) => s.kind !== "mode");
         const finish = (stage: Stage) => fingerprint(stage.rawCompany().rules);
         const faulted = await onStage(async (stage) => {
           await stage.seedAll();
+          await sweepBoth(stage);
           await play(stage, steps);
           return finish(stage);
         });
         const baseline = await onStage(async (stage) => {
           await stage.seedAll();
+          await sweepBoth(stage);
           await play(stage, clean);
           return finish(stage);
         });
@@ -290,6 +302,21 @@ describe.skipIf(!isReal)("company outbox [real logic, fake runtime]", () => {
       await stage.seedPlant("plant-a", { history });
       await sweepBoth(stage, ["plant-a"]);
       expect(fingerprint(stage.rawCompany().rules)).toEqual(before);
+    });
+  });
+
+  test("a rule whose delivery fails stays queued until it lands", async () => {
+    await onStage(async (stage) => {
+      await stage.seedAll();
+      await sweepBoth(stage);
+      stage.world.fault = (target, method) => (target === COMPANY && method === "promoteRule" ? "before" : null);
+      await recordUnsafe(stage, [0, 1, 2]);
+      expect(stage.rawCompany().rules).toEqual([]);
+      expect(stage.rawPlant("plant-a").companyOutbox.length).toBe(1);
+      stage.world.fault = () => null;
+      await sweepBoth(stage, ["plant-a"]);
+      expect(stage.rawCompany().rules.length).toBe(1);
+      expect(stage.rawPlant("plant-a").companyOutbox).toEqual([]);
     });
   });
 

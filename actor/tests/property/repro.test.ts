@@ -6,10 +6,11 @@ import { isReal } from "./target";
 import { iso, makeEvent, plantComponents, T0, type HistoryEvent, type LearnedRule } from "./harness";
 
 const describeReal = isReal ? describe : describe.skip;
+const SRC = process.env.PROP_SRC ?? "../../src";
 
 describeReal("repro [real logic, fake runtime]", () => {
   test("F1 three safe runs cannot support an unsafe rule at Plant.promoteRule", async () => {
-    const { Plant } = (await import("../../src/actor")) as any;
+    const { Plant } = (await import(`${SRC}/actor`)) as any;
     const plant = new Plant();
     plant.id = "plant-a";
     const components = plantComponents("plant-a");
@@ -36,21 +37,21 @@ describeReal("repro [real logic, fake runtime]", () => {
   });
 
   test("F5 rankSimilar returns no more than k", async () => {
-    const { rankSimilar } = await import("../../src/logic/similar");
+    const { rankSimilar } = await import(`${SRC}/logic/similar`);
     const history = [makeEvent("e0", "plant-a/P-100", "speedPct", 85)];
     const got = rankSimilar({ history, componentId: "plant-a/P-100", metric: "speedPct", to: 85, upstreamSnapshot: {}, k: 0, liveEventIds: [] });
     expect(got.length).toBe(0);
   });
 
   test("F6 reachableVoters follows a link recorded only on the far end", async () => {
-    const { reachableVoters } = await import("../../src/logic/proposals");
+    const { reachableVoters } = await import(`${SRC}/logic/proposals`);
     const def = (id: string, downstream: string[]) => ({ id, tag: id, model: "m", limits: {}, upstream: [], downstream, sharedResources: [] });
     const topology = { a: def("a", []), b: def("b", ["a"]) };
     expect(reachableVoters("a", topology, ["a", "b"])).toEqual(["b"]);
   });
 
   test("F7 applyCalibration never moves the margin on a window under five", async () => {
-    const { applyCalibration } = await import("../../src/logic/component");
+    const { applyCalibration } = await import(`${SRC}/logic/component`);
     const limits = { positionPct: { min: 10, max: 80, critical: 90 } };
     const entry = (metric: string, absError: number) => ({ at: iso(T0), proposalId: "p", metric, predicted: 0, observed: absError, absError });
     let state = { calibration: [] as ReturnType<typeof entry>[], marginPct: 10, sinceAdjustment: 0 };
@@ -65,7 +66,7 @@ describeReal("repro [real logic, fake runtime]", () => {
   });
 
   test("F9 company rules from different changed components are not merged", async () => {
-    const { mergeCompanyRule, toCompanyRule } = await import("../../src/logic/rules");
+    const { mergeCompanyRule, toCompanyRule } = await import(`${SRC}/logic/rules`);
     const rule = (component: string, value: number): LearnedRule => ({
       id: `r-${component}`,
       scope: "plant",
