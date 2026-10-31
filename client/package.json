@@ -1,0 +1,20 @@
+{
+    "name": "client",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "start": "bun index.ts",
+        "start:cloud": "bun --env-file=.env.cloud index.ts",
+        "check": "tsc --noEmit",
+        "generate": "terse actor generate --non-interactive",
+        "generate:cloud": "bun run --env-file=.env.cloud generate"
+    },
+    "dependencies": {
+        "commander": "^14.0.3",
+        "terse-sdk": "0.14.9"
+    },
+    "devDependencies": {
+        "@types/node": "^22.0.0",
+        "typescript": "~5.9.3"
+    }
+}
