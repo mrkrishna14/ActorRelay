@@ -1,0 +1,256 @@
+/*
+ * 2D P&ID color, motion, and agent identity.
+ * Process colors: water blue, steam orange, condensate pale cyan, signals muted grey.
+ * Agent colors arrive per equipment group as --agent-color / --agent-ink (lib/agent-colors.ts).
+ * Red and green stay reserved for blocked / ready semantics.
+ */
+
+/* ---------- Theme tokens (dark is the base palette) ---------- */
+.plant-schematic {
+  --pid-bg: #0d0d0d;
+  --pid-text: #e6e6e6;
+  --pid-text-muted: #a2a7ad;
+  --pid-line: #e6e8eb;
+  --pid-equip-fill: #14171b;
+  --pid-box-fill: #111316;
+  --pid-box-stroke: #6f7780;
+  --pid-pipe-shell: #262c33;
+  --pid-water: #4ea8f2;
+  --pid-water-sheen: #b9defd;
+  --pid-water-particle: #dff0ff;
+  --pid-water-particle-stroke: none;
+  --pid-steam: #fb8a3c;
+  --pid-steam-sheen: #ffd2ad;
+  --pid-steam-particle: #ffe0c4;
+  --pid-steam-particle-stroke: none;
+  --pid-condensate: #8ec9d6;
+  --pid-condensate-particle: #e4f6fa;
+  --pid-signal: #78828e;
+  --pid-signal-pulse: #e8f2ff;
+  --pid-coil-cold: #8e959d;
+  --pid-tank-1: #1a1f25; --pid-tank-2: #2c333b; --pid-tank-3: #171b20; --pid-tank-4: #29303a; --pid-tank-5: #111418;
+  --pid-tank-stroke: #e3e6ea;
+  --pid-liquid-top: #2a7fcb; --pid-liquid-mid: #175c9a; --pid-liquid-bottom: #0d3a66;
+  --pid-liquid-surface: #a8d8ff;
+  --pid-bubble: #d6ecff;
+  --pid-zone-fill: #121212;
+  --pid-zone-stroke: #363636;
+  --pid-zone-text: #7a7a7a;
+  --pid-context-stroke: #7d7d7d;
+  --pid-context-fill: #141414;
+  --pid-badge-fill: #16181b;
+  --pid-badge-stroke: #42464c;
+  --pid-forecast-fill: #16181b;
+  --pid-forecast-stroke: #59606a;
+  --pid-led: #4ea8f2;
+  --pid-tag-color: var(--agent-color, var(--pid-text));
+  --pid-blocked: #ef4444;
+  --pid-ready: #22c55e;
+  --pid-halo-max: .5;
+}
+html[data-theme="light"] .plant-schematic {
+  --pid-bg: #fafafa;
+  --pid-text: #1f2328;
+  --pid-text-muted: #6b7280;
+  --pid-line: #2c3138;
+  --pid-equip-fill: #ffffff;
+  --pid-box-fill: #ffffff;
+  --pid-box-stroke: #a7afb8;
+  --pid-pipe-shell: #dde3e9;
+  --pid-water: #1f7fd6;
+  --pid-water-sheen: #d9edff;
+  --pid-water-particle: #ffffff;
+  --pid-water-particle-stroke: #1f7fd6;
+  --pid-steam: #ea6a12;
+  --pid-steam-sheen: #ffe3cc;
+  --pid-steam-particle: #fff4ea;
+  --pid-steam-particle-stroke: #ea6a12;
+  --pid-condensate: #5fa3b4;
+  --pid-condensate-particle: #ffffff;
+  --pid-signal: #9aa2ac;
+  --pid-signal-pulse: #1f2937;
+  --pid-coil-cold: #9aa1a9;
+  --pid-tank-1: #e3e8ed; --pid-tank-2: #fbfcfd; --pid-tank-3: #e6ebf0; --pid-tank-4: #f5f7f9; --pid-tank-5: #d3dae1;
+  --pid-tank-stroke: #353b43;
+  --pid-liquid-top: #93cbf5; --pid-liquid-mid: #6fb3ec; --pid-liquid-bottom: #3f8fd6;
+  --pid-liquid-surface: #1f7fd6;
+  --pid-bubble: #ffffff;
+  --pid-zone-fill: #f3f4f6;
+  --pid-zone-stroke: #d4d8de;
+  --pid-zone-text: #858c95;
+  --pid-context-stroke: #9aa1a9;
+  --pid-context-fill: #ffffff;
+  --pid-badge-fill: #ffffff;
+  --pid-badge-stroke: #d3d8de;
+  --pid-forecast-fill: #ffffff;
+  --pid-forecast-stroke: #b9c0c8;
+  --pid-led: #1f7fd6;
+  --pid-tag-color: var(--agent-ink, var(--pid-text));
+  --pid-blocked: #dc2626;
+  --pid-ready: #16a34a;
+  --pid-halo-max: .42;
+}
+/* The light theme used to invert the dark drawing; colors are now explicit per theme. */
+html[data-theme="light"] .plant-schematic .pid-drawing { filter: none; }
+
+/* ---------- Base drawing ---------- */
+.plant-schematic .pid-drawing text { fill: var(--pid-text); }
+.plant-schematic .pid-drawing .pid-muted { fill: var(--pid-text-muted); }
+.plant-schematic .pid-drawing .pid-water-text { fill: var(--pid-water); }
+.plant-schematic .pid-drawing .pid-steam-text { fill: var(--pid-steam); }
+.plant-schematic .pid-value-box { fill: var(--pid-box-fill); stroke: var(--pid-box-stroke); }
+.plant-schematic .pid-equip-body { fill: var(--pid-equip-fill); stroke: var(--pid-line); }
+.plant-schematic .pid-pump-casing { fill: none; stroke: var(--pid-line); opacity: .22; }
+.plant-schematic .pid-pump-symbol { stroke: var(--pid-line); }
+.plant-schematic .pid-impeller path { stroke: var(--pid-water); opacity: .9; }
+.plant-schematic .pid-impeller-hub { fill: var(--pid-water); }
+.plant-schematic .pid-valve-open { stroke: none; pointer-events: none; transition: opacity .6s ease; }
+.plant-schematic .pid-valve-open-water { fill: var(--pid-water); }
+.plant-schematic .pid-valve-open-steam { fill: var(--pid-steam); }
+.plant-schematic .pid-valve-stem { stroke: var(--pid-line); transition: d .6s ease; }
+.plant-schematic .pid-divider { stroke: var(--pid-text); opacity: .3; }
+.plant-schematic .pid-agitator { stroke: var(--pid-line); }
+.plant-schematic .pid-tank-shell { stroke: var(--pid-tank-stroke); }
+.plant-schematic .pid-tank-inner { stroke: var(--pid-line); opacity: .12; }
+.plant-schematic .pid-tank-highlight { stroke: #fff; opacity: .16; pointer-events: none; }
+html[data-theme="light"] .plant-schematic .pid-tank-highlight { opacity: .9; }
+.plant-schematic .pid-liquid { opacity: .92; }
+.plant-schematic .pid-liquid-surface { stroke: var(--pid-liquid-surface); opacity: .9; }
+.plant-schematic .pid-wave { stroke: var(--pid-liquid-surface); }
+.plant-schematic .pid-bubble { fill: var(--pid-bubble); opacity: .45; }
+html[data-theme="light"] .plant-schematic .pid-bubble { opacity: .85; }
+
+/* Gauges inside value boxes, in the agent's color. */
+.plant-schematic .pid-gauge-track { fill: var(--pid-text); opacity: .1; }
+.plant-schematic .pid-gauge-fill { fill: var(--agent-color, var(--pid-water)); transition: width .6s ease; }
+
+/* ---------- Process lines ---------- */
+.plant-schematic .pid-pipe-shell { stroke: var(--pid-pipe-shell); stroke-width: 7; stroke-linejoin: round; }
+.plant-schematic .pid-pipe-core { stroke-width: 2.4; stroke-linejoin: round; }
+.plant-schematic .pid-pipe-sheen { stroke-width: 2.4; stroke-dasharray: 5 15; stroke-linecap: round; opacity: 0; }
+.plant-schematic .pid-process-water .pid-pipe-core { stroke: var(--pid-water); }
+.plant-schematic .pid-process-water .pid-pipe-sheen { stroke: var(--pid-water-sheen); }
+.plant-schematic .pid-process-steam .pid-pipe-core { stroke: var(--pid-steam); }
+.plant-schematic .pid-process-steam .pid-pipe-sheen { stroke: var(--pid-steam-sheen); }
+.plant-schematic .pid-process-condensate .pid-pipe-shell { stroke-width: 5.5; }
+.plant-schematic .pid-process-condensate .pid-pipe-core { stroke: var(--pid-condensate); stroke-width: 1.8; }
+.plant-schematic .pid-process-condensate .pid-pipe-sheen { stroke: var(--pid-condensate-particle); stroke-width: 1.8; }
+.plant-schematic .pid-process:not(.is-flowing) .pid-pipe-core { opacity: .45; }
+.pid-live .pid-process.is-flowing .pid-pipe-sheen { opacity: .55; animation: pid-sheen var(--pid-sheen-dur, 2s) linear infinite; }
+html[data-theme="light"] .pid-live .pid-process.is-flowing .pid-pipe-sheen { opacity: .8; }
+@keyframes pid-sheen { to { stroke-dashoffset: -40; } }
+
+.plant-schematic .pid-arrow-water { stroke: var(--pid-water); }
+.plant-schematic .pid-arrow-steam { stroke: var(--pid-steam); }
+.plant-schematic .pid-arrow-condensate { stroke: var(--pid-condensate); }
+.plant-schematic .pid-marker-water { fill: var(--pid-water); }
+.plant-schematic .pid-marker-steam { fill: var(--pid-steam); }
+.plant-schematic .pid-marker-condensate { fill: var(--pid-condensate); }
+.plant-schematic .pid-marker-signal { stroke: var(--pid-signal); }
+.plant-schematic .pid-trap-gap { stroke: var(--pid-bg); }
+.plant-schematic .pid-trap { fill: var(--pid-equip-fill); stroke: var(--pid-condensate); stroke-width: 1.4; }
+
+/* Particles */
+.plant-schematic .pid-particles-water { filter: drop-shadow(0 0 1.6px color-mix(in srgb, var(--pid-water) 70%, transparent)); }
+.plant-schematic .pid-particles-water circle { fill: var(--pid-water-particle); stroke: var(--pid-water-particle-stroke); stroke-width: 1.1; }
+.plant-schematic .pid-particles-steam { filter: drop-shadow(0 0 2px color-mix(in srgb, var(--pid-steam) 80%, transparent)); }
+.plant-schematic .pid-particles-steam circle { fill: var(--pid-steam-particle); stroke: var(--pid-steam-particle-stroke); stroke-width: 1; }
+.plant-schematic .pid-particles-condensate circle { fill: var(--pid-condensate-particle); stroke: var(--pid-condensate); stroke-width: .8; opacity: .8; }
+.plant-schematic .pid-steam-puffs circle { fill: var(--pid-steam-particle); stroke: var(--pid-steam); stroke-width: .8; }
+
+/* Coil heat: the hot overlay and glow opacity scale with E-101 duty. */
+.plant-schematic .pid-coil { stroke: var(--pid-coil-cold); }
+.plant-schematic .pid-coil-hot { stroke: var(--pid-steam); pointer-events: none; transition: opacity .8s ease; }
+.plant-schematic .pid-coil-glow { stroke: var(--pid-steam); pointer-events: none; transition: opacity .8s ease; }
+
+/* ---------- Instruments ---------- */
+.plant-schematic .pid-instrument { stroke: var(--pid-signal); }
+.plant-schematic .pid-instrument-bubble { fill: var(--pid-equip-fill); stroke: var(--pid-signal); stroke-dasharray: none; }
+.plant-schematic .pid-signal-active > .pid-instrument-bubble { animation: none; }
+.plant-schematic .pid-signal-pulses circle { fill: var(--pid-signal-pulse); filter: drop-shadow(0 0 3px var(--pid-signal-pulse)); }
+html[data-theme="light"] .plant-schematic .pid-signal-pulses circle { filter: none; }
+
+/* ---------- Context zones ---------- */
+.plant-schematic .pid-campus-zones > rect, .plant-schematic .pid-campus-zones > path { fill: var(--pid-zone-fill); stroke: var(--pid-zone-stroke); }
+.plant-schematic .pid-campus-zones > path { fill: none; }
+.plant-schematic .pid-campus-zones > text, .plant-schematic .pid-campus-zones .pid-context-note { fill: var(--pid-zone-text); }
+.plant-schematic .pid-campus-zones .pid-context-equipment { fill: var(--pid-text-muted); }
+.plant-schematic .pid-context-shapes { fill: var(--pid-context-fill); stroke: var(--pid-context-stroke); }
+.plant-schematic .pid-context-fluid path { fill: var(--pid-water); opacity: .22; stroke: none; }
+.plant-schematic .pid-campus-zones .pid-walkway { fill: none; stroke: var(--pid-zone-stroke); }
+.plant-schematic .pid-cabinet-leds circle { fill: var(--pid-led); stroke: none; opacity: .7; }
+.plant-schematic .pid-cabinet-leds circle:nth-child(2n) { fill: #f59e0b; }
+.pid-live .pid-cabinet-leds circle { animation: pid-blink 2.4s steps(2, jump-none) infinite; }
+.pid-live .pid-cabinet-leds circle:nth-child(2) { animation-delay: -.6s; animation-duration: 3.1s; }
+.pid-live .pid-cabinet-leds circle:nth-child(3) { animation-delay: -1.3s; }
+.pid-live .pid-cabinet-leds circle:nth-child(4) { animation-delay: -.2s; animation-duration: 1.7s; }
+@keyframes pid-blink { 0% { opacity: .85; } 100% { opacity: .2; } }
+
+.plant-schematic .pid-forecast path, .plant-schematic .pid-forecast rect { fill: var(--pid-forecast-fill); stroke: var(--pid-forecast-stroke); }
+
+/* ---------- Agent identity ---------- */
+.plant-schematic .pid-equipment .pid-tag { fill: var(--pid-tag-color); font-weight: 600; }
+.plant-schematic .pid-tag-underline { fill: var(--agent-color, var(--pid-text)); opacity: .9; }
+.plant-schematic .pid-equipment .pid-selection-fill { fill: var(--agent-color, #fff); stroke: var(--agent-color, #fff); opacity: 0; }
+.plant-schematic .pid-equipment:hover .pid-selection-fill { opacity: .06; }
+.plant-schematic .pid-equipment:focus-visible .pid-selection-fill { opacity: .14; stroke-width: 2; }
+.plant-schematic .pid-equipment.is-selected .pid-value-box { stroke: var(--agent-color, var(--pid-line)); stroke-width: 1.4; }
+
+/* Halo: selection = soft steady glow, thinking/reviewing = fast pulse,
+   waiting/observing = slow pulse, blocked = strong steady glow + outline. */
+.plant-schematic .pid-agent-halo { fill: var(--agent-color); opacity: 0; transition: opacity .3s ease; }
+.plant-schematic .pid-agent-outline { fill: none; stroke: var(--agent-color); stroke-width: 1.6; opacity: 0; transition: opacity .3s ease; }
+.plant-schematic .pid-equipment.is-selected .pid-agent-halo { opacity: calc(var(--pid-halo-max) * .55); }
+.plant-schematic .pid-equipment.is-selected .pid-agent-outline { opacity: .55; }
+.plant-schematic .pid-equipment:is(.agent-thinking, .agent-reviewing) .pid-agent-halo { opacity: calc(var(--pid-halo-max) * .7); }
+.plant-schematic .pid-equipment:is(.agent-waiting, .agent-observing) .pid-agent-halo { opacity: calc(var(--pid-halo-max) * .5); }
+.pid-live .pid-equipment:is(.agent-thinking, .agent-reviewing) .pid-agent-halo { animation: pid-halo-pulse 1.3s ease-in-out infinite; }
+.pid-live .pid-equipment:is(.agent-waiting, .agent-observing) .pid-agent-halo { animation: pid-halo-pulse-slow 3.4s ease-in-out infinite; }
+.plant-schematic .pid-equipment.agent-blocked .pid-agent-halo { opacity: var(--pid-halo-max); animation: none; }
+.plant-schematic .pid-equipment.agent-blocked .pid-agent-outline { opacity: 1; stroke-width: 2.4; }
+@keyframes pid-halo-pulse { 0%, 100% { opacity: calc(var(--pid-halo-max) * .2); } 50% { opacity: calc(var(--pid-halo-max) * 1); } }
+@keyframes pid-halo-pulse-slow { 0%, 100% { opacity: calc(var(--pid-halo-max) * .15); } 50% { opacity: calc(var(--pid-halo-max) * .65); } }
+
+/* Highlight beacon (operator pointing from chat/harness): marching outline + expanding ring. */
+.plant-schematic .pid-beacon-outline { fill: none; stroke: var(--agent-color); stroke-width: 3; stroke-dasharray: 11 6; stroke-linecap: round; }
+.plant-schematic .pid-beacon-ring { fill: none; stroke: var(--agent-color); stroke-width: 2; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.pid-live .pid-beacon-outline { animation: pid-march 1s linear infinite; }
+.pid-live .pid-beacon-ring { animation: pid-beacon 1.6s ease-out infinite; }
+@keyframes pid-march { to { stroke-dashoffset: -34; } }
+@keyframes pid-beacon { 0% { opacity: .9; transform: scale(1); } 100% { opacity: 0; transform: scale(1.12); } }
+
+/* Agent badges */
+.plant-schematic .pid-agent-badge > rect:first-of-type { fill: var(--pid-badge-fill); stroke: var(--pid-badge-stroke); }
+.plant-schematic .pid-agent-badge .pid-agent-bar { fill: var(--agent-color); stroke: none; }
+.plant-schematic .pid-agent-badge.is-selected > rect:first-of-type,
+.plant-schematic .pid-agent-badge:focus-visible > rect:first-of-type,
+.plant-schematic .pid-agent-badge.is-highlighted > rect:first-of-type { stroke: var(--agent-color); stroke-width: 1.6; }
+.plant-schematic .pid-agent-badge .pid-agent-tag { fill: var(--pid-tag-color); font-weight: 600; }
+.plant-schematic .pid-agent-badge .pid-agent-state { fill: var(--pid-text-muted); font-weight: 400; }
+.plant-schematic .pid-agent-badge .pid-agent-state.state-blocked { fill: var(--pid-blocked); font-weight: 600; }
+.plant-schematic .pid-agent-badge .pid-agent-state.state-ready { fill: var(--pid-ready); }
+.plant-schematic .pid-agent-badge .pid-agent-role { fill: var(--pid-text-muted); }
+.plant-schematic .pid-agent-badge .pid-agent-name { fill: var(--pid-text); }
+.plant-schematic .pid-agent-indicator { fill: var(--agent-color); stroke: none; }
+.plant-schematic .pid-agent-indicator.state-monitoring { fill: none; stroke: var(--agent-color); stroke-width: 1.4; }
+.plant-schematic .pid-agent-indicator.state-blocked { fill: var(--pid-blocked); }
+.plant-schematic .pid-agent-indicator-ring { fill: none; stroke: var(--agent-color); stroke-width: 1.2; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.plant-schematic .pid-agent-badge.agent-blocked .pid-agent-indicator-ring { stroke: var(--pid-blocked); opacity: .7; }
+.pid-live .pid-agent-badge:is(.agent-thinking, .agent-reviewing) .pid-agent-indicator-ring { animation: pid-dot-ping 1.3s ease-out infinite; }
+.pid-live .pid-agent-badge:is(.agent-waiting, .agent-observing) .pid-agent-indicator-ring { animation: pid-dot-ping 3.4s ease-out infinite; }
+@keyframes pid-dot-ping { 0% { opacity: .9; transform: scale(.6); } 100% { opacity: 0; transform: scale(1.6); } }
+
+/* ---------- Legend ---------- */
+.plant-schematic .pid-legend-swatch { display: inline-block; width: 12px; height: 3px; border-radius: 2px; margin-left: 6px; }
+.plant-schematic .pid-legend-swatch:first-child { margin-left: 0; }
+.plant-schematic .pid-legend-swatch.is-water { background: var(--pid-water); }
+.plant-schematic .pid-legend-swatch.is-steam { background: var(--pid-steam); }
+.plant-schematic .pid-legend-swatch.is-condensate { background: var(--pid-condensate); }
+.plant-schematic .pid-legend-swatch.is-signal { height: 0; border-radius: 0; background: none; border-top: 1.5px dashed var(--pid-signal); }
+
+/* ---------- Motion off: paused or reduced motion ---------- */
+.pid-still .pid-anim { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .plant-schematic .pid-anim { animation: none !important; }
+  .plant-schematic .pid-gauge-fill, .plant-schematic .pid-valve-open, .plant-schematic .pid-valve-stem, .plant-schematic .pid-coil-hot, .plant-schematic .pid-coil-glow, .plant-schematic .pid-agent-halo { transition: none; }
+}
