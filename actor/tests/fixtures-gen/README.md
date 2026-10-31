@@ -31,7 +31,7 @@ The comparison uses a stub model that says yes and repeats the evidence estimate
 
 The validator exits 1 if any check fails. Its compile check uses `actor/tests/contract/node_modules/typescript`, or the path in `TSC`, and prints SKIP if neither exists.
 
-Demo retrieval is checked two ways. `REAL CODE` runs `rankSimilar`, `deriveRules`, `assertHistoryEvent` and the voter's estimates from `actor/src/logic` and `agent/retrieval.ts`, with no LLM, and prints SKIP if they cannot be loaded. `DEMO RETRIEVAL` runs a reference `similar()` written from `TASK1.MD` under 12 scorings, so the fixture does not depend on one normalization.
+Demo retrieval is checked two ways. `REAL CODE` runs `rankSimilar`, `deriveRules`, `assertHistoryEvent` and the voter's estimates from `actor/src/logic` and `agent/retrieval.ts`, with no LLM, and prints SKIP if they cannot be loaded. `DEMO RETRIEVAL` runs a reference `similar()` written from `TASK1.MD` under 6 scorings, so a file does not depend on one normalization.
 
 ## What the fields mean
 
@@ -50,11 +50,12 @@ Demo retrieval is checked two ways. `REAL CODE` runs `rankSimilar`, `deriveRules
 
 ## Where model output disagreed with these decisions
 
-Running model-generated history through `compare-history.ts` showed the fit is off in three places. No demo vote changed. Trust model output over this file on these points:
+`compare-history.ts` shows this file is off in two places against model output from `bridge/gen_history.ts` and from Person 2's separately built model. No demo vote changed. Trust model output over this file on these points:
 
-- `tempC` rows from the model are the trough, about 71.4 °C after a step to 85. This file reads 73.2 °C, so the residual reading above is not what the model reports.
-- LV-101 overshoot from the model is smaller, about +1.9 points at 80-87 against +4.4 here.
-- `headerBarg` rows from the model do not move within a run. Here they do.
+- `tempC` rows from both models are the trough, about 71.2-71.5 °C after a step to 85. This file reads 73.2 °C, so the residual reading above is not what the models report.
+- LV-101 overshoot at 80-87 averages +4.4 points here, against +3.4 from the bridge model and +1.9 from Person 2's.
+
+The two models disagree on `headerBarg`: its rows move in the bridge file, as they do here, and stay flat in Person 2's.
 
 ## Keeping the demo retrievable
 

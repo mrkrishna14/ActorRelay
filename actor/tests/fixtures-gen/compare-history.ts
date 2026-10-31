@@ -194,7 +194,7 @@ async function runCounter(events: HistoryEvent[], tag: string, model: (world: Wo
   const counter = await buildCounter({ glue: world, llm }, blocked, [blocked]);
   if (!counter) return { to: null, decidedBy: null, votes: [] };
   const follow = proposalFor({ plantId: "plant-a", from: 50, to: counter.proposal.to }, `${tag}-counter`);
-  return { to: counter.proposal.to, decidedBy: counter.decidedBy, votes: await votesOn(world, follow, llm) };
+  return { to: counter.proposal.to, decidedBy: counter.explainedBy, votes: await votesOn(world, follow, llm) };
 }
 
 const voteLine = (votes: Vote[]) => votes.map((v) => (v.vote === "yes" ? "y" : "N")).join("");
