@@ -114,7 +114,7 @@ Against real `live_sim.ts`, fake glue. Windows Bun 1.3.14 and WSL Bun 1.4.4. The
 
 | Test | Result | Measured |
 |---|---|---|
-| 10 components, every tick, 60 s, no gaps | Pass | 60 of 60 ticks, 600 `/mirror` pushes, worst gap 1034 ms, 0 failed |
+| 10 components, every tick, 60 s, no gaps | Pass | 60 of 60 ticks, 600 `/mirror` pushes, worst gap 1036 ms, 0 failed |
 | 65: LV-101 settles 60–72 within 5 ticks | Pass | 66.38 at tick 5, peak 66.53 |
 | 65: `tempC` back within 1 °C of 75 | **Not within 5 ticks** | 73.32 at tick 5, within 1 °C from tick 8 |
 | 85: LV-101 ≥ 85 within 3 ticks | Pass | 83.39 at tick 2, 87.22 at tick 3 |
