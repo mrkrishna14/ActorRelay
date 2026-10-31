@@ -38,7 +38,7 @@ function HelpDialog({ onClose, live = false }: { onClose: () => void; live?: boo
     <header><div><Info size={22} /><h2 id="help-title">Your plant workspace</h2></div><button onClick={onClose} aria-label="Close workspace guide"><X size={20} /></button></header>
     <p>Inspect connected equipment, review the evidence, and watch agents negotiate an operating change.</p>
     {live ? <div className="help-mode"><span>LIVE SYSTEM</span><p>Plant values come from the plant simulator; votes are made by the ten equipment agents through the durable actors. The plant is simulated; no physical equipment is connected.</p></div> : <div className="help-mode"><span>INTERACTIVE DEMO</span><p>Plant measurements, equipment agents, history, votes, and calibration are sample data running in this browser. No physical equipment or backend is connected.</p></div>}
-    {live ? <ol><li>Send <strong>“Propose 85%”</strong> in the Plant A conversation (or use New proposal).</li><li>Watch the agents block it with evidence, counter-propose, and the 10-second veto window.</li><li>Switch to Plant B to see the shared rule.</li></ol> : <ol><li>Select equipment in the tree or either plant view.</li><li>Send <strong>“Propose 65%”</strong> in the Plant A conversation.</li><li>Review unanimous sample votes, then try the 10-second veto window.</li><li>Switch to Plant B or Company to explore shared knowledge.</li></ol>}
+    {live ? <ol><li>Send <strong>“Propose 85%”</strong> in the Plant A conversation (or use New proposal).</li><li>Watch the agents block it with evidence, counter-propose, and the 5-second veto window.</li><li>Switch to Plant B to see the shared rule.</li></ol> : <ol><li>Select equipment in the tree or either plant view.</li><li>Send <strong>“Propose 65%”</strong> in the Plant A conversation.</li><li>Review unanimous sample votes, then try the 5-second veto window.</li><li>Switch to Plant B or Company to explore shared knowledge.</li></ol>}
     <p className="help-relay">Open <strong>Agent flow</strong> to see review requests and votes between equipment agents across both plants. The conversation on the right shows their decisions and evidence. Select an agent to inspect its details. Use <strong>Show graph</strong> when you want to inspect the equipment trend.</p>
     <div className="help-shortcuts"><span><kbd>1</kbd> 2D view</span><span><kbd>2</kbd> 3D view</span><span><kbd>3</kbd> Agent flow</span><span><kbd>⌘ K</kbd> Equipment search</span><span><kbd>I</kbd> Inspect</span></div>
     <button className="primary-button" onClick={onClose}>Explore the workspace <ArrowRight size={17} /></button>
@@ -85,12 +85,17 @@ export default function Dashboard() {
   const components = data.components.filter((component) => component.plantId === plantId);
   const equipment = components.find((component) => component.tag === selected)!;
   const proposal = data.proposals.findLast((item) => item.plantId === plantId) ?? null;
+  // Big banner when this plant refused a change because of a rule learned in the other plant (stays up for 2 minutes).
+  const otherPlant = plantId === "plant-a" ? "Plant B" : "Plant A";
+  const knowledgeBanner = scope !== "company" && data.proposals.some((p) => p.plantId === plantId && p.status === "blocked" && data.now - p.createdAt < 120_000
+    && p.votes.some((v) => v.vote === "no" && v.reason.includes(`Learned in ${otherPlant}`))) ? `${plantName(plantId)} uses knowledge from ${otherPlant}` : null;
   const activities = useMemo(() => demoAgentActivities(data), [data]);
   const selectedActivity = activities.find((activity) => activity.plantId === plantId && activity.tag === selected)!;
   const evidence = data.evidence.find((item) => item.id === evidenceId) ?? null;
   const audit = data.audit.filter((event) => scope === "company" || event.plantId === scope || event.plantId === "company").toReversed();
   const latestAudit = audit[0];
   const latestDecision = data.proposals.findLast((p) => p.plantId === plantId && p.status === "blocked");
+  const latestDecisionControl = latestDecision ? controlTarget(latestDecision.proposerTag ?? "P-100", latestDecision.metric ?? "speedPct") : undefined;
   const forecast = proposal?.status === "blocked" && (!proposal.metric || proposal.metric === "speedPct") ? { predicted: (usingLive ? proposal.votes.find((v) => v.tag === "LV-101")?.predicted : undefined) ?? proposal.to + 4, threshold: 81 } : null;
 
   useEffect(() => { dispatch({ type: "reset", now: Date.now() }); const timer = setInterval(() => { if (!liveRef.current) dispatch({ type: "tick", now: Date.now() }); }, 1000); return () => clearInterval(timer); }, []);
@@ -174,8 +179,10 @@ export default function Dashboard() {
   const send = async (text: string, destination: string) => {
     if (!usingLive) { dispatch({ type: "send", text, channel: destination, now: Date.now() }); return; }
     const command = parseControlRequest(text);
-    if (!command) { setToast("Try “Set temperature to 76°C”, “Set level to 55%”, or “Set steam to 1540 kg/h”."); return; }
+    if (!command) { setToast("Try “Propose 85%” (pump), “Set tank temperature to 76”, or “Set tank level to 60%”."); return; }
     if (destination !== "plant-a" && destination !== "plant-b") { setToast("Select Plant A to propose a loop setpoint change."); return; }
+    const control = controlTarget(command.tag, command.metric);
+    if (control && (command.to < control.min || command.to > control.max)) { setToast(`${control.label} must be between ${control.min} and ${control.max} ${control.unit}.`); return; }
     await proposeOn(destination, command.to, command.metric, command.tag);
   };
   const propose = (to: number, metric: ControlMetric = "speedPct", tag: ComponentTag = "P-100") => {
@@ -254,6 +261,7 @@ export default function Dashboard() {
       <ResizeHandle kind="sidebar" label="Resize equipment navigator" value={layout.sidebarWidth} {...layout.bounds.sidebar} onPointerDown={layout.startResize} onResizeBy={layout.resizeBy} onReset={resetPanelSizes} />
 
       <main id="plant-workspace" className="plant-workspace" ref={workspace}>
+        {knowledgeBanner && <div className="knowledge-banner" role="status" aria-live="polite">{knowledgeBanner}</div>}
 
 
         {scope === "company" && view !== "agents" ? <CompanyOverview plants={PLANTS.map((plant) => ({ ...plant, components: data.components.filter((component) => component.plantId === plant.id) }))} onOpenPlant={openScope} rules={data.evidence.filter((item) => item.kind === "rule")} onRuleClick={setEvidenceId} /> : <>
@@ -262,7 +270,7 @@ export default function Dashboard() {
           </section>
           {showTrend && view !== "agents" && <>
           <ResizeHandle kind="chart" label="Resize timing chart" value={layout.chartHeight} {...layout.bounds.chart} onPointerDown={layout.startResize} onResizeBy={layout.resizeBy} onReset={resetPanelSizes} />
-          <section id="equipment-trend" className="trend-section" aria-label="Equipment timing chart"><TrendChart points={data.trends[plantId]} threshold={81} label="Outlet valve" unit="%" paused={data.paused} onTogglePause={() => dispatch({ type: "pause" })} eventLabel={latestDecision ? `${latestDecision.to}% proposal blocked` : undefined} eventAt={latestDecision?.createdAt} /></section>
+          <section id="equipment-trend" className="trend-section" aria-label="Equipment timing chart"><TrendChart points={data.trends[plantId]} threshold={81} label="Outlet valve" unit="%" paused={data.paused} onTogglePause={() => dispatch({ type: "pause" })} eventLabel={latestDecision ? `${latestDecision.to}${latestDecisionControl?.unit ?? "%"} ${latestDecisionControl && latestDecisionControl.tag !== "P-100" ? `${latestDecisionControl.loop} ` : ""}proposal blocked` : undefined} eventAt={latestDecision?.createdAt} /></section>
           </>}
         </>}
 

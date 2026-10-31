@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url"
 import type { CalibrationEntry, ComponentId, HistoryEvent, PlantId, PlantState, Proposal, Role, Vote } from "../../shared/types.js"
 import type { Backend, ComponentSnapshot, CounterInput } from "./backend.js"
 import { DeadlineError, draftWithRetry, type Llm } from "./llm.js"
-import { buildVote, ground, ownPoints, plantOf, tagOf, threshold, type Grounding } from "./predict.js"
+import { buildVote, ground, ownPoints, plantOf, relevanceRadius, tagOf, threshold, type Grounding } from "./predict.js"
 
 const here = dirname(fileURLToPath(import.meta.url))
 const roleText: Partial<Record<Role, string>> = {}
@@ -40,7 +40,7 @@ function prompt(self: ComponentSnapshot, proposal: Proposal, g: Grounding, retri
         `Proposal ${proposal.id} in ${proposal.plantId}: ${tagOf(proposal.proposerComponentId)} ${proposal.metric} ${proposal.from} → ${proposal.to}. Rationale: ${proposal.rationale}`,
         `You are ${self.id} (${self.name}, model ${self.model}), marginPct ${self.marginPct}.`,
         `Your limits:\n${limits}`,
-        `Similar past changes (${g.similar.length} of ${retrievedCount} retrieved are within ±15 of the target):\n${g.similar.map(row).join("\n") || "- none"}`,
+        `Similar past changes (${g.similar.length} of ${retrievedCount} retrieved are within ±${relevanceRadius(proposal.metric)} of the target):\n${g.similar.map(row).join("\n") || "- none"}`,
         `Newest run of this change: ${g.anchor ? row(g.anchor) : "none"}`,
         `Learned rules that apply:\n${g.rules.map(r => `- ${r.id}: ${r.text}`).join("\n") || "- none"}`,
         `Grounded baseline prediction: ${g.basis.map(b => `${b.metric} ${b.value} (${b.from}: ${b.note})`).join("; ") || "none"}`,
@@ -80,10 +80,14 @@ export async function decideVote(proposal: Proposal, componentId: ComponentId, d
     return buildVote(self, proposal, g, { vote: draft.vote, reason: draft.reason, predicted }, `[${llm.label}] `)
 }
 
+/** Counter step = minimum meaningful move, in the metric's own units (pump speed 5 points, tank temperature 1 °C, level 5 %). */
+const COUNTER_STEP: Record<string, number> = { tempC: 1, levelPct: 5, speedPct: 5 }
+export const counterStep = (metric: string) => COUNTER_STEP[metric] ?? 5
+
 /**
  * Counter-proposal for a blocked proposal of ours: the highest target whose 3 nearest past runs were all
- * safe for every blocking voter (no incident, below each voter's threshold), one 5-point step back for margin.
- * Max 2 counters per root proposal.
+ * safe for every blocking voter (no incident, below each voter's threshold), one step back for margin
+ * (or the safe target itself when the step back would not move). Max 2 counters per root proposal.
  */
 export async function counterFor(proposal: Proposal, plant: PlantState, deps: Deps): Promise<CounterInput | null> {
     if (proposal.status !== "blocked") return null
@@ -94,23 +98,25 @@ export async function counterFor(proposal: Proposal, plant: PlantState, deps: De
     const voters = await Promise.all(blockers.map(v => deps.backend.component(v.componentId)))
     const changes = plant.history.filter(e => e.componentId === proposal.proposerComponentId && e.metric === proposal.metric)
     const safeAt = (x: number) => {
-        const nearest = [...changes].sort((a, b) => Math.abs(a.after - x) - Math.abs(b.after - x)).slice(0, 3)
+        // Only runs this plant actually made near x count as evidence (no extrapolating from far-away runs).
+        const nearest = [...changes].filter(e => proposal.metric !== "speedPct" || Math.abs(e.after - x) <= 5).sort((a, b) => Math.abs(a.after - x) - Math.abs(b.after - x)).slice(0, 3)
         if (nearest.length < 3) return false
         return nearest.every(e => !e.incident && voters.every(c => Object.entries(ownPoints([e], c.id)).every(([m, pts]) => !c.limits[m] || pts.every(p => p.y < threshold(c.limits[m]!, c.marginPct)))))
     }
-    const step = proposal.to > proposal.from ? -5 : 5
+    const size = counterStep(proposal.metric)
+    const step = proposal.to > proposal.from ? -size : size
+    const moves = (x: number) => Math.abs(x - proposal.from) >= size - 1e-9 && (step < 0 ? x > proposal.from : x < proposal.from)
     let best: number | null = null
-    for (let x = proposal.to + step; step < 0 ? x > proposal.from : x < proposal.from; x += step) {
+    for (let x = proposal.to + step; moves(x); x += step) {
         if (safeAt(x)) { best = x; break }
     }
     if (best === null) return null
-    // One 5-point step below the highest safe value, and only if that still moves meaningfully from where we are.
-    const to = best + step
-    if (Math.abs(to - proposal.from) < 5 || (step < 0 ? to <= proposal.from : to >= proposal.from)) return null
+    // One step below the highest safe value for margin; if that would not move meaningfully, the safe value itself.
+    const to = moves(best + step) ? best + step : best
     const why = blockers.map(v => `${tagOf(v.componentId)}: ${v.reason.slice(0, 160)}`).join(" | ")
     return {
         proposerComponentId: proposal.proposerComponentId, proposerAgentId: `agent:${proposal.proposerComponentId}`, metric: proposal.metric, to,
-        rationale: `Counter to ${proposal.id}: ${proposal.to} was blocked (${why}). Past runs near ${best} were all safe for every blocking voter; proposing ${to} (one step below for margin).`,
+        rationale: `Counter to ${proposal.id}: ${proposal.to} was blocked (${why}). Past runs near ${best} were all safe for every blocking voter; proposing ${to}${to === best ? "" : " (one step below for margin)"}.`,
         parentProposalId: root,
     }
 }

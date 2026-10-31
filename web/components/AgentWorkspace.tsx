@@ -166,7 +166,7 @@ export default function AgentWorkspace(props: AgentWorkspaceProps & { live?: boo
         <div className="agent-composer-input"><label className="agent-sr-only" htmlFor="agent-message">Message the agents</label><textarea id="agent-message" rows={1} value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={keyDown} placeholder={proposal?.status === "blocked" ? "Propose 65% instead…" : "Message your equipment agents…"} /><button type="submit" aria-label="Send message" title="Send message" disabled={sending || !draft.trim()}>{sending ? <ArrowsClockwise size={21} className="relay-spin" /> : <PaperPlaneTilt size={23} weight="fill" />}</button></div>
         <div className="agent-composer-quick-actions"><button type="button" onClick={quickReview} disabled={sending || pendingReview}><Check size={13} />Run 65% review</button><span>Enter to send · Shift + Enter for a new line</span></div>
         {sendError && <p className="agent-send-error" role="alert">{sendError}</p>}
-        <p className="agent-composer-note">{live ? "Changes need equipment consensus and a 10 s veto window." : "Sample changes need equipment consensus and a 10s veto window."}</p>
+        <p className="agent-composer-note">{live ? "Changes need equipment consensus and a 5 s veto window." : "Sample changes need equipment consensus and a 5s veto window."}</p>
       </form>
     </section>
 

@@ -164,6 +164,22 @@ describe("toDemoState", () => {
       expect(mapped.messages.find((message) => message.id === `live-${proposal.id}-proposal`)?.sender).toBe(tag);
     }
   });
+
+  test("tank-temperature votes keep the metric each voter predicted (real glue shape)", () => {
+    const vote = (componentId: string, predicted: Record<string, number>) => ({ ...crossVote, agentId: `agent:${componentId}`, componentId, predicted, proposalId: "plant-a-t1" });
+    const proposal = { ...plantA.proposals[0]!, id: "plant-a-t1", parentProposalId: null, proposerComponentId: "plant-a/TK-101", metric: "tempC", from: 75, to: 78, status: "voting",
+      votes: [vote("plant-a/P-100", { feedM3h: 15, speedPct: 50 }), vote("plant-a/TV-101", { headerBarg: 6, positionPct: 52.6, steamKgH: 1623.2 }), vote("plant-b/TV-101", { headerBarg: 6, steamKgH: 1532.7 }), vote("plant-a/E-101", { dutyKw: 951.4 })] };
+    const votes = toDemoState({ ...stateA, plant: { ...plantA, proposals: [proposal] } }, stateB, null, NOW).proposals[0]!.votes;
+    expect(votes.map((v) => [v.tag, v.plantId, v.predictedMetric, v.predicted])).toEqual([
+      ["P-100", "plant-a", "speedPct", 50], ["TV-101", "plant-a", "steamKgH", 1623.2], ["TV-101", "plant-b", "headerBarg", 6], ["E-101", "plant-a", "dutyKw", 951.4],
+    ]);
+  });
+
+  test("evidence titles use the event metric's unit", () => {
+    const event = { ...history[1]!, id: "seed-loop-plant-a-tempC-76", componentId: "plant-a/TK-101", metric: "tempC", before: 75, after: 76, effects: [] };
+    const mapped = toDemoState({ ...stateA, plant: { ...plantA, history: [event] } }, stateB, null, NOW);
+    expect(mapped.evidence.find((item) => item.id === event.id)?.title).toBe("TK-101 75→76 °C");
+  });
 });
 
 describe("glue calls", () => {

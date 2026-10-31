@@ -19,7 +19,7 @@
     },
     {
       "id": "plant-a/TK-101", "plantId": "plant-a", "tag": "TK-101", "name": "Hydrolysis hold tank", "model": "hold-tank-A", "role": "process_engineer", "vendor": "claude",
-      "metrics": {"levelPct": 50, "tempC": 75}, "limits": {"levelPct": {"min": 20, "max": 70, "critical": 80}, "tempC": {"min": 70, "max": 80, "critical": 85}},
+      "metrics": {"levelPct": 50, "tempC": 75}, "limits": {"levelPct": {"min": 20, "max": 70, "critical": 80}, "tempC": {"min": 70, "max": 80, "critical": 90}},
       "upstream": ["plant-a/P-100", "plant-a/E-101"], "downstream": ["plant-a/LV-101"], "sharedResources": [], "status": "ok", "marginPct": 10, "lastTick": "2026-10-31T00:00:00Z"
     },
     {
@@ -44,7 +44,7 @@
     },
     {
       "id": "plant-b/TK-101", "plantId": "plant-b", "tag": "TK-101", "name": "Hydrolysis hold tank", "model": "hold-tank-A", "role": "process_engineer", "vendor": "claude",
-      "metrics": {"levelPct": 50, "tempC": 75}, "limits": {"levelPct": {"min": 20, "max": 70, "critical": 80}, "tempC": {"min": 70, "max": 80, "critical": 85}},
+      "metrics": {"levelPct": 50, "tempC": 75}, "limits": {"levelPct": {"min": 20, "max": 70, "critical": 80}, "tempC": {"min": 70, "max": 80, "critical": 90}},
       "upstream": ["plant-b/P-100", "plant-b/E-101"], "downstream": ["plant-b/LV-101"], "sharedResources": [], "status": "ok", "marginPct": 10, "lastTick": "2026-10-31T00:00:00Z"
     },
     {

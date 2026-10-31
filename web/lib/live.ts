@@ -71,26 +71,28 @@ function toEquipment(c: any): Equipment {
   };
 }
 
-/** The one predicted number that matters most for this voter. */
-function primaryPrediction(vote: any, proposalPlant: PlantId): number {
+/** The one predicted number that matters most for this voter, with the metric it measures. */
+function primaryPrediction(vote: any, proposalPlant: PlantId, proposalMetric = "speedPct"): { metric?: string; value: number } {
   const predicted: Record<string, number> = vote.predicted ?? {};
   const tag = tagOf(vote.componentId);
   const crossPlant = plantOf(vote.componentId) !== proposalPlant;
   const preferred: string[] =
     tag === "LV-101" ? ["positionPct"]
       : tag === "TV-101" ? (crossPlant ? ["headerBarg", "steamKgH", "positionPct"] : ["steamKgH", "positionPct", "headerBarg"])
-        : tag === "TK-101" ? ["levelPct", "tempC"]
+        : tag === "TK-101" ? (proposalMetric === "tempC" ? ["tempC", "levelPct"] : ["levelPct", "tempC"])
           : tag === "E-101" ? ["dutyKw"]
-            : [];
-  for (const key of preferred) if (typeof predicted[key] === "number") return predicted[key];
-  const first = Object.values(predicted).find((value) => typeof value === "number");
-  return num(first, 0);
+            : tag === "P-100" ? ["speedPct", "feedM3h"]
+              : [];
+  for (const key of preferred) if (typeof predicted[key] === "number") return { metric: key, value: predicted[key] };
+  const first = Object.entries(predicted).find(([, value]) => typeof value === "number");
+  return first ? { metric: first[0], value: num(first[1], 0) } : { value: 0 };
 }
 
-function toVote(vote: any, proposalPlant: PlantId): ProposalVote {
+function toVote(vote: any, proposalPlant: PlantId, proposalMetric?: string): ProposalVote {
+  const prediction = primaryPrediction(vote, proposalPlant, proposalMetric);
   return {
     tag: tagOf(vote.componentId), plantId: plantOf(vote.componentId), vote: vote.vote === "yes" ? "yes" : "no",
-    predicted: primaryPrediction(vote, proposalPlant), reason: String(vote.reason ?? ""),
+    predicted: prediction.value, ...(prediction.metric ? { predictedMetric: prediction.metric } : {}), reason: String(vote.reason ?? ""),
     evidence: [...(vote.evidenceEventIds ?? []), ...(vote.evidenceRuleIds ?? [])],
   };
 }
@@ -98,10 +100,12 @@ function toVote(vote: any, proposalPlant: PlantId): ProposalVote {
 function toProposal(p: any): Proposal {
   return {
     id: p.id, plantId: p.plantId, proposerTag: tagOf(p.proposerComponentId ?? `${p.plantId}/P-100`), metric: p.metric ?? "speedPct", from: num(p.from), to: num(p.to), status: p.status,
-    votes: (p.votes ?? []).map((v: any) => toVote(v, p.plantId)),
+    votes: (p.votes ?? []).map((v: any) => toVote(v, p.plantId, p.metric)),
     vetoDeadline: ms(p.vetoDeadline), parentId: p.parentProposalId ?? undefined, createdAt: ms(p.at) ?? 0,
   };
 }
+
+const EVENT_UNITS: Record<string, string> = { speedPct: "%", levelPct: "%", positionPct: "%", tempC: " °C", steamKgH: " kg/h", dutyKw: " kW", headerBarg: " barg" };
 
 function eventEvidence(e: any): EvidenceItem {
   const lv = (e.effects ?? []).find((f: any) => typeof f.componentId === "string" && f.componentId.endsWith("/LV-101") && f.metric === "positionPct");
@@ -111,7 +115,7 @@ function eventEvidence(e: any): EvidenceItem {
   if (e.proposalId) parts.push(`Observed after proposal ${e.proposalId}`);
   return {
     id: e.id, kind: "event",
-    title: `${tagOf(e.componentId)} ${round(num(e.before))}→${round(num(e.after))}%${e.incident ? ` · ${e.incident}` : ""}`,
+    title: `${tagOf(e.componentId)} ${round(num(e.before))}→${round(num(e.after))}${EVENT_UNITS[e.metric] ?? "%"}${e.incident ? ` · ${e.incident}` : ""}`,
     plantId: e.plantId, at: e.at, summary: parts.join(". ") || `${e.metric} ${e.before} → ${e.after}`,
     before: num(e.before), after: num(e.after), observed: lv ? num(lv.after) : num(e.after),
   };

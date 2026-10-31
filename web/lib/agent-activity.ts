@@ -52,7 +52,7 @@ export function demoAgentActivities(state: DemoState): AgentActivity[] {
       activity.progress = Math.min(85, 15 + proposal.votes.length * 14);
       if (proposal.status === "veto_window") {
         activity.state = "waiting";
-        activity.summary = proposer ? `All required agents accepted ${proposal.to}${description.unit} for ${description.label}. The operator can veto before the 10-second window ends.` : `${vote?.reason ?? "Equipment review complete"}. Waiting for the operator veto window; no setpoint has changed yet.`;
+        activity.summary = proposer ? `All required agents accepted ${proposal.to}${description.unit} for ${description.label}. The operator can veto before the 5-second window ends.` : `${vote?.reason ?? "Equipment review complete"}. Waiting for the operator veto window; no setpoint has changed yet.`;
         activity.latestAction = vote ? `Voted ${vote.vote.toUpperCase()} on ${proposal.id}; waiting for human oversight.` : `Collected ${proposal.votes.length} accepted reviews for ${proposal.id}.`;
         activity.evidence = vote?.evidence ?? [];
       } else if (vote) {
