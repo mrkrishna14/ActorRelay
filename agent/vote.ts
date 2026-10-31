@@ -6,9 +6,9 @@ import type { ComponentView, Glue } from "./glue";
 import type { Llm, LlmReply } from "./llm";
 import { llmVoteSchema, voteSchema, type LlmVote } from "./schemas";
 import {
-  CLOSE_RUN_FRACTION,
+  closeDistance,
   evidenceEstimates,
-  evidencePeaks,
+  evidenceExtremes,
   expectedHeader,
   MIN_SIMILAR,
   newestExecution,
@@ -30,9 +30,11 @@ const MAX_REASON_CHARS = 900;
 const MAX_AGENT_NOTE_CHARS = 240;
 const MAX_IDS_IN_REASON = 3;
 
-export const LLM_TIMEOUT_MS = { openai: 8000, claude: 9000 };
+export const LLM_TIMEOUT_MS = { openai: 12_000, claude: 9000 };
 /** Relay's reply window is 20 s; both attempts must fit inside it. */
 export const TOTAL_LLM_BUDGET_MS = 18_000;
+/** An instant failure would otherwise spend both attempts at once. */
+const RETRY_BACKOFF_MS = 400;
 /**
  * A no the evidence already proves is posted after this long even if the model is slow. A first block can wait for the
  * model's reasoning. A repeat has fresh memory behind it, so it goes early: with a 2 s sweep that keeps it under 5 s.
@@ -54,8 +56,9 @@ export function systemPrompt(role: Role): string {
 const round9 = (value: number) => Math.round(value * 1e9) / 1e9;
 const show = (value: number) => String(Math.round(value * 10) / 10);
 
+/** The margin pulls the line in from critical, but never under the operating maximum. The actors use the same line. */
 export function thresholdFor(limit: Limit, marginPct: number): number {
-  return round9(limit.critical * (1 - marginPct / 100));
+  return round9(Math.max(limit.critical * (1 - marginPct / 100), limit.max));
 }
 
 const nearCriticalLine = (limit: Limit) => round9(limit.critical * NEAR_CRITICAL_FRACTION);
@@ -68,7 +71,7 @@ export function requiredMetrics(own: ComponentView): string[] {
 export type VoteContext = {
   proposal: Proposal;
   own: ComponentView;
-  proposerLimit: Limit | undefined;
+  proposerLimit: Limit;
   /** The similar events after the relevance cut. This is what the voter was given, so similarCount is its length. */
   retrieved: HistoryEvent[];
   newest: HistoryEvent | null;
@@ -76,6 +79,7 @@ export type VoteContext = {
   applicable: LearnedRule[];
   estimates: Record<string, number>;
   peaks: Record<string, number>;
+  lows: Record<string, number>;
   /** Header pressure this change should leave, for voters on the shared header. */
   header: number | undefined;
   thresholds: Record<string, number>;
@@ -132,6 +136,7 @@ async function loadSharedContext(deps: VoteDeps, notified: Proposal): Promise<Sh
 async function gatherContext(deps: VoteDeps, notified: Proposal, componentId: ComponentId): Promise<VoteContext> {
   const { glue } = deps;
   const own = await glue.component(componentId);
+  if (own.status === "offline" || !Object.keys(own.limits).length) throw new Error(`${componentId} is offline or has no limits`);
   const { proposal, proposer, steam, similar, newest } = await sharedContext(deps, notified);
   const proposerLimit = proposer?.limits[proposal.metric];
   if (!proposer || !proposerLimit) throw new Error(`no limit known for ${proposal.proposerComponentId} ${proposal.metric}`);
@@ -144,6 +149,7 @@ async function gatherContext(deps: VoteDeps, notified: Proposal, componentId: Co
     Object.entries(own.limits).map(([metric, limit]) => [metric, thresholdFor(limit, own.marginPct)]),
   );
   const moved = sameDirection(retrieved, proposal);
+  const { peaks, lows } = evidenceExtremes(moved, own, proposal, closeDistance(proposerLimit));
   return {
     proposal,
     own,
@@ -153,7 +159,8 @@ async function gatherContext(deps: VoteDeps, notified: Proposal, componentId: Co
     rules,
     applicable: rules.filter((r) => ruleApplies(r, proposal, own)),
     estimates: evidenceEstimates(moved, own, proposal.to),
-    peaks: evidencePeaks(moved, own, proposal.to),
+    peaks,
+    lows,
     header: steam && own.sharedResources.length ? expectedHeader(moved, steam, proposal.to) : undefined,
     thresholds,
   };
@@ -161,8 +168,10 @@ async function gatherContext(deps: VoteDeps, notified: Proposal, componentId: Co
 
 /** A proposal that itself lands within 15% of the changed metric's critical limit. */
 function changeNearCritical(context: VoteContext): boolean {
-  return context.proposerLimit !== undefined && context.proposal.to >= nearCriticalLine(context.proposerLimit);
+  return context.proposal.to >= nearCriticalLine(context.proposerLimit);
 }
+
+const isIncrease = (context: VoteContext) => context.proposal.to > context.proposal.from;
 
 /** Rule consequences that put this voter at or past a threshold. These rules bind whatever the model predicts. */
 function bindingRules(context: VoteContext): LearnedRule[] {
@@ -172,24 +181,31 @@ function bindingRules(context: VoteContext): LearnedRule[] {
   });
 }
 
-/** The value history proves for a metric: a smaller change already reached it, or the nearest runs average there. */
-const provenValue = (context: VoteContext, metric: string) => Math.max(context.estimates[metric] ?? -Infinity, context.peaks[metric] ?? -Infinity);
+/** The value this change is known to reach: where it already reads, what a smaller run reached, or where the nearest runs land. */
+function provenValue(context: VoteContext, metric: string): number {
+  const reading = isIncrease(context) ? (context.own.metrics[metric] ?? -Infinity) : -Infinity;
+  return Math.max(reading, context.estimates[metric] ?? -Infinity, context.peaks[metric] ?? -Infinity);
+}
 
 function evidenceBreaches(context: VoteContext): string[] {
   return Object.keys(context.thresholds).filter((metric) => provenValue(context, metric) >= context.thresholds[metric]);
 }
 
-/** Runs well short of a near-critical target say nothing about it, so only close runs count there. */
-function insufficientHistory(context: VoteContext): boolean {
-  if (context.retrieved.length < MIN_SIMILAR) return true;
-  if (!changeNearCritical(context) || !context.proposerLimit) return false;
-  const { min, max } = context.proposerLimit;
-  const closest = context.proposal.to - CLOSE_RUN_FRACTION * (max - min);
-  return context.retrieved.filter((e) => e.after >= closest).length < MIN_SIMILAR;
+/** Metrics a run no bigger than this change took under their minimum. */
+function evidenceLows(context: VoteContext): string[] {
+  return Object.keys(context.own.limits).filter((metric) => context.lows[metric] < context.own.limits[metric].min);
 }
 
-/** An increase nothing in history resembles. */
-const unprecedentedIncrease = (context: VoteContext) => context.retrieved.length === 0 && context.proposal.to > context.proposal.from;
+function closeRuns(context: VoteContext): number {
+  const closest = context.proposal.to - closeDistance(context.proposerLimit);
+  return context.retrieved.filter((e) => e.after >= closest).length;
+}
+
+/** Runs well short of the target say nothing about it, so an increase or a change near critical needs close ones. */
+function insufficientHistory(context: VoteContext): boolean {
+  if (context.retrieved.length < MIN_SIMILAR) return true;
+  return (isIncrease(context) || changeNearCritical(context)) && closeRuns(context) < MIN_SIMILAR;
+}
 
 function nearCritical(context: VoteContext, predicted: Record<string, number>): boolean {
   return Object.entries(context.own.limits).some(
@@ -202,8 +218,8 @@ function provenNo(context: VoteContext): boolean {
   return (
     bindingRules(context).length > 0 ||
     evidenceBreaches(context).length > 0 ||
-    unprecedentedIncrease(context) ||
-    (insufficientHistory(context) && (changeNearCritical(context) || nearCritical(context, context.estimates)))
+    evidenceLows(context).length > 0 ||
+    (insufficientHistory(context) && (isIncrease(context) || changeNearCritical(context) || nearCritical(context, context.estimates)))
   );
 }
 
@@ -326,6 +342,7 @@ async function askModel(deps: VoteDeps, context: VoteContext): Promise<Answered 
       user = `${buildVotePrompt(context)}\nYour previous reply was rejected: ${error}. Return only the JSON object.`;
     } catch (error) {
       deps.log?.(`${context.own.id} attempt ${attempt + 1} failed: ${error instanceof Error ? error.message : error}`);
+      if (attempt === 0) await Bun.sleep(RETRY_BACKOFF_MS * (1 + Math.random()));
     }
   }
   return questioned;
@@ -379,6 +396,9 @@ function effectivePrediction(context: VoteContext, answered: Answered | null): R
   for (const metric of evidenceBreaches(context)) {
     predicted[metric] = Math.max(predicted[metric] ?? -Infinity, provenValue(context, metric));
   }
+  for (const metric of evidenceLows(context)) {
+    predicted[metric] = Math.min(predicted[metric] ?? Infinity, context.lows[metric]);
+  }
   for (const rule of bindingRules(context)) {
     const { metric, value } = rule.consequence;
     predicted[metric] = Math.max(predicted[metric] ?? -Infinity, value);
@@ -402,6 +422,8 @@ function thresholdReason(context: VoteContext, predicted: Record<string, number>
     const claim = `predicted ${metric} ${show(predicted[metric])} is at or past the ${show(context.thresholds[metric])} threshold (critical ${limit.critical} less ${context.own.marginPct}% margin)`;
     const reached = context.retrieved.filter((e) => ownRows(e, context.own).some((r) => r.metric === metric && r.after >= context.thresholds[metric]));
     if (reached.length) return `${claim}; ${reached.length} of ${context.retrieved.length} similar runs reached it (${listIds(reached.map((e) => e.id))})`;
+    const reading = context.own.metrics[metric];
+    if (isIncrease(context) && reading >= context.thresholds[metric]) return `${claim}; it already reads ${show(reading)}`;
     return cited ? claim : `${claim}; no similar run reached it, so this rests on the prediction alone`;
   });
   return parts.join("; ");
@@ -415,9 +437,17 @@ function newestNote(context: VoteContext): string | null {
   return `Newest run ${newest.id} (${change}) stayed safe; it is the latest observation, not proof that this change is unsafe.`;
 }
 
-/** Rule text may carry its own older count, so the live timesSeen is the only one shown. */
+/** Binding rules, or failing that any applicable rule behind a breach the prediction already shows. */
+function backingRules(context: VoteContext, predicted: Record<string, number>): LearnedRule[] {
+  const binding = bindingRules(context);
+  if (binding.length) return binding;
+  return context.applicable.filter(({ consequence }) => consequence.op === ">=" && predicted[consequence.metric] >= context.thresholds[consequence.metric]);
+}
+
+/** Plant and company copies of one pattern print once, and only the live timesSeen is shown. */
 function ruleReason(rules: LearnedRule[]): string {
-  return rules.map((r) => `${r.scope} rule ${r.id}: ${r.text.replace(/,?\s*seen \d+ times?/i, "")} (seen ${r.timesSeen} times)`).join("; ");
+  const patterns = new Map(rules.map((r) => [`${r.condition.metric}|${r.condition.value}|${r.consequence.metric}|${r.consequence.value}`, r]));
+  return [...patterns.values()].map((r) => `${r.scope} rule ${r.id}: ${r.text.replace(/,?\s*seen \d+ times?/i, "")} (seen ${r.timesSeen} times)`).join("; ");
 }
 
 function compose(parts: (string | null)[], max = MAX_REASON_CHARS): string {
@@ -429,16 +459,14 @@ function decide(context: VoteContext, answered: Answered | null, missing: NoAnsw
   const predicted = effectivePrediction(context, answered);
   const { prefix, suffix } = provenance(answered?.reply ?? null, missing);
   const note = answered ? `Agent said ${answered.answer.vote}: ${agentNote(answered.answer.reason)}` : null;
-  const binding = bindingRules(context);
-  const nearLimit = nearCritical(context, predicted) || nearCritical(context, context.estimates) || changeNearCritical(context);
+  const backing = backingRules(context, predicted);
+  const needsHistory = isIncrease(context) || nearCritical(context, predicted) || nearCritical(context, context.estimates) || changeNearCritical(context);
 
   let grounds: string | null = null;
-  if (binding.length) {
-    grounds = compose([`${ruleReason(binding)};`, thresholdReason(context, predicted, true)]);
-  } else if (unprecedentedIncrease(context)) {
-    grounds = "insufficient history: no similar event for this increase";
-  } else if (insufficientHistory(context) && nearLimit) {
-    grounds = `insufficient history: ${context.retrieved.length} similar events, too few or too far short of the target (${MIN_SIMILAR} close ones needed) for a change within 15% of a critical limit`;
+  if (backing.length) {
+    grounds = compose([`${ruleReason(backing)};`, thresholdReason(context, predicted, true)]);
+  } else if (insufficientHistory(context) && needsHistory) {
+    grounds = `insufficient history: ${closeRuns(context)} of ${context.retrieved.length} similar runs came close to this target, ${MIN_SIMILAR} needed`;
   } else {
     grounds = thresholdReason(context, predicted);
     const low = belowMinimum(context, predicted);

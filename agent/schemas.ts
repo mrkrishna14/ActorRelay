@@ -45,7 +45,7 @@ export const componentStateSchema = z.object({
   downstream: z.array(id),
   sharedResources: z.array(z.string()),
   status: z.enum(["ok", "warning", "critical", "offline"]),
-  marginPct: finite,
+  marginPct: z.number().min(5).max(25),
   lastTick: z.string(),
   calibration: z.array(calibrationEntrySchema).optional(),
 }) satisfies z.ZodType<ComponentState & { calibration?: CalibrationEntry[] }>;

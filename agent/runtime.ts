@@ -12,6 +12,8 @@ import { castVote } from "./vote";
 const MAX_PROPOSAL_AGE_MS = 30_000;
 const BLOCK_POLL_MS = 800;
 const BLOCK_WATCH_MS = 40_000;
+/** The first no blocks at the next sweep, but late votes still land, and a counter built without them can miss a limit. */
+const COUNTER_SETTLE_MS = 6000;
 const LEARN_TRIES = 3;
 const LEARN_RETRY_MS = 1000;
 
@@ -90,7 +92,12 @@ export class AgentRuntime {
     const age = Date.now() - Date.parse(proposal.at);
     if (proposal.status !== "voting" || age > MAX_PROPOSAL_AGE_MS) return;
     const voters = proposal.requiredVoters.filter((id) => this.owned.has(id) && id !== proposal.proposerComponentId);
-    const work: Promise<unknown>[] = voters.filter((id) => this.once(`vote|${proposal.id}|${id}`)).map((id) => this.voteAs(proposal, id));
+    const work: Promise<unknown>[] = voters.filter((id) => this.once(`vote|${proposal.id}|${id}`)).map((id) =>
+      this.voteAs(proposal, id).catch((error) => {
+        this.seen.delete(`vote|${proposal.id}|${id}`);
+        throw error;
+      }),
+    );
     if (this.owned.has(proposal.proposerComponentId) && this.once(`watch|${proposal.id}`)) work.push(this.watchForBlock(proposal));
     await Promise.all(work);
   }
@@ -108,15 +115,21 @@ export class AgentRuntime {
   private async watchForBlock(proposal: Proposal) {
     const { glue, llm, post, pollMs } = this.options;
     const deadline = Date.now() + BLOCK_WATCH_MS;
+    let blockedAt = 0;
     while (Date.now() < deadline) {
       await Bun.sleep(pollMs ?? BLOCK_POLL_MS);
       const plant = await glue.plant(proposal.plantId).catch(() => null);
       const current = plant?.proposals.find((p) => p.id === proposal.id);
       if (!plant || !current || current.status === "voting") continue;
-      if (current.status !== "blocked" || !this.once(`counter|${proposal.id}`)) return;
+      if (current.status !== "blocked") return;
+      blockedAt ||= Date.now();
+      const allIn = current.votes.length >= current.requiredVoters.length;
+      if (!allIn && Date.now() - blockedAt < COUNTER_SETTLE_MS) continue;
+      // Actor state remembers a posted counter, so a retry here can never post a second one.
       const counter = await buildCounter({ glue, llm, log: this.log }, current, plant.proposals);
-      if (!counter) return;
-      this.log(`${proposal.proposerComponentId} countered ${proposal.id} with ${counter.proposal.to} (${counter.decidedBy})`);
+      if (!counter && allIn) return;
+      if (!counter) continue;
+      this.log(`${proposal.proposerComponentId} countered ${proposal.id} with ${counter.proposal.to} (target by code, explained by ${counter.explainedBy})`);
       await post({ type: "counter", parentProposalId: counter.parentProposalId, proposal: counter.proposal }, proposal.plantId, proposal.proposerComponentId);
       return;
     }
@@ -130,7 +143,10 @@ export class AgentRuntime {
         return this.log(`calibrated ${entries.length} metrics for ${message.proposalId}`);
       } catch (error) {
         // learn.ts skips what is already recorded, so a retry after a partial failure repeats nothing.
-        if (attempt >= LEARN_TRIES) throw error;
+        if (attempt >= LEARN_TRIES) {
+          this.seen.delete(`executed|${message.proposalId}`);
+          throw error;
+        }
         this.log(`learning failed for ${message.proposalId}, retrying: ${error}`);
         await Bun.sleep(this.options.pollMs ?? LEARN_RETRY_MS);
       }

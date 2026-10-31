@@ -15,6 +15,8 @@ const TOKENS_FILE = process.env.RELAY_TOKENS_FILE ?? join(import.meta.dir, ".rel
 const HEALTH_PORT = Number(process.env.AGENT_HEALTH_PORT ?? 7201);
 const STARTUP_TRIES = 3;
 const STARTUP_RETRY_MS = 300;
+/** The default backoff left a stream dead 14 s after the server came back. */
+const RECONNECT = { reconnectBaseDelayMs: 250, reconnectMaxDelayMs: 1500 };
 
 type Tokens = { workspaceKey: string; agents: Record<string, string> };
 type Client = Awaited<ReturnType<AgentRelay["workspace"]["reconnect"]>>;
@@ -39,7 +41,18 @@ async function withRetry<T>(label: string, work: () => Promise<T>): Promise<T> {
   }
 }
 
-/** Registration is create-only, so a known identity comes back through its stored token. */
+/** Registration is create-only. If the token was lost, say with a dropped response, only a release frees the name. */
+async function register(relay: AgentRelay, name: string): Promise<Client> {
+  try {
+    return await relay.workspace.register({ name, type: "agent" });
+  } catch (error) {
+    if ((error as { code?: string }).code !== "name_conflict") throw error;
+    await relay.workspace.release({ name, deleteAgent: true });
+    return relay.workspace.register({ name, type: "agent" });
+  }
+}
+
+/** A known identity comes back through its stored token. */
 async function identity(relay: AgentRelay, tokens: Tokens, name: string): Promise<Client> {
   const stored = tokens.agents[name];
   if (stored) {
@@ -49,16 +62,22 @@ async function identity(relay: AgentRelay, tokens: Tokens, name: string): Promis
       console.warn(`${name}: stored token rejected, registering again: ${error}`);
     }
   }
-  const client = await withRetry(`register ${name}`, () => relay.workspace.register({ name, type: "agent" }));
+  const client = await withRetry(`register ${name}`, () => register(relay, name));
   if (!client.token) throw new Error(`${name}: relay returned no token`);
   tokens.agents[name] = client.token;
   saveTokens(tokens);
   return client;
 }
 
+/**
+ * Post cost grows with channel members, so each agent joins only what it posts to. All identities share one listener,
+ * so any member of a channel delivers it to every agent in this process.
+ */
+const channelsFor = (component: ComponentState) => [component.plantId, ...(component.sharedResources.length ? ["company"] : [])];
+
 /** Glue also creates these, and whichever of us starts first wins. */
-async function joinChannels(client: Client) {
-  for (const channel of CHANNELS) {
+async function joinChannels(client: Client, channels: string[]) {
+  for (const channel of channels) {
     await client.channels.create({ name: channel, topic: `ActorRelay ${channel}` }).catch(() => undefined);
     await withRetry(`join ${channel}`, () => client.channels.join(channel));
   }
@@ -73,11 +92,11 @@ async function main() {
   console.log(claudeUp ? "claude cli: logged in" : "claude cli: unavailable, Claude roles vote through labelled GPT fallback");
 
   const key = await workspaceKey();
-  const relay = new AgentRelay({ workspaceKey: key, baseUrl: RELAY_URL });
+  const relay = new AgentRelay({ workspaceKey: key, baseUrl: RELAY_URL, agentClientOptions: { ws: RECONNECT } });
   const tokens = loadTokens(key);
   const clients = new Map<string, Client>();
   for (const component of components) clients.set(component.id, await identity(relay, tokens, agentName(component.id)));
-  for (const client of clients.values()) await joinChannels(client);
+  for (const component of components) await joinChannels(clients.get(component.id) as Client, channelsFor(component));
 
   /** If Relay refuses a post, the same message still reaches glue: Plant rejects a duplicate vote. */
   const direct = (message: WireMessage) => {

@@ -40,7 +40,7 @@ export class GlueError extends Error {
   }
 }
 
-const REQUEST_TIMEOUT_MS = 5000;
+const REQUEST_TIMEOUT_MS = 8000;
 
 /** Routes may wrap a list in an object; accept either so a reshaped response does not silently become "no history". */
 function listOf<T>(schema: z.ZodType<T>, key: string, body: unknown): T[] {
@@ -55,7 +55,17 @@ export class HttpGlue implements Glue {
     this.base = base.replace(/\/$/, "");
   }
 
+  /** A slow actor is worth one more read. Writes are not repeated: the caller knows whether a repeat is safe. */
   private async request(path: string, body?: unknown): Promise<unknown> {
+    try {
+      return await this.send(path, body);
+    } catch (error) {
+      if (body !== undefined || (error as Error).name !== "TimeoutError") throw error;
+      return this.send(path, body);
+    }
+  }
+
+  private async send(path: string, body?: unknown): Promise<unknown> {
     const response = await fetch(this.base + path, {
       method: body === undefined ? "GET" : "POST",
       headers: body === undefined ? {} : { "Content-Type": "application/json" },

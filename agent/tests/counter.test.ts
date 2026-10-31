@@ -59,7 +59,7 @@ describe("buildCounter", () => {
 
   test("a blocker on a metric that normally runs near its limit still leaves a counter", async () => {
     const parent = blocked();
-    parent.votes.push({ ...noVote(parent.id), componentId: "plant-a/TK-101", agentId: "agent:plant-a/TK-101", predicted: { levelPct: 51, tempC: 77 } });
+    parent.votes.push({ ...noVote(parent.id), componentId: "plant-a/TK-101", agentId: "agent:plant-a/TK-101", predicted: { levelPct: 51, tempC: 81 } });
     const counter = await buildCounter(deps(new FakeGlue(), pick(65)), parent, [parent]);
     expect(counter?.proposal.to).toBe(65);
   });
@@ -79,7 +79,35 @@ describe("buildCounter", () => {
     const counter = await buildCounter(deps(new FakeGlue(), llm), parent, [parent]);
     expect(llm.requests).toHaveLength(2);
     expect(counter?.proposal.to).toBe(65);
-    expect(counter?.proposal.rationale).toContain("chosen by code");
+    expect(counter?.proposal.rationale).toContain("target set by code; the model gave no valid explanation");
+    expect(counter?.explainedBy).toBe("nobody");
+  });
+
+  test("the rationale says code set the target, and who explained it", async () => {
+    const parent = blocked();
+    const llm = new ScriptedLlm(() => JSON.stringify({ value: 65, rationale: "safe history" }), { model: "gpt-6.1-terra" });
+    const counter = await buildCounter(deps(new FakeGlue(), llm), parent, [parent]);
+    expect(counter?.proposal.rationale).toContain("[target set by code; explained by openai gpt-6.1-terra]");
+    expect(counter?.explainedBy).toBe("openai gpt-6.1-terra");
+  });
+
+  test("a counter refused only by a failed voter falls back on what blocked its parent", async () => {
+    const root = blocked();
+    const first = makeProposal({ status: "blocked", from: 50, to: 65, parentProposalId: root.id });
+    first.votes = [{ ...noVote(first.id), componentId: "plant-a/TV-101", agentId: "agent:plant-a/TV-101", reason: "malformed prediction", predicted: {} }];
+    const counter = await buildCounter(deps(new FakeGlue(), pick(60)), first, [root, first]);
+    expect(counter?.proposal.to).toBe(60);
+    expect(counter?.parentProposalId).toBe(first.id);
+  });
+
+  test("when the doubled margin leaves nothing, the plain threshold is the ceiling", async () => {
+    const parent = blocked();
+    parent.votes = [{ ...noVote(parent.id), marginPct: 25 }];
+    const glue = new FakeGlue();
+    const run = (id: string, after: number, valve: number) => ({ ...safeExecution(id), id, before: 50, after, proposalId: null, effects: [{ componentId: "plant-a/LV-101", metric: "positionPct", before: 50, after: valve, ticksToSettle: 3 }] });
+    glue.history.splice(0, glue.history.length, run("a", 65, 70), run("b", 66, 70), run("c", 66, 71), run("d", 60, 66), run("e", 61, 66), run("f", 61, 67), run("g", 55, 62), run("h", 56, 62), run("i", 56, 63));
+    const counter = await buildCounter(deps(glue, pick(65)), parent, [parent]);
+    expect(counter?.proposal.to).toBe(65);
   });
 
   test("a fallback pick keeps its vendor label", async () => {
@@ -114,7 +142,7 @@ describe("buildCounter", () => {
   });
 
   test("no safe value between from and to means no counter", async () => {
-    const parent = blocked({ from: 72, to: 85 });
+    const parent = blocked({ from: 76, to: 85 });
     expect(await buildCounter(deps(new FakeGlue(), pick(75)), parent, [parent])).toBeNull();
   });
 

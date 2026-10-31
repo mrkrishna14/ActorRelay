@@ -81,7 +81,7 @@ describe("counter trigger", () => {
   test("the proposer notices its own block and posts a counter on the plant channel", async () => {
     const glue = new FakeGlue();
     const posted: { message: WireMessage; channel: string; from: string }[] = [];
-    const llm = new ScriptedLlm((request) => (request.system.includes("Pick a safer target") ? JSON.stringify({ value: 65, rationale: "safe history" }) : JSON.stringify({ vote: "no", reason: "too high", predicted: { positionPct: 89 } })));
+    const llm = new ScriptedLlm((request) => (request.system.includes("Explain it") ? JSON.stringify({ value: 65, rationale: "safe history" }) : JSON.stringify({ vote: "no", reason: "too high", predicted: { positionPct: 89 } })));
     const runtime = new AgentRuntime({ glue, llm, owned: ["plant-a/P-100", "plant-a/LV-101"], log: () => undefined, pollMs: 5, post: async (message, channel, from) => void posted.push({ message, channel, from }) });
     const proposal = makeProposal({ to: 85, requiredVoters: ["plant-a/LV-101"] });
     glue.addProposal(proposal);
@@ -96,6 +96,94 @@ describe("counter trigger", () => {
     expect(counter?.from).toBe("plant-a/P-100");
     expect(counter?.channel).toBe("plant-a");
     expect(counter?.message).toMatchObject({ type: "counter", parentProposalId: proposal.id, proposal: { to: 65 } });
+  });
+});
+
+describe("waiting for late votes", () => {
+  const noFrom = (componentId: string, proposalId: string, predicted: Record<string, number>, reason = "too high") => ({ proposalId, componentId, agentId: `agent:${componentId}`, vote: "no" as const, reason, predicted, marginPct: 10, evidenceEventIds: [], evidenceRuleIds: [], similarCount: 5 });
+
+  function watcher(glue: FakeGlue, posted: { message: WireMessage }[]) {
+    const llm = new ScriptedLlm((request) => (request.system.includes("Explain it") ? JSON.stringify({ value: 65, rationale: "safe history" }) : JSON.stringify({ vote: "yes", reason: "ok", predicted: { positionPct: 66 } })));
+    return new AgentRuntime({ glue, llm, owned: ["plant-a/P-100"], log: () => undefined, pollMs: 5, post: async (message) => void posted.push({ message }) });
+  }
+
+  test("the counter is built from the full vote once it is in, not the first blocked snapshot", async () => {
+    const glue = new FakeGlue();
+    const posted: { message: WireMessage }[] = [];
+    const proposal = makeProposal({ to: 85, requiredVoters: ["plant-a/LV-101", "plant-a/TV-101"] });
+    glue.addProposal(proposal);
+    watcher(glue, posted).onMessage({ type: "proposal", proposal: structuredClone(proposal) });
+    proposal.status = "blocked";
+    proposal.votes = [noFrom("plant-a/LV-101", proposal.id, { positionPct: 89 })];
+    await Bun.sleep(60);
+    expect(posted).toHaveLength(0);
+    proposal.votes.push(noFrom("plant-a/TV-101", proposal.id, { positionPct: 88 }));
+    await Bun.sleep(150);
+    expect(posted.map((p) => p.message.type)).toEqual(["counter"]);
+  });
+
+  test("a first no with no prediction does not end the watch: the real no that lands later is used", async () => {
+    const glue = new FakeGlue();
+    const posted: { message: WireMessage }[] = [];
+    const proposal = makeProposal({ to: 85, requiredVoters: ["plant-a/TK-101", "plant-a/LV-101"] });
+    glue.addProposal(proposal);
+    watcher(glue, posted).onMessage({ type: "proposal", proposal: structuredClone(proposal) });
+    proposal.status = "blocked";
+    proposal.votes = [noFrom("plant-a/TK-101", proposal.id, {}, "malformed prediction")];
+    await Bun.sleep(60);
+    proposal.votes.push(noFrom("plant-a/LV-101", proposal.id, { positionPct: 89 }));
+    await Bun.sleep(150);
+    expect(posted).toHaveLength(1);
+    expect(posted[0].message).toMatchObject({ type: "counter", proposal: { to: 65 } });
+  });
+});
+
+describe("a failure leaves the work recoverable", () => {
+  test("a vote that could not be posted is cast again on redelivery", async () => {
+    const glue = new FakeGlue();
+    const llm = new ScriptedLlm(() => JSON.stringify({ vote: "yes", reason: "ok", predicted: { positionPct: 66 } }));
+    let fails = 1;
+    const posted: WireMessage[] = [];
+    const runtime = new AgentRuntime({
+      glue,
+      llm,
+      owned: ["plant-a/LV-101"],
+      log: () => undefined,
+      pollMs: 5,
+      post: async (message) => {
+        if (fails-- > 0) throw new Error("relay and glue both down");
+        posted.push(message);
+      },
+    });
+    const proposal = makeProposal({ to: 65, requiredVoters: ["plant-a/LV-101"] });
+    glue.addProposal(proposal);
+    runtime.onMessage({ type: "proposal", proposal });
+    await runtime.drain();
+    expect(posted).toHaveLength(0);
+    runtime.onMessage({ type: "proposal", proposal });
+    await runtime.drain();
+    expect(posted).toHaveLength(1);
+  });
+
+  test("an executed message that kept failing can be delivered again", async () => {
+    const { runtime, glue } = setup();
+    const proposal = makeProposal({ id: "p-down", to: 65, status: "executed", requiredVoters: ["plant-a/LV-101"] });
+    proposal.votes = [{ proposalId: "p-down", componentId: "plant-a/LV-101", agentId: "agent:plant-a/LV-101", vote: "yes", reason: "ok", predicted: { positionPct: 66 }, marginPct: 10, evidenceEventIds: [], evidenceRuleIds: [], similarCount: 5 }];
+    glue.addProposal(proposal);
+    const realPlant = glue.plant.bind(glue);
+    let down = true;
+    glue.plant = async (id) => {
+      if (down) throw new Error("glue down");
+      return realPlant(id);
+    };
+    const message = { type: "executed", proposalId: "p-down", event: safeExecution("p-down") };
+    runtime.onMessage(message);
+    await runtime.drain();
+    expect(glue.calibrations).toHaveLength(0);
+    down = false;
+    runtime.onMessage(message);
+    await runtime.drain();
+    expect(glue.calibrations).toHaveLength(1);
   });
 });
 

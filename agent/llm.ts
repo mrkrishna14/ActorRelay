@@ -19,8 +19,13 @@ export interface Llm {
   complete(request: LlmRequest): Promise<LlmReply>;
 }
 
-export const OPENAI_MODEL = process.env.AGENT_OPENAI_MODEL ?? "gpt-6-luna";
-export const OPENAI_EFFORT = process.env.AGENT_OPENAI_EFFORT ?? "none";
+export const OPENAI_MODEL = process.env.AGENT_OPENAI_MODEL ?? "gpt-6.1-terra";
+export const OPENAI_EFFORT = process.env.AGENT_OPENAI_EFFORT ?? "low";
+/** Rate limits are per model, so another model usually has room when the first is saturated. */
+const BACKUP_MODEL = process.env.AGENT_BACKUP_MODEL ?? "gpt-6-luna";
+const BACKUP_EFFORT = process.env.AGENT_BACKUP_EFFORT ?? "none";
+const DEFAULT_RATE_LIMIT_WAIT_MS = 300;
+const MAX_RATE_LIMIT_WAIT_MS = 1500;
 export const CLAUDE_MODEL = process.env.AGENT_CLAUDE_MODEL ?? "haiku";
 
 const repoRoot = join(import.meta.dir, "..");
@@ -34,7 +39,23 @@ function openAiKey(): string {
   return line.slice("OPENAI_API_KEY=".length).trim();
 }
 
-export async function callOpenAi(request: LlmRequest, model = OPENAI_MODEL, effort = OPENAI_EFFORT): Promise<LlmReply> {
+class RateLimited extends Error {
+  constructor(
+    message: string,
+    readonly waitMs: number,
+  ) {
+    super(message);
+  }
+}
+
+function rateLimitWait(response: Response): number {
+  const millis = Number(response.headers.get("retry-after-ms"));
+  if (millis > 0) return millis;
+  const seconds = Number(response.headers.get("retry-after"));
+  return seconds > 0 ? seconds * 1000 : DEFAULT_RATE_LIMIT_WAIT_MS;
+}
+
+async function postResponse(request: LlmRequest, model: string, effort: string): Promise<LlmReply> {
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: { Authorization: `Bearer ${openAiKey()}`, "Content-Type": "application/json" },
@@ -51,12 +72,28 @@ export async function callOpenAi(request: LlmRequest, model = OPENAI_MODEL, effo
     output?: { content?: { text?: string }[] }[];
     error?: { message?: string };
   };
-  if (!response.ok) throw new Error(`openai ${response.status}: ${body.error?.message ?? "request failed"}`);
+  const failure = `openai ${response.status}: ${body.error?.message ?? "request failed"}`;
+  if (response.status === 429) throw new RateLimited(failure, rateLimitWait(response));
+  if (!response.ok) throw new Error(failure);
   const text = (body.output ?? [])
     .flatMap((item) => item.content ?? [])
     .map((part) => part.text ?? "")
     .join("");
   return { text, provider: "openai", model, fallback: false };
+}
+
+/** On a rate limit, waits as told and tries the backup model once, inside the same time budget. */
+export async function callOpenAi(request: LlmRequest, model = OPENAI_MODEL, effort = OPENAI_EFFORT): Promise<LlmReply> {
+  const started = Date.now();
+  try {
+    return await postResponse(request, model, effort);
+  } catch (error) {
+    if (!(error instanceof RateLimited)) throw error;
+    await Bun.sleep(Math.min(error.waitMs, MAX_RATE_LIMIT_WAIT_MS));
+    const remaining = request.timeoutMs - (Date.now() - started);
+    if (remaining <= 0) throw error;
+    return postResponse({ ...request, timeoutMs: remaining }, BACKUP_MODEL, BACKUP_EFFORT);
+  }
 }
 
 function claudeBinary(): string {
@@ -110,7 +147,8 @@ export function callClaudeCli(request: LlmRequest, model = CLAUDE_MODEL): Promis
   });
 }
 
-const CLAUDE_RETRY_AFTER_MS = 60_000;
+/** A failed CLI call costs seconds on the vote path, so it is tried rarely. */
+const CLAUDE_RETRY_AFTER_MS = 600_000;
 
 /**
  * Routes each call by vendor. If the Claude CLI cannot answer, the call goes to OpenAI and the reply is marked as a

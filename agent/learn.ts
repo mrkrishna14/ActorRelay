@@ -127,7 +127,7 @@ export async function learnFromExecution(deps: LearnDeps, event: HistoryEvent, o
   deps.cache.addEvent(event);
   deps.cache.addEvents(plant.history);
   const votes = proposal.votes.filter((v) => owned.has(v.componentId));
-  const results = await Promise.all(votes.map((vote) => calibrate(deps, vote, event)));
+  const results = await Promise.allSettled(votes.map((vote) => calibrate(deps, vote, event)));
 
   const changed = { componentId: event.componentId, metric: event.metric };
   if (owned.has(event.componentId)) {
@@ -142,5 +142,7 @@ export async function learnFromExecution(deps: LearnDeps, event: HistoryEvent, o
       if (rule) await postRule(deps, rule);
     }
   }
-  return results.flat();
+  const failed = results.find((r) => r.status === "rejected");
+  if (failed) throw failed.reason;
+  return results.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
 }

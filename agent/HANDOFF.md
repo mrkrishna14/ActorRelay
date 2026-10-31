@@ -72,7 +72,8 @@ bun run agent/tests/live-relay-proof.ts
 | `RELAY_SYSTEM_NAME` | `actorrelay-system` | Must match glue's. |
 | `AGENT_HEALTH_PORT` | `7201` | `/health` |
 | `OPENAI_API_KEY` | from repo `.env` | Model calls |
-| `AGENT_OPENAI_MODEL`, `AGENT_OPENAI_EFFORT` | `gpt-6-luna`, `none` | Model for OpenAI calls |
+| `AGENT_OPENAI_MODEL`, `AGENT_OPENAI_EFFORT` | `gpt-6.1-terra`, `low` | Model for every role, chosen on the vote evals in `evals/vote/REPORT.md` |
+| `AGENT_BACKUP_MODEL`, `AGENT_BACKUP_EFFORT` | `gpt-6-luna`, `none` | Tried once on a 429, because rate limits are per model |
 | `AGENT_CLAUDE_MODEL`, `CLAUDE_BIN` | `haiku`, auto | Claude CLI model and binary |
 
 ## Relay wire format
@@ -91,6 +92,7 @@ Relay names are exactly `agent:<componentId>`, for example `agent:plant-a/LV-101
 
 - `proposal`, `executed` and `rule` are only obeyed from the system identity. The payload is validated first, and anything else is dropped.
 - A cross-plant voter posts on `company`. Everyone else posts on the proposal's plant channel.
+- Each agent joins only its own plant channel, and the two TV-101s also join `company`, because post cost grows with channel members. All identities share one listener, so every agent still receives all three channels.
 - If a Relay post fails, the vote or counter goes to glue directly over HTTP. A duplicate vote is rejected by the actors.
 - There is no `blocked` message, so the proposer polls `GET /state` every 800 ms until its proposal settles.
 - Calibration entries and rule proposals go over HTTP: `POST /calibration`, `POST /rule`.
@@ -105,28 +107,38 @@ Glue routes used: `GET /component/:id`, `GET /similar?componentId&metric&to&k&up
 
 **Direction.** Evidence for peaks only comes from runs that moved the way the proposal does. In the real history a step down heats the tank past 76.5 °C, and that says nothing about a step up. The table shown to the model marks such runs.
 
-**Force-no order.**
-1. A binding rule: its consequence is at or past this voter's threshold. The reason cites the rule.
-2. Insufficient history: no similar event for an increase; or fewer than 3 similar events with a prediction, or the change itself, within 15% of critical. For a change near critical, only runs within 5% of the range of the target count as close.
-3. A prediction at or past `critical × (1 − marginPct/100)`, or under the metric's `min`.
+**Threshold.** `max(critical × (1 − marginPct/100), limit.max)`, the same line the actors use. Without the floor, TK-101 `tempC` would sit past its threshold at normal running from margin 12 up, and block everything. The floor also means LV-101's threshold stops moving at 80, so a margin above about 11 no longer tightens it.
 
-History raises the prediction: if a run that went no further than the target reached the threshold, or the nearest runs average past it, that value stands whatever the model says. Code never turns a `no` into a `yes`. The model's `no` can be sent back once, either because no prediction supports it, or because every similar run contradicts it.
+**Force-no order.**
+1. A rule: a binding rule, whose consequence is at or past this voter's threshold, or any applicable rule behind a predicted breach. The reason cites the rule.
+2. Insufficient history: fewer than 3 similar events with a prediction or the change near critical; or an increase, or a change near critical, with fewer than 3 runs within 3.5% of the range below the target (about 2.5 speed points). Runs well short of the target say nothing about it.
+3. A prediction at or past the threshold, or under the metric's `min`.
+
+History moves the prediction, so a model that lowballs cannot pass a change history already shows as unsafe. A value stands if the metric already reads there on an increase, if a run no bigger than this change (plus the same 3.5%) reached it, or if the nearest runs land there. Rows are shifted to the target by the model's slope before averaging, so runs on one side do not bias the estimate. The same check covers `min` on the low side. Evidence only comes from runs that moved the same way as the proposal.
+
+With a model that always says yes, the sweep in `tests/adversarial/compromised-sweep.test.ts` stops at 76 on plant-a and 75 on plant-b.
+
+Code never turns a `no` into a `yes`. The model's `no` can be sent back once, if no prediction supports it, or if at least 3 runs that went as far as the target contradict it. A second answer stands, including a `yes`: TASK1 requires the re-request, and a compromised model gains nothing from it because it could say `yes` first.
 
 **Malformed.** Bad JSON, a missing limited metric, an implausible value, or a `no` with no prediction behind it gets one re-request. After that, a `no` that evidence already proves is posted with the evidence, labelled `malformed prediction from the model`. Otherwise it is `{vote:"no", reason:"malformed prediction", predicted:{}}`. A failed read of `/component`, `/similar` or `/rules` gives `reason:"retrieval failed"`.
 
 **Slow models.** A `no` already proven by evidence or a rule is posted at 6 s on a first block and 1.5 s when a live execution exists, whether or not the model has answered. The reason then starts `[decided from retrieved evidence; the model did not answer in time]`. A `yes` always waits for the model.
 
-**Counters.** The ceiling is `threshold × (1 − margin/100)`, 72.9 for LV-101 at margin 10. A metric that normally runs above that line, like TK-101 `tempC`, uses its threshold instead. Candidates are multiples of 5 between `from` and `to` whose highest observed row stays under the ceiling. A candidate needs at least 3 safe runs that reached it, because runs stopping just short of 70 say nothing about 70. Code fixes the target as the largest such candidate, because a free choice sometimes landed on 60 and the demo needs about 65. With none, there is no counter. The model confirms it and writes the rationale; if it fails twice, the rationale says code chose. Max 2 per root proposal. A forced repeat of a target already countered gets no counter.
+**Counters.** The ceiling is `threshold × (1 − margin/100)`, 72.9 for LV-101 at margin 10. A metric that normally runs above that line, like TK-101 `tempC`, uses its threshold instead, and if the doubled margin leaves no target, the plain threshold is the ceiling. When a voter failed and left no prediction, the blockers come from the parent proposal. Candidates are multiples of 5 between `from` and `to` whose highest observed row stays under the ceiling. A candidate needs at least 3 safe runs that reached it, because runs stopping just short of 70 say nothing about 70. Code fixes the target as the largest such candidate, because a free choice sometimes landed on 60 and the demo needs about 65. With none, there is no counter. The model only explains it, and the rationale says `[target set by code; explained by <provider> <model>]`, or that no explanation came. The proposer waits up to 6 s after a block for late votes, so a counter is built from the full vote. Max 2 per root proposal. A forced repeat of a target already countered gets no counter.
 
 **Rules.** After a `no` backed by at least 3 evidence ids, and after any execution that crosses a limit, an agent looks for at least 3 runs sharing the crossing, with no safe run in the same range, and posts a rule through `/rule`, with an id derived from its content. Rule ids and support ids come only from retrieved data.
 
 **Reset.** `plant.history` and `/rules` are the truth. The local cache only covers a failed history read, so a reset between demo takes needs no signal to agents.
 
+**Rule scope.** A plant rule applies only to changes in that plant. A cross-plant voter relies on the company rule, because the proposing Plant refuses a rule id it does not hold.
+
+**Recovery.** A vote that could not be posted, or an `executed` that kept failing, can run again if the message is redelivered. A slow read is retried once. Writes are not. If a stored agent token is lost, the name is released and registered again.
+
 **Proposal copy.** When the actors hold the proposal, their copy is what gets voted on, not the Relay message.
 
 ## Vendor truth
 
-`vote.reason` ends `[answered by <provider> <model>]`, and the same goes for counter rationales. Mechanic roles run on OpenAI (`gpt-6-luna`, effort `none`). Claude roles call the installed Claude Code CLI headless. Its login has expired here and cannot be renewed without the user, so every Claude role currently votes through OpenAI with the reason prefix `[GPT fallback: Claude CLI unavailable]`. The CLI is retried every 60 s, so a fresh login takes effect without a restart. `claude` is not installed inside WSL, so a login also needs `CLAUDE_BIN` or an install there. **No Claude-role vote has actually run on Claude yet, no Claude CLI latency has been measured, and while this lasts the system runs on one vendor.** `GET :7201/health` reports `claudeCli`.
+`vote.reason` ends `[answered by <provider> <model>]`, and the same goes for counter rationales. Mechanic roles run on OpenAI (`gpt-6.1-terra`, effort `low`), with `gpt-6-luna` as the rate-limit backup. A direct OpenAI call is labelled OpenAI: no `codex exec` runs here, because it is not installed in WSL and took about 10 s at p95. Claude roles call the installed Claude Code CLI headless. Its login has expired here and cannot be renewed without the user, so every Claude role currently votes through OpenAI with the reason prefix `[GPT fallback: Claude CLI unavailable]`. The CLI is retried every 10 minutes, so a fresh login takes effect without a restart. `claude` is not installed inside WSL, so a login also needs `CLAUDE_BIN` or an install there. **No Claude-role vote has actually run on Claude yet, no Claude CLI latency has been measured, and while this lasts the system runs on one vendor.** `GET :7201/health` reports `claudeCli`.
 
 ## Verified, and what is stubbed
 
@@ -138,8 +150,7 @@ History raises the prediction: if a run that went no further than the target rea
 
 ## Known limits
 
-- Rate limits: model failures become safe votes, so an OpenAI 429 shows up as `malformed prediction`. Stop eval sweeps on this key during e2e and the demo.
-- Margin trap: TK-101 `tempC` critical 85 means a `marginPct` of 12 or more puts the threshold under the 75 °C setpoint, so TK-101 then votes `no` on every proposal until reset. This is the literal rule, kept on purpose.
+- Rate limits: a 429 waits, then tries the backup model, then backs off and re-requests once. If all of that fails the vote is a safe no, shown as `malformed prediction`. Stop eval sweeps on this key during e2e and the demo.
 - Plant-b voters other than LV-101 vote `insufficient history` on 85 until they have 3 close events, so they block too. That is correct per `CLAUDE.MD`.
 - A cross-plant voter's `steamKgH` prediction is replaced by its live value, because its own controller holds that flow.
 - History holds `headerBarg` flat within a run, so the expected header is computed from the steam a change adds, using the simulator's 0.0005 barg per kg/h. If Person 2 retunes that gain, update `HEADER_BARG_PER_KGH` in `retrieval.ts`.

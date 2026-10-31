@@ -4,8 +4,8 @@ import type { ComponentId, ComponentState, HistoryEvent, LearnedRule, Limit, Pro
 /** Below this many similar events a component cannot claim history. */
 export const MIN_SIMILAR = 3;
 
-/** For a change near critical, a run only speaks for the target if it got within this fraction of the range of it. */
-export const CLOSE_RUN_FRACTION = 0.05;
+/** A run only speaks for a target if it got within this fraction of the metric's range of it. */
+export const CLOSE_RUN_FRACTION = 0.035;
 
 /** similar() is k-nearest with no cutoff, so an event only counts within this fraction of the metric's operating range. */
 export const RELEVANCE_BAND_FRACTION = 0.15;
@@ -16,6 +16,8 @@ export function relevanceBand(to: number, limit: Limit | undefined): number {
   const range = limit ? limit.max - limit.min : Math.abs(to);
   return Math.max(RELEVANCE_BAND_FRACTION * range, 1);
 }
+
+export const closeDistance = (limit: Limit) => CLOSE_RUN_FRACTION * (limit.max - limit.min);
 
 export function relevantEvents(events: HistoryEvent[], to: number, limit: Limit | undefined): HistoryEvent[] {
   const band = relevanceBand(to, limit);
@@ -41,14 +43,22 @@ export function sameDirection(events: HistoryEvent[], proposal: Pick<Proposal, "
   return events.filter((e) => Math.sign(e.after - e.before) === Math.sign(proposal.to - proposal.from));
 }
 
-/** Closeness-weighted mean of what past events did to each metric, so the nearest runs dominate. */
+/** What one point of pump speed does to each metric, from the model's steady states. */
+const SPEED_SLOPES: Record<string, number> = { "LV-101.positionPct": 1, "TV-101.positionPct": 0.36, "TV-101.steamKgH": 29.7, "E-101.dutyKw": 17.43 };
+
+/**
+ * Closeness-weighted mean of what past events did to each metric, so the nearest runs dominate. Each row is moved to
+ * the proposed target first, or runs all on one side of it would bias the estimate.
+ */
 export function evidenceEstimates(events: HistoryEvent[], own: ComponentState, to: number): Record<string, number> {
   const totals: Record<string, { sum: number; weight: number }> = {};
   for (const event of events) {
-    const weight = 1 / (1 + Math.abs(event.after - to));
+    const gap = to - event.after;
+    const weight = 1 / (1 + Math.abs(gap));
     for (const row of ownRows(event, own)) {
+      const slope = event.metric === "speedPct" && !row.counterpart ? (SPEED_SLOPES[`${own.tag}.${row.metric}`] ?? 0) : 0;
       const t = (totals[row.metric] ??= { sum: 0, weight: 0 });
-      t.sum += row.after * weight;
+      t.sum += (row.after + slope * gap) * weight;
       t.weight += weight;
     }
   }
@@ -72,14 +82,22 @@ export function expectedHeader(events: HistoryEvent[], steam: ComponentState, to
   return Math.round(Math.min(HEADER_RANGE.max, Math.max(HEADER_RANGE.min, after)) * 100) / 100;
 }
 
-/** Highest value each metric reached in runs that went no further than the target. A smaller change already got there. */
-export function evidencePeaks(events: HistoryEvent[], own: ComponentState, to: number): Record<string, number> {
+/**
+ * The highest and lowest each metric reached in runs no bigger than this change, give or take a close run. If a run
+ * that size already crossed a limit, this change will too, whatever an average of the other runs says.
+ */
+export function evidenceExtremes(events: HistoryEvent[], own: ComponentState, proposal: Pick<Proposal, "from" | "to">, closeBy: number) {
   const peaks: Record<string, number> = {};
+  const lows: Record<string, number> = {};
+  const rising = proposal.to >= proposal.from;
   for (const event of events) {
-    if (event.after > to) continue;
-    for (const row of ownRows(event, own)) peaks[row.metric] = Math.max(peaks[row.metric] ?? -Infinity, row.after);
+    if (rising ? event.after > proposal.to + closeBy : event.after < proposal.to - closeBy) continue;
+    for (const row of ownRows(event, own)) {
+      peaks[row.metric] = Math.max(peaks[row.metric] ?? -Infinity, row.after);
+      lows[row.metric] = Math.min(lows[row.metric] ?? Infinity, row.after);
+    }
   }
-  return peaks;
+  return { peaks, lows };
 }
 
 export const newestFirst = (a: HistoryEvent, b: HistoryEvent) => Date.parse(b.at) - Date.parse(a.at);
@@ -106,8 +124,9 @@ export function ruleApplies(rule: LearnedRule, proposal: Proposal, own: Componen
   if (!consequence.componentId && rule.model !== own.model) return false;
   if (!(consequence.metric in own.limits)) return false;
   if (rule.scope === "company") return true;
+  // A plant rule describes changes in that plant. The proposing plant would refuse it from a voter in the other one.
   const home = consequence.componentId ?? condition.componentId;
-  return home !== null && plantOf(home) === own.plantId;
+  return home !== null && plantOf(home) === own.plantId && own.plantId === proposal.plantId;
 }
 
 export class RetrievalCache {

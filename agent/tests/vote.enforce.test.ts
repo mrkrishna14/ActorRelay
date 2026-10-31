@@ -1,6 +1,8 @@
 // Enforcement in code, with a scripted model that tries to get it wrong. No test here says anything about model quality.
 import { describe, expect, test } from "bun:test";
 import { RetrievalCache } from "../retrieval";
+import { evidenceEstimates, ruleApplies } from "../retrieval";
+import { componentStateSchema } from "../schemas";
 import { castVote, thresholdFor } from "../vote";
 import { companyRule, FakeGlue, makeProposal, safeExecution } from "./fake-glue";
 import { answer, ScriptedLlm } from "./scripted-llm";
@@ -9,6 +11,18 @@ const deps = (glue: FakeGlue, llm: ScriptedLlm, cache = new RetrievalCache()) =>
 
 test("threshold is critical less margin, exactly 81 for LV-101 at margin 10", () => {
   expect(thresholdFor({ min: 10, max: 80, critical: 90 }, 10)).toBe(81);
+});
+
+test("a wide margin never pulls the threshold under the operating maximum, as in the actors", () => {
+  expect(thresholdFor({ min: 10, max: 80, critical: 90 }, 25)).toBe(80);
+  expect(thresholdFor({ min: 70, max: 80, critical: 85 }, 10)).toBe(80);
+  expect(thresholdFor({ min: 70, max: 80, critical: 85 }, 15)).toBe(80);
+});
+
+test("a margin outside the actors' range is refused at the boundary", () => {
+  const component = { id: "a", plantId: "plant-a", tag: "t", name: "n", model: "m", role: "safety", vendor: "codex", metrics: {}, limits: {}, upstream: [], downstream: [], sharedResources: [], status: "ok", marginPct: -50, lastTick: "t" };
+  expect(componentStateSchema.safeParse(component).success).toBe(false);
+  expect(componentStateSchema.safeParse({ ...component, marginPct: 10 }).success).toBe(true);
 });
 
 describe("malformed output", () => {
@@ -57,12 +71,24 @@ describe("malformed output", () => {
     expect(vote.reason).toContain("3000");
   });
 
-  test("a model failure on both attempts is a safe no", async () => {
+  test("a model failure on both attempts is a safe no, after a pause between them", async () => {
+    const at: number[] = [];
     const llm = new ScriptedLlm(() => {
+      at.push(Date.now());
       throw new Error("network down");
     });
     const vote = await castVote(deps(new FakeGlue(), llm), makeProposal({ to: 65 }), "plant-a/LV-101");
     expect(vote).toMatchObject({ vote: "no", reason: "malformed prediction" });
+    expect(at[1] - at[0]).toBeGreaterThanOrEqual(390);
+  });
+
+  test("a transient failure does not cost a safe yes", async () => {
+    const llm = new ScriptedLlm((_, call) => {
+      if (call === 1) throw new Error("openai 429");
+      return answer("yes", { positionPct: 66 });
+    });
+    const vote = await castVote(deps(new FakeGlue(), llm), makeProposal({ to: 65 }), "plant-a/LV-101");
+    expect(vote.vote).toBe("yes");
   });
 });
 
@@ -80,14 +106,85 @@ describe("safety lives in code", () => {
     expect(vote.vote).toBe("no");
   });
 
-  test("a wider margin moves the threshold", async () => {
+  test("a wider margin moves the threshold, down to the operating maximum", async () => {
     const glue = new FakeGlue();
     const own = glue.components.get("plant-a/LV-101");
-    if (own) own.marginPct = 25;
-    const llm = new ScriptedLlm(() => answer("yes", { positionPct: 68 }));
-    const vote = await castVote(deps(glue, llm), makeProposal({ to: 65 }), "plant-a/LV-101");
+    if (own) own.marginPct = 11;
+    const vote = await castVote(deps(glue, new ScriptedLlm(() => answer("yes", { positionPct: 80.5 }))), makeProposal({ to: 65 }), "plant-a/LV-101");
     expect(vote.vote).toBe("no");
-    expect(vote.marginPct).toBe(25);
+    expect(vote.marginPct).toBe(11);
+  });
+
+  test("a widened margin on TK-101 does not block normal running", async () => {
+    const glue = new FakeGlue();
+    const own = glue.components.get("plant-a/TK-101");
+    if (own) own.marginPct = 15;
+    const vote = await castVote(deps(glue, new ScriptedLlm(() => answer("yes", { levelPct: 50, tempC: 74 }))), makeProposal({ to: 65 }), "plant-a/TK-101");
+    expect(vote.vote).toBe("yes");
+  });
+
+  test("a run just above the target still counts as evidence", async () => {
+    const glue = new FakeGlue();
+    const run = (id: string, before: number, after: number, valve: number) => ({ ...safeExecution(id), id, before, after, proposalId: null, effects: [{ componentId: "plant-a/LV-101", metric: "positionPct", before, after: valve, ticksToSettle: 3 }] });
+    glue.history.splice(0, glue.history.length, run("bad", 50, 85, 96), run("ok1", 50, 84, 70), run("ok2", 50, 84, 70), run("ok3", 50, 84, 70), run("ok4", 50, 84, 70));
+    const vote = await castVote(deps(glue, new ScriptedLlm(() => answer("yes", { positionPct: 72 }))), makeProposal({ to: 84.9 }), "plant-a/LV-101");
+    expect(vote.vote).toBe("no");
+    expect(vote.predicted.positionPct).toBe(96);
+  });
+
+  test("evidence under a minimum forces a no even when the model predicts inside the band", async () => {
+    const glue = new FakeGlue();
+    const run = (id: string) => ({ ...safeExecution(id), id, before: 50, after: 66, proposalId: null, effects: [{ componentId: "plant-a/TK-101", metric: "levelPct", before: 50, after: 50, ticksToSettle: 3 }, { componentId: "plant-a/TK-101", metric: "tempC", before: 75, after: 60, ticksToSettle: 3 }] });
+    glue.history.splice(0, glue.history.length, run("a"), run("b"), run("c"));
+    const vote = await castVote(deps(glue, new ScriptedLlm(() => answer("yes", { levelPct: 50, tempC: 74 }))), makeProposal({ to: 65 }), "plant-a/TK-101");
+    expect(vote.vote).toBe("no");
+    expect(vote.predicted.tempC).toBe(60);
+    expect(vote.reason).toContain("minimum");
+  });
+
+  test("an increase needs runs that came close to the target, far from critical too", async () => {
+    const glue = new FakeGlue();
+    const run = (id: string, after: number) => ({ ...safeExecution(id, "plant-b"), id, after, proposalId: null, effects: [{ componentId: "plant-b/LV-101", metric: "positionPct", before: 50, after, ticksToSettle: 3 }] });
+    glue.history.splice(0, glue.history.length, run("a", 62), run("b", 63), run("c", 63), run("d", 64));
+    const vote = await castVote(deps(glue, new ScriptedLlm(() => answer("yes", { positionPct: 72 }))), makeProposal({ plantId: "plant-b", to: 70 }), "plant-b/LV-101");
+    expect(vote.similarCount).toBe(4);
+    expect(vote.vote).toBe("no");
+    expect(vote.reason).toContain("insufficient history");
+  });
+
+  test("a step down does not need close runs", async () => {
+    const glue = new FakeGlue();
+    const run = (id: string, after: number) => ({ ...safeExecution(id), id, before: 60, after, proposalId: null, effects: [{ componentId: "plant-a/LV-101", metric: "positionPct", before: 60, after, ticksToSettle: 3 }] });
+    glue.history.splice(0, glue.history.length, run("a", 48), run("b", 49), run("c", 49));
+    const vote = await castVote(deps(glue, new ScriptedLlm(() => answer("yes", { positionPct: 45 }))), makeProposal({ from: 60, to: 44 }), "plant-a/LV-101");
+    expect(vote.vote).toBe("yes");
+  });
+
+  test("a reading already past its threshold blocks an increase whatever the model predicts", async () => {
+    const glue = new FakeGlue();
+    const own = glue.components.get("plant-a/LV-101");
+    if (own) own.metrics.positionPct = 82;
+    const vote = await castVote(deps(glue, new ScriptedLlm(() => answer("yes", { positionPct: 66 }))), makeProposal({ to: 65 }), "plant-a/LV-101");
+    expect(vote.vote).toBe("no");
+    expect(vote.reason).toContain("already reads 82");
+  });
+
+  test("the same reading does not block a step down", async () => {
+    const glue = new FakeGlue();
+    const own = glue.components.get("plant-a/LV-101");
+    if (own) own.metrics.positionPct = 82;
+    const run = (id: string) => ({ ...safeExecution(id), id, before: 80, after: 66, proposalId: null });
+    glue.history.splice(0, glue.history.length, run("a"), run("b"), run("c"));
+    const vote = await castVote(deps(glue, new ScriptedLlm(() => answer("yes", { positionPct: 66 }))), makeProposal({ from: 80, to: 65 }), "plant-a/LV-101");
+    expect(vote.vote).toBe("yes");
+  });
+
+  test("an offline voter is a safe no", async () => {
+    const glue = new FakeGlue();
+    const own = glue.components.get("plant-a/LV-101");
+    if (own) own.status = "offline";
+    const vote = await castVote(deps(glue, new ScriptedLlm(() => answer("yes", { positionPct: 66 }))), makeProposal({ to: 65 }), "plant-a/LV-101");
+    expect(vote).toMatchObject({ vote: "no", reason: "retrieval failed" });
   });
 
   test("a model that lies low on 85 is overruled by the retrieved evidence", async () => {
@@ -138,6 +235,24 @@ describe("safety lives in code", () => {
     const vote = await castVote(deps(glue, llm), makeProposal({ plantId: "plant-b", to: 85 }), "plant-b/LV-101");
     expect(vote.vote).toBe("no");
     expect(vote.predicted.positionPct).toBeGreaterThanOrEqual(85);
+  });
+
+  test("a rule under the threshold still carries the reason when the prediction is past it", async () => {
+    const glue = new FakeGlue();
+    const rule = companyRule({ consequence: { componentId: "plant-a/LV-101", metric: "positionPct", op: ">=", value: 80, withinTicks: 3 } });
+    glue.companyRules.push(rule);
+    const vote = await castVote(deps(glue, new ScriptedLlm(() => answer("no", { positionPct: 89 }))), makeProposal({ plantId: "plant-b", to: 85 }), "plant-b/LV-101");
+    expect(vote.vote).toBe("no");
+    expect(vote.reason).toContain(rule.id);
+    expect(vote.reason).not.toContain("insufficient history");
+  });
+
+  test("plant and company copies of one pattern print once", async () => {
+    const glue = new FakeGlue();
+    glue.companyRules.push(companyRule(), companyRule({ id: "plant-copy", scope: "plant" }));
+    const vote = await castVote({ ...deps(glue, new ScriptedLlm(() => answer("no", { positionPct: 89 }))), fastNoMs: 2000 }, makeProposal({ to: 85 }), "plant-a/LV-101");
+    expect(vote.reason.match(/ rule /g)).toHaveLength(1);
+    expect(vote.evidenceRuleIds).toHaveLength(2);
   });
 
   test("a rule whose condition does not match this change is not cited", async () => {
@@ -243,6 +358,21 @@ describe("safety lives in code", () => {
     const vote = await castVote(deps(glue, new ScriptedLlm(() => answer("yes", { positionPct: 66 }))), makeProposal({ to: 65 }), "plant-a/LV-101");
     expect(vote).toMatchObject({ vote: "no", reason: "retrieval failed" });
   });
+});
+
+test("a rule of the voter's own plant does not apply to a change in the other plant", async () => {
+  const glue = new FakeGlue();
+  const steamRule = companyRule({ id: "plant-b-steam", scope: "plant", model: "steam-valve-A", condition: { componentId: "plant-b/P-100", metric: "speedPct", op: ">=", value: 80 }, consequence: { componentId: "plant-b/TV-101", metric: "steamKgH", op: ">=", value: 2750, withinTicks: 3 } });
+  const own = await glue.component("plant-b/TV-101");
+  expect(ruleApplies(steamRule, makeProposal({ to: 85 }), own)).toBe(false);
+  expect(ruleApplies(steamRule, makeProposal({ plantId: "plant-b", to: 85 }), own)).toBe(true);
+});
+
+test("estimates move each run to the target, so runs all on one side do not bias them", async () => {
+  const glue = new FakeGlue();
+  const own = await glue.component("plant-a/LV-101");
+  const run = (id: string, after: number) => ({ ...safeExecution(id), id, after, proposalId: null, effects: [{ componentId: own.id, metric: "positionPct", before: 50, after: after + 2, ticksToSettle: 3 }] });
+  expect(evidenceEstimates([run("a", 79), run("b", 82), run("c", 84)], own, 74).positionPct).toBe(76);
 });
 
 describe("the repeated block", () => {
