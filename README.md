@@ -10,9 +10,9 @@ Built for [Haunted Hacks 2026](https://events.ycombinator.com/haunted-hacks-2026
 
 [Run locally](#run-locally) · [Demo](#the-90-second-demo) · [Architecture](#architecture) · [Evidence](#evidence-you-can-inspect) · [Limitations](#scope-and-limitations)
 
-![ActorRelay in demo mode: equipment navigator, process schematic, blocked pump proposal, agent discussion, and operating trend](web/design/qa/light-2d.png)
+![ActorRelay's current 3D workspace in demo mode, showing the enclosed factory hall, colored equipment and piping, equipment navigator, and agent conversation](docs/images/actorrelay-3d.jpg)
 
-*Demo mode with illustrative activity. Live mode connects the same interface to actors, agents, and the Python simulator. [View the 3D plant](web/design/qa/light-3d-expanded.png).*
+*The 3D workspace captured from the current app in demo mode. Live mode connects the same interface to actors, agents, and the Python simulator.*
 
 > **Simulated plants only.** Two physics-based process models share a steam header. ActorRelay does not control industrial equipment.
 
