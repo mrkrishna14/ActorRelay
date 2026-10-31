@@ -1,6 +1,7 @@
 // Scores one vote reason. Deterministic checks first, then independent LLM judges.
 // Canaries with hand-assigned labels run in every batch, so a judge that misses the trap is visible in the report.
-import type { HistoryEvent, LearnedRule, Proposal, Vote } from "../../../shared/types.ts";
+import type { ComponentState, HistoryEvent, LearnedRule, Proposal, Vote } from "../../../shared/types.ts";
+import { ownRows } from "../../retrieval.ts";
 import { complete, parseJson } from "./llm.ts";
 import { PHYSICS } from "./reference.ts";
 import { World } from "./world.ts";
@@ -28,19 +29,22 @@ rests_only_on_safe_run: true if, once you strip what the safe run contributes, n
 
 logically_sound: true if the verdict follows from the stated premises and they are mutually consistent. False if a premise contradicts the verdict, the direction of a comparison is wrong, a threshold is misused, an inference does not follow, or the reason says something about one plant that only happened in the other. A bare correct threshold comparison ("predicted 88 reaches threshold 81") is sound.
 
-unsupported_claims: list every factual claim the cited evidence, limits and physics summary do not support, each as a short quote. This includes numbers absent from them, incidents or alarms no cited event records, events attributed to the wrong plant or speed, and claims of what this plant experienced that only another plant did. Empty if none.
+unsupported_claims: list every factual claim the cited evidence, limits, voting contract and physics summary do not support, each as a short quote. A restatement of a cited row's value counts as supported, in any wording. A prediction stated as a prediction is not a factual claim. This includes numbers absent from them, incidents or alarms no cited event records, events attributed to the wrong plant or speed, and claims of what this plant experienced that only another plant did. Empty if none.
 
 why: one sentence.
 
 Return ONLY JSON: {"safe_run_as_proof":bool,"rests_only_on_safe_run":bool,"logically_sound":bool,"unsupported_claims":[string],"why":string}`;
 
-function expand(e: HistoryEvent, voter: string) {
+// The voter's published rules. A reason may state these without citing an event.
+const CONTRACT = "No-go threshold = critical x (1 - marginPct/100). Fewer than 3 similar events means history is insufficient, and a change is then voted no if its target is within 15% of the changed metric's critical limit, or if a prediction is within 15% of its own critical. A rule's text is the rule, including its count.";
+
+function expand(e: HistoryEvent, voter: ComponentState) {
   return {
     id: e.id,
     plant: e.plantId,
     at: e.at,
     changed: `${e.componentId} ${e.metric} ${e.before}->${e.after}`,
-    effects: e.effects.filter((f) => f.componentId === voter).map((f) => `${f.metric} ${f.before}->${f.after}`),
+    effects: ownRows(e, voter).map((f) => `${f.counterpart ? "shared-header twin " : ""}${f.metric} ${f.before}->${f.after}`),
     incident: e.incident,
     executedByThisSystem: !!e.proposalId,
   };
@@ -56,8 +60,9 @@ export function packet(p: Proposal, v: Vote, world: World) {
     reason: v.reason,
     predicted: v.predicted,
     limits: Object.fromEntries(Object.entries(c.limits).map(([m, l]) => [m, { ...l, noGoThreshold: +(l.critical * (1 - v.marginPct / 100)).toFixed(1) }])),
-    citedEvents: v.evidenceEventIds.map((id) => world.event(id)).filter(Boolean).map((e) => expand(e!, v.componentId)),
+    citedEvents: v.evidenceEventIds.map((id) => world.event(id)).filter(Boolean).map((e) => expand(e!, c)),
     citedRules: v.evidenceRuleIds.map((id) => world.rule(id)).filter(Boolean).map((r) => ({ id: r!.id, scope: r!.scope, text: r!.text, supportEventIds: r!.supportEventIds.length })),
+    votingContract: CONTRACT,
     physics: PHYSICS,
   };
 }
@@ -86,7 +91,15 @@ export function unmatchedNumbers(p: Proposal, v: Vote, world: World) {
   const c = world.components.get(v.componentId)!;
   let text = v.reason;
   for (const id of [...v.evidenceEventIds, ...v.evidenceRuleIds]) text = text.replaceAll(id, " ");
-  text = text.replace(/\b(evt|rule|prop)-[0-9a-z-]+/gi, " ").replace(/\b[A-Z]{1,3}-\d{2,3}\b/g, " ");
+  text = text
+    .replace(/\b(evt|prop|standin|hist|company-rule|rule)[-:][0-9a-zA-Z:/_-]+/gi, " ")
+    .replace(/\b[A-Z]{1,3}-\d{2,3}\b/g, " ")
+    .replace(/\b\d+ of \d+ similar runs/g, " ")
+    .replace(/\d+ similar events \(\d+ needed\)/g, " ")
+    .replace(/seen \d+ times/g, " ")
+    .replace(/and \d+ more/g, " ")
+    .replace(/within 15%/g, " ")
+    .replace(/\bgpt-[0-9a-z.-]+/gi, " ");
   const found = [...text.matchAll(/(?<![\w.-])\d+(?:[.,]\d+)?/g)].map((m) => Number(m[0].replace(",", "")));
   const allowed = new Set<number>([p.from, p.to, v.marginPct, ...Object.values(v.predicted)]);
   for (const l of Object.values(c.limits)) for (const x of [l.min, l.max, l.critical, l.critical * (1 - v.marginPct / 100)]) allowed.add(x);
@@ -94,19 +107,20 @@ export function unmatchedNumbers(p: Proposal, v: Vote, world: World) {
     const e = world.event(id);
     if (!e) continue;
     allowed.add(e.before).add(e.after);
-    for (const f of e.effects) if (f.componentId === v.componentId) allowed.add(f.before).add(f.after);
+    for (const f of ownRows(e, c)) allowed.add(f.before).add(f.after);
   }
   for (const id of v.evidenceRuleIds) {
     const r = world.rule(id);
     if (r) allowed.add(r.condition.value).add(r.consequence.value).add(r.consequence.withinTicks).add(r.timesSeen);
   }
   for (const m of PHYSICS.matchAll(/\d+(?:,\d+)?(?:\.\d+)?/g)) allowed.add(Number(m[0].replace(",", "")));
+  allowed.add(15).add(3).add(0);
   return found.filter((n) => ![...allowed].some((a) => Math.abs(a - n) <= 0.6));
 }
 
 export function deterministic(p: Proposal, v: Vote, world: World, newestId: string | null, rules: LearnedRule[]) {
   const cited = v.evidenceEventIds.map((id) => world.event(id));
-  const ids = [...v.reason.matchAll(/\b(?:evt|rule)-[0-9a-z-]+/gi)].map((m) => m[0]);
+  const ids = [...v.reason.matchAll(/\b(?:evt|standin|hist|company-rule|rule)[-:][0-9a-zA-Z:/_-]*[0-9a-zA-Z]/gi)].map((m) => m[0]).filter((id) => /[\d:]/.test(id));
   const known = new Set([...v.evidenceEventIds, ...v.evidenceRuleIds]);
   return {
     inventedIdInReason: ids.filter((id) => !known.has(id)),
@@ -116,7 +130,7 @@ export function deterministic(p: Proposal, v: Vote, world: World, newestId: stri
     safeRunWordingFlag: /\b(65)\b[^.]{0,80}\b(prove|proves|proof|shows? (that )?85|means 85|confirms? (that )?85)/i.test(v.reason),
     ruleNamed: rules.some((r) => v.reason.includes(r.id)),
     ruleCited: rules.some((r) => v.evidenceRuleIds.includes(r.id)),
-    insufficientText: /insufficient history|history is insufficient|insufficient evidence|not enough history/i.test(v.reason),
+    insufficientText: /insufficient history|history is (also )?insufficient|insufficient evidence|not enough history/i.test(v.reason),
     insufficientGrounds: /^(\[[^\]]*\] )?insufficient history/i.test(v.reason),
   };
 }

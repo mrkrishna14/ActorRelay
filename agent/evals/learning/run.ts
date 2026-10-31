@@ -24,9 +24,11 @@ const runs = Number(arg("runs", "20"));
 const seed0 = Number(arg("seed", "1000"));
 const model = { model: arg("model", "gpt-6-luna"), effort: arg("effort", "none") };
 const noJudge = has("no-judge");
+const lvOnly = has("judge-lv-only");
 const reach = Number(arg("plant-b-reach", "65")) as 65 | 78;
 const historyMode = arg("history", "auto") as "auto" | "fixture";
 const shape = arg("history-shape", "as-is") as "as-is" | "settled";
+const seedRules = !has("no-seed-rules");
 const fromSeed = (i: number) => seed0 + i * 7919;
 
 export type Cast = (p: Proposal, id: ComponentId, world: World) => Promise<VoteRecord>;
@@ -81,6 +83,13 @@ async function sequence(i: number, p: Awaited<ReturnType<typeof loadPipeline>>):
   // Demo order in one world, so plant-b sees exactly what plant-a produced.
   const pb0 = world.proposal("plant-b", 85, 50, "Increase throughput");
   const before = await cast(pb0, "plant-b/LV-101", world);
+
+  // Plant.loadSeed derives rules from seeded history and the next sweep pushes them to Company, so a live demo has the
+  // company rule within seconds of reset. The vote above is the only one that runs before it exists.
+  if (seedRules) {
+    world.deriveAfterRecord("plant-a");
+    world.deriveAfterRecord("plant-b");
+  }
 
   const p1 = world.proposal("plant-a", 85, 50, "Increase throughput");
   const v1 = await castAll(cast, p1, world);
@@ -158,7 +167,7 @@ async function sequence(i: number, p: Awaited<ReturnType<typeof loadPipeline>>):
   };
 
   if (!noJudge) {
-    const judged = async (r: VoteRecord, prop: Proposal) => judge(packet(prop, r.vote, world));
+    const judged = async (r: VoteRecord, prop: Proposal) => (lvOnly && !r.vote.componentId.endsWith("LV-101") ? [] : judge(packet(prop, r.vote, world)));
     const [a, b, c] = await Promise.all([
       Promise.all(v3.map((r) => judged(r, p3))),
       Promise.all(after.map((r) => judged(r, pb1))),
@@ -208,10 +217,11 @@ function report(rows: Row[], canaryResults: Row[]) {
   say(`after rule, LV-101 no                ${pct(count(rows, (r) => LV(r.b.after.votes).vote === "no"), n)}`);
   say(`after rule, rule in evidenceRuleIds  ${pct(count(rows, (r) => LV(r.b.after.votes).det.ruleCited), n)}`);
   say(`after rule, reason names the rule    ${pct(count(rows, (r) => LV(r.b.after.votes).det.ruleNamed), n)}`);
-  say(`after rule, falls to insufficient    ${pct(count(rows, (r) => LV(r.b.after.votes).det.insufficientText), n)}`);
+  say(`after rule, grounds are insufficient  ${pct(count(rows, (r) => LV(r.b.after.votes).det.insufficientGrounds), n)}`);
+  say(`after rule, text mentions insufficient ${pct(count(rows, (r) => LV(r.b.after.votes).det.insufficientText), n)}`);
   say(`after rule, truncated reason          ${pct(count(rows, (r) => LV(r.b.after.votes).truncated), n)}`);
   say(`after rule, evidenceEventIds empty    ${pct(count(rows, (r) => LV(r.b.after.votes).evidenceEventIds.length === 0), n)}`);
-  say(`rule at end: ${[...new Set(rows.map((r) => r.b.rule?.text ?? "none"))].slice(0, 3).join(" | ")}`);
+  say(`rule at end: ${[...new Set(rows.map((r) => `${r.b.rule?.text ?? "none"} [timesSeen ${r.b.rule?.seen}]`))].slice(0, 3).join(" | ")}`);
   say(`control at 65, LV-101 yes            ${pct(count(rows, (r) => r.b.belowRule.vote === "yes"), n)}`);
   say(`control at 65, wrongly cites rule    ${pct(count(rows, (r) => r.b.belowRule.det.ruleCited), n)}`);
   say("");
@@ -258,7 +268,7 @@ function report(rows: Row[], canaryResults: Row[]) {
     say("");
     say("HEADLINE: a run passes only if every check on that demo moment passes and both judges find nothing");
     say(`moment 1, repeat 85 cites newest honestly  ${pct(count(rows, (r) => r.a.repeat.status === "blocked" && LV(r.a.repeat.votes).vote === "no" && LV(r.a.repeat.votes).firstIsNewest && clean(LV(r.a.repeat.votes))), n)}`);
-    say(`moment 2, plant-b cites plant-a rule       ${pct(count(rows, (r) => r.b.after.status === "blocked" && LV(r.b.after.votes).vote === "no" && LV(r.b.after.votes).det.ruleCited && LV(r.b.after.votes).det.ruleNamed && !LV(r.b.after.votes).det.insufficientText && clean(LV(r.b.after.votes))), n)}`);
+    say(`moment 2, plant-b cites plant-a rule       ${pct(count(rows, (r) => r.b.after.status === "blocked" && LV(r.b.after.votes).vote === "no" && LV(r.b.after.votes).det.ruleCited && LV(r.b.after.votes).det.ruleNamed && !LV(r.b.after.votes).det.insufficientGrounds && clean(LV(r.b.after.votes))), n)}`);
   }
   scored(rows.map((r) => LV(r.a.repeat.votes)), "REASON QUALITY: repeat 85, LV-101");
   scored(rows.flatMap((r) => (r.a.repeat.votes as Row[]).filter((v) => !v.component.endsWith("LV-101"))), "REASON QUALITY: repeat 85, other voters");
@@ -294,13 +304,29 @@ async function runCanaries() {
 
 const pipeline = await loadPipeline();
 const started = Date.now();
-const settled = await Promise.allSettled(Array.from({ length: runs }, (_, i) => sequence(i, pipeline)));
+// --serial runs one sequence at a time, so LLM latency and the fast-no race match a live demo.
+const settled: PromiseSettledResult<Row>[] = [];
+const batch = has("serial") ? 1 : Number(arg("parallel", String(runs)));
+for (let i = 0; i < runs; i += batch) {
+  const size = Math.min(batch, runs - i);
+  settled.push(...(await Promise.allSettled(Array.from({ length: size }, (_, n) => sequence(i + n, pipeline)))));
+}
 const rows = settled.flatMap((s) => (s.status === "fulfilled" ? [s.value] : []));
 const failures = settled.flatMap((s) => (s.status === "rejected" ? [String(s.reason?.message ?? s.reason)] : []));
 const canaryResults = noJudge ? [] : await runCanaries();
 const text = rows.length ? report(rows, canaryResults) : "no sequence completed";
 console.log(text);
 if (failures.length) console.log(`\n${failures.length} sequences failed: ${[...new Set(failures)].slice(0, 3).join(" | ")}`);
+if (pipelineName === "real") {
+  const { attemptLog } = await import("./real.ts");
+  const kinds = new Map<string, number>();
+  for (const line of attemptLog) {
+    const kind = line.replace(/^\S+ attempt \d (rejected|failed): /, "$1: ").replace(/\d+(\.\d+)?/g, "N").slice(0, 90);
+    kinds.set(kind, (kinds.get(kind) ?? 0) + 1);
+  }
+  console.log(`\nvote attempts that did not produce a usable reply: ${attemptLog.length}`);
+  for (const [kind, n] of [...kinds].sort((a, b) => b[1] - a[1]).slice(0, 8)) console.log(`  ${n} ${kind}`);
+}
 console.log(`\nwall ${((Date.now() - started) / 1000).toFixed(0)}s`);
 
 const out = join(HERE, "out");

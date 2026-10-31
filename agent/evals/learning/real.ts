@@ -62,6 +62,9 @@ class CappedLlm implements Llm {
   }
 }
 
+// Why vote attempts failed, reported by run.ts: a 429 and a parse rejection need different fixes.
+export const attemptLog: string[] = [];
+
 export async function load(model: { model: string; effort: string }, opts: { fastNoMs: number }) {
   const llm = new CappedLlm(model.model, model.effort, Number(process.env.LEARNING_CONCURRENCY ?? 24));
   const worlds = new WeakMap<World, { deps: VoteDeps; glue: WorldGlue }>();
@@ -69,7 +72,7 @@ export async function load(model: { model: string; effort: string }, opts: { fas
     let w = worlds.get(world);
     if (!w) {
       const glue = new WorldGlue(world);
-      w = { glue, deps: { glue, llm, cache: new RetrievalCache(), fastNoMs: opts.fastNoMs } };
+      w = { glue, deps: { glue, llm, cache: new RetrievalCache(), fastNoMs: opts.fastNoMs, log: (line) => attemptLog.push(line) } };
       worlds.set(world, w);
     }
     return w;
