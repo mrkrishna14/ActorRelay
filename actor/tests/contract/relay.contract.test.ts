@@ -160,9 +160,13 @@ async function seedAll() {
 const VOTERS = ["plant-a/TK-101", "plant-a/LV-101", "plant-a/E-101", "plant-a/TV-101", "plant-b/TV-101"];
 let clock = Date.parse("2026-10-31T20:00:00.000Z");
 const advance = (ms: number) => setSystemTime(new Date((clock += ms)));
+// A cross-plant proposal needs Company's lease on the shared resource: one sweep asks, the next opens the veto window.
 const sweep = async (id: PlantId = "plant-a") => {
-  await plant(id).tick();
-  await plant(id).tick();
+  for (let i = 0; i < 2; i++) {
+    await plant(id).tick();
+    await plant(id).tick();
+    await Bun.sleep(5);
+  }
 };
 const propose = (to: number): Promise<Proposal> => plant().propose({ plantId: "plant-a", proposerComponentId: "plant-a/P-100", metric: "speedPct", to, rationale: "Contract run." });
 

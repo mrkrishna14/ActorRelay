@@ -1,8 +1,9 @@
 // The public surface of the actor classes, read from the source: methods against the docs, emitted fields against
 // shared/types.ts. Static, so it runs without the Terse runtime. Nothing here depends on the fake.
 import { describe, expect, test } from "bun:test";
+import { readdirSync } from "node:fs";
 import ts from "typescript";
-import { claudeMethods, readRepo, task1, task3Routes } from "./lib/docs";
+import { claudeMethods, readRepo, REPO_ROOT, task1, task3Routes } from "./lib/docs";
 
 const source = ts.createSourceFile("actor.ts", readRepo("actor/src/actor.ts"), ts.ScriptTarget.ESNext, true);
 const classes = new Map<string, ts.ClassDeclaration>();
@@ -38,8 +39,8 @@ function typeKeys(name: string): string[] {
 const EXTRA_PARAMS: Record<string, string[]> = { "Component.setMetric": ["token"], "Company.registerPlant": ["models"] };
 const INTERNAL = {
   Component: ["getState"],
-  Plant: ["getState", "getExecution", "claimDispatch", "redeemToken", "reportDispatchFailure", "rulesFor", "setConnected", "recordAudit", "sweep", "onAlarm"],
-  Company: ["getState", "modelExistsElsewhere", "addCrossPlantProposal"],
+  Plant: ["getState", "getExecution", "claimDispatch", "redeemToken", "reportDispatchFailure", "rulesFor", "setConnected", "recordAudit", "sweep", "onAlarm", "grantLease", "noteMargin", "acceptCalibration", "ackCompanySync"],
+  Company: ["getState", "modelExistsElsewhere", "addCrossPlantProposal", "acquireLease", "releaseLease"],
 };
 
 for (const actor of ["Component", "Plant", "Company"] as const) {
@@ -101,5 +102,21 @@ describe("the Plant's outbound calls", () => {
     const assigned = task3Routes().filter((r) => r.caller.startsWith("Plant")).map((r) => r.path).sort();
     expect(outbound).toEqual(assigned);
     expect(outbound).toEqual(["/execute-callback", "/tick"]);
+  });
+});
+
+describe("glue's calls into the actors", () => {
+  const sources = readdirSync(`${REPO_ROOT}/glue`).filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"));
+  const calls = sources.flatMap((f) =>
+    [...readRepo(`glue/${f}`).matchAll(/\.call(?:<[^(]*>)?\("(Component|Plant|Company)",\s*[^,]+,\s*"(\w+)"/g)].map((m) => [m[1]!, m[2]!] as const),
+  );
+
+  test("the scan found the demo path", () => {
+    const seen = new Set(calls.map(([actor, method]) => `${actor}.${method}`));
+    for (const needed of ["Plant.propose", "Plant.vote", "Plant.execute", "Plant.claimDispatch", "Component.setMetric", "Component.mirror", "Plant.recordEvent", "Company.loadSeed"]) expect(seen.has(needed)).toBe(true);
+  });
+  test("every method glue calls exists on that actor", () => {
+    const missing = calls.filter(([actor, method]) => publicMethods(actor)[method] === undefined);
+    expect(missing).toEqual([]);
   });
 });

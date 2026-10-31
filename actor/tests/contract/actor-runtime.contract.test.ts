@@ -21,6 +21,7 @@ import {
 mock.module("terse-sdk/actor", () => fakeModule);
 const { Company, Component, Plant } = await import("../../src/actor");
 const { COMPANY_ACTOR_ID, componentActorId, plantOfProposal } = await import("../../src/ids");
+const { applyCalibration } = await import("../../src/logic/component");
 
 const VOTERS = ["plant-a/TK-101", "plant-a/LV-101", "plant-a/E-101", "plant-a/TV-101", "plant-b/TV-101"];
 const T0 = Date.parse("2026-10-31T19:00:00.000Z");
@@ -30,6 +31,14 @@ const advance = (ms: number) => setSystemTime(new Date((clock += ms)));
 const plant = (id: PlantId = "plant-a") => (Plant as any).get(id);
 const company = () => (Company as any).get(COMPANY_ACTOR_ID);
 const component = (id: string) => (Component as any).get(componentActorId(id));
+// A cross-plant proposal needs Company's lease on the shared resource: one sweep asks, the next opens the veto window.
+const sweep = async (id: PlantId = "plant-a") => {
+  for (let i = 0; i < 2; i++) {
+    await plant(id).tick();
+    await plant(id).tick();
+    await Bun.sleep(5);
+  }
+};
 const strict = <T extends z.ZodType>(schema: T, value: unknown) => {
   const parsed = schema.safeParse(value);
   if (!parsed.success) console.error(JSON.stringify(parsed.error.issues, null, 1));
@@ -171,33 +180,33 @@ describe("Component methods", () => {
     expect((await component(id).setMargin(0)).marginPct).toBe(5);
     expect((await component(id).setMargin(10)).marginPct).toBe(10);
   });
-  test("addCalibration: one 1-point error leaves the margin alone (TASK1 agent test)", async () => {
-    const state = await component("plant-a/E-101").addCalibration({ at: "t", proposalId: "p", metric: "dutyKw", predicted: 1160, observed: 1161, absError: 1 });
-    strict(EmittedComponentS, state);
-    expect(state.marginPct).toBe(10);
+  test("addCalibration refuses an entry for a run that never happened", async () => {
+    const entry = { at: "t", proposalId: "plant-a-p99999-nope", metric: "positionPct", predicted: 1, observed: 1, absError: 0 };
+    await expect(component(id).addCalibration(entry)).rejects.toThrow("proposal_not_found");
+    await expect(component(id).addCalibration({ ...entry, proposalId: "made-up" })).rejects.toThrow("invalid_proposal_id");
   });
-  test("addCalibration: five large errors raise the margin to exactly 15 (TASK1 actor test)", async () => {
-    let state: any;
-    for (let i = 0; i < 5; i++) state = await component("plant-a/TV-101").addCalibration({ at: "t", proposalId: `p${i}`, metric: "steamKgH", predicted: 1000, observed: 2000, absError: 1000 });
-    expect(state.marginPct).toBe(15);
-    await component("plant-a/TV-101").setMargin(10);
+});
+
+// The pure margin rules behind addCalibration. Actor-level acceptance needs a real run, so it is in the demo path below.
+describe("calibration moves the margin as TASK1 says", () => {
+  const limits = { positionPct: { min: 10, max: 80, critical: 90 } };
+  const entry = (metric: string, absError: number, n = 0) => ({ at: "t", proposalId: `p${n}`, metric, predicted: 0, observed: absError, absError });
+  const feed = (entries: ReturnType<typeof entry>[]) =>
+    entries.reduce((state, e) => applyCalibration({ ...state, entry: e, limits }), { calibration: [] as ReturnType<typeof entry>[], marginPct: 10, sinceAdjustment: 0 });
+
+  test("one 1-point error leaves the margin alone", () => {
+    expect(feed([entry("positionPct", 1)]).marginPct).toBe(10);
   });
-  test("addCalibration: a metric with no limit is stored and cannot move the margin", async () => {
-    const tv = "plant-b/TV-101";
-    let state: any;
-    for (let i = 0; i < 6; i++) state = await component(tv).addCalibration({ at: "t", proposalId: `h${i}`, metric: "headerBarg", predicted: 6, observed: 1, absError: 5 });
-    strict(EmittedComponentS, state);
+  test("five large errors raise it to exactly 15", () => {
+    expect(feed([0, 1, 2, 3, 4].map((n) => entry("positionPct", 20, n))).marginPct).toBe(15);
+  });
+  test("a metric with no limit is stored and cannot move the margin", () => {
+    const state = feed([0, 1, 2, 3, 4, 5].map((n) => entry("headerBarg", 5, n)));
     expect(state.marginPct).toBe(10);
     expect(state.calibration.length).toBe(6);
   });
-  test("addCalibration recomputes absError", async () => {
-    const state = await component("plant-a/TK-101").addCalibration({ at: "t", proposalId: "x", metric: "tempC", predicted: 75, observed: 74, absError: -1000 });
-    expect(strict(CalibrationEntryS, state.calibration.at(-1)).absError).toBe(1);
-  });
-  test("calibration keeps the last 50", async () => {
-    let state: any;
-    for (let i = 0; i < 55; i++) state = await component("plant-a/P-100").addCalibration({ at: "t", proposalId: `c${i}`, metric: "feedM3h", predicted: 1, observed: 1, absError: 0 });
-    expect(state.calibration.length).toBe(50);
+  test("calibration keeps the last 50", () => {
+    expect(feed(Array.from({ length: 55 }, (_, n) => entry("headerBarg", 0, n))).calibration.length).toBe(50);
   });
 });
 
@@ -236,8 +245,7 @@ describe("Plant and Company methods through the demo path", () => {
   });
   test("tick and sweep block it, and /tick reaches glue with a body glue accepts", async () => {
     glueCalls.length = 0;
-    await plant().tick();
-    await plant().tick();
+    await sweep();
     await Bun.sleep(30);
     const state = strict(PlantStateS, await plant().getState());
     expect(state.proposals.find((p) => p.id === bad.id)!.status).toBe("blocked");
@@ -252,8 +260,7 @@ describe("Plant and Company methods through the demo path", () => {
   });
   test("unanimous yes opens a 10 s veto window", async () => {
     for (const v of VOTERS) await plant().vote(voteFrom(safe, v));
-    await plant().tick();
-    await plant().tick();
+    await sweep();
     const state = strict(PlantStateS, await plant().getState());
     const current = state.proposals.find((p) => p.id === safe.id)!;
     expect(current.status).toBe("veto_window");
@@ -265,8 +272,7 @@ describe("Plant and Company methods through the demo path", () => {
   test("after the deadline the sweep executes and /execute-callback passes glue's validator", async () => {
     glueCalls.length = 0;
     advance(10_000);
-    await plant().tick();
-    await plant().tick();
+    await sweep();
     await Bun.sleep(30);
     const state = strict(PlantStateS, await plant().getState());
     expect(state.proposals.find((p) => p.id === safe.id)!.status).toBe("executed");
@@ -304,6 +310,24 @@ describe("Plant and Company methods through the demo path", () => {
     const state = await plant().getState();
     expect(state.history.filter((e: HistoryEvent) => e.proposalId === safe.id).length).toBe(1);
   });
+  test("addCalibration takes a voter's own prediction for that run and recomputes absError", async () => {
+    const entry = { at: "2026-10-31T19:00:30.000Z", proposalId: safe.id, metric: "positionPct", predicted: 66, observed: 67, absError: -1000 };
+    const state = strict(EmittedComponentS, await component("plant-a/LV-101").addCalibration(entry));
+    expect(strict(CalibrationEntryS, state.calibration.at(-1)).absError).toBe(1);
+    await allThreeStatesAreStrict();
+  });
+  test("addCalibration takes a metric with no limit, from the cross-plant voter too", async () => {
+    const entry = { at: "2026-10-31T19:00:30.000Z", proposalId: safe.id, metric: "headerBarg", predicted: 5.9, observed: 5.8, absError: 0.1 };
+    const state = strict(EmittedComponentS, await component("plant-b/TV-101").addCalibration(entry));
+    expect(state.calibration.at(-1)!.metric).toBe("headerBarg");
+    expect(state.marginPct).toBe(10);
+  });
+  test("addCalibration refuses a repeat, a changed prediction and a component that did not vote", async () => {
+    const entry = { at: "t", proposalId: safe.id, metric: "positionPct", predicted: 66, observed: 67, absError: 1 };
+    await expect(component("plant-a/LV-101").addCalibration(entry)).rejects.toThrow("duplicate_calibration");
+    await expect(component("plant-a/TK-101").addCalibration({ ...entry, metric: "tempC", predicted: 1 })).rejects.toThrow("invalid_calibration");
+    await expect(component("plant-a/P-100").addCalibration({ ...entry, metric: "speedPct" })).rejects.toThrow("invalid_calibration");
+  });
   test("similar returns strict events with the newest live run first", async () => {
     const events: HistoryEvent[] = await plant().similar("plant-a/P-100", "speedPct", 85, { feedM3h: 19.5, headerBarg: 6 }, 5);
     for (const e of events) strict(HistoryEventS, e);
@@ -316,7 +340,9 @@ describe("Plant and Company methods through the demo path", () => {
   });
   test("a seeded rule reaches Company with the model and no component ids", async () => {
     // Promotion needs both plants registered, which each does on its first sweep.
-    for (const id of ["plant-b", "plant-b", "plant-a", "plant-a"] as PlantId[]) await plant(id).tick();
+    await sweep("plant-b");
+    await sweep("plant-a");
+    await Bun.sleep(20);
     const rules: LearnedRule[] = strict(CompanyStateS, await company().getState()).rules as LearnedRule[];
     const shared = rules.find((r) => r.model === "outlet-valve-A");
     expect(shared).toBeDefined();

@@ -38,7 +38,7 @@ describe("compile-time guard", () => {
     const { code, out } = tsc("tsconfig.json");
     if (code !== 0) console.error(out);
     expect(code).toBe(0);
-  }, 60000);
+  }, 240000); // covers agent/, glue/ and actor/src now, on a machine shared with many sessions
 
   // Proves the guard has teeth. A guard that cannot fail proves nothing.
   const mutations: [string, (s: string) => string][] = [
@@ -77,7 +77,7 @@ describe("compile-time guard", () => {
       rmSync(dir, { recursive: true, force: true });
       expect(code).not.toBe(0);
       expect(out).toContain("lib/schemas.ts");
-    }, 60000);
+    }, 240000);
   }
 
   test("drift workspace is cleaned up", () => {

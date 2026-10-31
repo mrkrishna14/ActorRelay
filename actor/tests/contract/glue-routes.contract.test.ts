@@ -1,6 +1,7 @@
 // Every glue route against TASK3.MD and shared/types.ts. lib/glue-spec.ts is written from the doc, so this holds whatever
 // glue is built to it. The actor and agent suites use the same spec, so all three stay on one definition.
 import { describe, expect, test } from "bun:test";
+import { routeSchemas as ourGlue, type Route } from "../../../glue/contract";
 import { task1, task3, task3Routes } from "./lib/docs";
 import * as ex from "./lib/examples";
 import { routeSchemas as glueSchemas } from "./lib/glue-spec";
@@ -58,4 +59,22 @@ describe("GET routes the agents read", () => {
   test("a ComponentId has to be encoded in /component/:id", () => {
     expect(`/component/${encodeURIComponent("plant-a/LV-101")}`).toBe("/component/plant-a%2FLV-101");
   });
+});
+
+describe("our glue's validators against this spec", () => {
+  test("the same routes", () => {
+    expect(Object.keys(ourGlue).sort()).toEqual(Object.keys(glueSchemas).sort());
+  });
+  for (const [path, body] of Object.entries(ex.routeBodies)) {
+    test(`POST ${path} accepts the canonical body`, () => {
+      const parsed = ourGlue[path as Route].safeParse(JSON.parse(JSON.stringify(body)));
+      if (!parsed.success) console.error(path, parsed.error.issues);
+      expect(parsed.success).toBe(true);
+    });
+  }
+  for (const [path, what, body] of nearMisses) {
+    test(`POST ${path} refuses ${what}`, () => {
+      expect(ourGlue[path as Route].safeParse(body).success).toBe(false);
+    });
+  }
 });
