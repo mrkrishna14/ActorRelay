@@ -1,0 +1,92 @@
+{
+  "id": "p1-durability-and-alarm",
+  "title": "acknowledged writes and a running alarm across kill -9 of the real server",
+  "target": "real Terse dev server, throwaway probe actor, fake glue",
+  "startedAt": "2026-10-31T19:42:35.344Z",
+  "durationMs": 68324,
+  "status": "fail",
+  "checks": [
+    {
+      "name": "GLUE_URL env reaches the actor",
+      "pass": true,
+      "detail": "\"http://127.0.0.1:7240\""
+    },
+    {
+      "name": "hosts are told this server's URL, not 7100",
+      "pass": true,
+      "detail": "\"http://127.0.0.1:7140\""
+    },
+    {
+      "name": "actor-to-actor call works on this port",
+      "pass": true,
+      "detail": "{\"alarm\":null,\"alarmEveryMs\":0,\"alarmFires\":0,\"controlPlaneUrl\":\"http://127.0.0.1:7140\",\"count\":0,\"glueUrl\":\"http://127.0.0.1:7240\",\"lastAlarmAt\":0,\"marks\":[],\"pid\":13636}"
+    },
+    {
+      "name": "each actor has its own host process",
+      "pass": true,
+      "detail": "{\"self\":13598,\"other\":13636}"
+    },
+    {
+      "name": "host lookup finds the right process",
+      "pass": true,
+      "detail": "13598"
+    },
+    {
+      "name": "alarm fires before the crash",
+      "pass": true
+    },
+    {
+      "name": "all 50 acknowledged writes survive",
+      "pass": true,
+      "detail": "{\"before\":50,\"after\":50}"
+    },
+    {
+      "name": "persisted alarm config survives",
+      "pass": true,
+      "detail": "{\"alarm\":null,\"alarmEveryMs\":300,\"alarmFires\":43,\"controlPlaneUrl\":\"http://127.0.0.1:7140\",\"count\":50,\"glueUrl\":\"http://127.0.0.1:7240\",\"lastAlarmAt\":1793475789216,\"marks\":[\"ack-0\",\"ack-1\",\"ack-2\",\"ack-3\",\"ack-4\",\"ack-5\",\"ack-6\",\"ack-7\",\"ack-8\",\"ack-9\",\"ack-10\",\"ack-11\",\"ack-12\",\"ack-13\",\"ack-14\",\"ack-15\",\"ack-16\",\"ack-17\",\"ack-18\",\"ack-19\",\"ack-20\",\"ack-21\",\"ack-22\",\"ack-23\",\"ack-24\",\"ack-25\",\"ack-26\",\"ack-27\",\"ack-28\",\"ack-29\",\"ack-30\",\"ack-31\",\"ack-32\",\"ack-33\",\"ack-34\",\"ack-35\",\"ack-36\",\"ack-37\",\"ack-38\",\"ack-39\",\"ack-40\",\"ack-41\",\"ack-42\",\"ack-43\",\"ack-44\",\"ack-45\",\"ack-46\",\"ack-47\",\"ack-48\",\"ack-49\"],\"pid\":14403}"
+    },
+    {
+      "name": "alarm resumes with no re-arm",
+      "pass": false,
+      "detail": "{\"firesAtRestart\":43,\"later\":43,\"alarm\":null}"
+    },
+    {
+      "name": "explicit re-arm restores the alarm",
+      "pass": true
+    }
+  ],
+  "restarts": [
+    {
+      "label": "probe",
+      "kill": {
+        "mode": "runtime",
+        "atEpochMs": 1793475789129,
+        "runtimePid": 13185,
+        "groupBefore": [
+          13129,
+          13156,
+          13185,
+          13579,
+          13598,
+          13617,
+          13636
+        ],
+        "portClosedMs": 68.64440099999774,
+        "hostsGoneMs": 206.3999960000001,
+        "survivors": []
+      },
+      "downMs": 0,
+      "healthzMs": 24623
+    }
+  ],
+  "metrics": {
+    "coldFirstCallMs": 634.6,
+    "probe.restartReadyMs": 26860,
+    "probe.coldReadAfterRestartMs": 525.3,
+    "probe.healthyAfterKillMs": 24623
+  },
+  "notes": [
+    "alarm.get() after restart: null; fires before 42, after 43",
+    "RUNTIME FACT: alarm did NOT fire on its own within 4s of restart (43 -> 43); alarm.get()=null"
+  ]
+}
