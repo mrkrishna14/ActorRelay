@@ -1,14 +1,16 @@
-import type { ChatMessage, Equipment, EvidenceItem, HarnessSession, PlantId, Proposal, ProposalVote, TrendPoint } from "./types";
+import type { ChatMessage, ComponentTag, Equipment, EvidenceItem, HarnessSession, PlantId, Proposal, ProposalVote, TrendPoint } from "./types";
+import { CONTROL_TARGETS, controlTarget, parseControlRequest, type ControlMetric } from "./controls";
+import { interpolateSampleEffects, sampleControlEffects } from "./control-effects";
 
 export const DEMO_EPOCH = Date.UTC(2026, 9, 31, 19, 14, 21);
 export const DEMO_REVIEW_MS = 5800;
 export const PLANTS: { id: PlantId; name: string }[] = [{ id: "plant-a", name: "Plant A" }, { id: "plant-b", name: "Plant B" }];
 export const COMPONENTS = [
   { tag: "P-100", name: "Feed pump", role: "Mechanic", vendor: "codex", metrics: { speedPct: 50, feedM3h: 15 }, limits: { speedPct: { min: 20, max: 90, critical: 95 } } },
-  { tag: "TK-101", name: "Hold tank", role: "Process engineer", vendor: "claude", metrics: { levelPct: 50, tempC: 75 }, limits: { levelPct: { min: 20, max: 70, critical: 80 }, tempC: { min: 70, max: 80, critical: 85 } } },
+  { tag: "TK-101", name: "Hold tank", role: "Process engineer", vendor: "claude", metrics: { levelPct: 50, tempC: 75, levelSetpointPct: 50, tempSetpointC: 75 }, limits: { levelPct: { min: 20, max: 70, critical: 80 }, tempC: { min: 70, max: 80, critical: 85 } } },
   { tag: "LV-101", name: "Outlet valve", role: "Mechanic", vendor: "codex", metrics: { positionPct: 50 }, limits: { positionPct: { min: 10, max: 80, critical: 90 } } },
   { tag: "E-101", name: "Steam coil", role: "Chemical engineer", vendor: "claude", metrics: { dutyKw: 900 }, limits: { dutyKw: { min: 300, max: 1600, critical: 1800 } } },
-  { tag: "TV-101", name: "Steam valve", role: "Safety", vendor: "claude", metrics: { positionPct: 50, steamKgH: 1533, headerBarg: 6 }, limits: { positionPct: { min: 5, max: 85, critical: 95 }, steamKgH: { min: 0, max: 2700, critical: 3000 } } },
+  { tag: "TV-101", name: "Steam valve", role: "Safety", vendor: "claude", metrics: { positionPct: 50, steamKgH: 1533, headerBarg: 6, steamSetpointKgH: 1533, steamFlowLocal: 0 }, limits: { positionPct: { min: 5, max: 85, critical: 95 }, steamKgH: { min: 0, max: 2700, critical: 3000 } } },
 ] as const;
 
 export const EVIDENCE: EvidenceItem[] = [
@@ -23,9 +25,9 @@ export interface AuditItem { id: string; at: number; plantId: PlantId | "company
 export interface DemoState {
   now: number; components: Equipment[]; messages: ChatMessage[]; proposals: Proposal[];
   evidence: EvidenceItem[]; audit: AuditItem[]; trends: Record<PlantId, TrendPoint[]>;
-  paused: boolean; observation: { plantId: PlantId; proposalId: string; from: number; target: number; startedAt: number } | null;
+  paused: boolean; observation: { plantId: PlantId; proposalId: string; from: number; target: number; startedAt: number; proposerTag?: ComponentTag; metric?: string; baseline?: Equipment[] } | null;
 }
-export type DemoAction = { type: "tick"; now: number } | { type: "reset"; now: number } | { type: "pause" } | { type: "veto"; id: string; now: number } | { type: "send"; text: string; channel: string; now: number } | { type: "propose"; plantId: PlantId; to: number; now: number };
+export type DemoAction = { type: "tick"; now: number } | { type: "reset"; now: number } | { type: "pause" } | { type: "veto"; id: string; now: number } | { type: "send"; text: string; channel: string; now: number } | { type: "propose"; plantId: PlantId; to: number; now: number; tag?: ComponentTag; metric?: string };
 
 function message(id: string, channel: string, sender: string, text: string, at: number, extra: Partial<ChatMessage> = {}): ChatMessage {
   return { id, channel, sender, text, at, kind: "agent", ...extra };
@@ -70,26 +72,44 @@ export function reviewVotes(plantId: PlantId, to: number): ProposalVote[] {
   }));
 }
 
-function propose(state: DemoState, plantId: PlantId, to: number, now: number): DemoState {
-  if (!Number.isFinite(to) || to < 20 || to > 90) return { ...state, messages: [...state.messages, message(`invalid-${now}`, plantId, "Demo guide", "Choose a pump target between 20% and 90%.", now, { kind: "system" })] };
+export function loopReviewVotes(state: DemoState, proposal: Proposal): ProposalVote[] {
+  const metric = proposal.metric as ControlMetric;
+  const effects = sampleControlEffects(state.components, proposal.plantId, metric, proposal.to);
+  const proposer = proposal.proposerTag ?? "P-100";
+  return effects.filter(c => c.plantId === proposal.plantId ? c.tag !== proposer : c.tag === "TV-101").map(c => {
+    const breaches = Object.entries(c.limits ?? {}).filter(([name, limit]) => c.metrics[name] < limit.min || c.metrics[name] >= limit.critical * (1 - c.marginPct / 100));
+    const own = state.components.find(item => item.plantId === proposal.plantId && item.tag === proposer)!;
+    const ownLimit = own.limits?.[metric];
+    const targetUnsafe = ownLimit && (proposal.to < ownLimit.min || proposal.to >= ownLimit.critical * (1 - own.marginPct / 100));
+    const primary = c.tag === "TK-101" ? "tempC" : c.tag === "P-100" ? "speedPct" : c.tag === "E-101" ? "dutyKw" : c.tag === "TV-101" ? "steamKgH" : "positionPct";
+    const blocked = !!targetUnsafe || breaches.length > 0;
+    return { tag: c.tag, plantId: c.plantId, vote: blocked ? "no" : "yes", predicted: c.metrics[primary], reason: `Browser sample model: ${blocked ? targetUnsafe ? "requested target exceeds its review margin" : `${breaches.map(([name]) => name).join(", ")} exceeds its operating envelope` : `${c.plantId !== proposal.plantId ? "cross-plant shared-header" : "coupled loop"} estimate remains within limits`}`, evidence: [] };
+  });
+}
+
+function propose(state: DemoState, plantId: PlantId, to: number, now: number, tag: ComponentTag = "P-100", requestedMetric?: string): DemoState {
+  const metric = requestedMetric ?? CONTROL_TARGETS.find(target => target.tag === tag)?.metric ?? "speedPct";
+  const target = controlTarget(tag, metric);
+  if (!target || !Number.isFinite(to) || to < target.min || to > target.max) return { ...state, messages: [...state.messages, message(`invalid-${now}`, plantId, "Demo guide", target ? `Choose a ${tag === "P-100" ? "pump target" : target.label.toLowerCase() + " target"} between ${target.min}${target.unit} and ${target.max}${target.unit}.` : "Select a supported control loop.", now, { kind: "system" })] };
   if (state.proposals.some((p) => p.status === "voting" || p.status === "veto_window") || state.observation) return { ...state, messages: [...state.messages, message(`pending-${now}`, plantId, "Demo guide", "A change is already in progress. Let its review and observations finish, or veto it before execution.", now, { kind: "system" })] };
-  const from = state.components.find((c) => c.plantId === plantId && c.tag === "P-100")!.metrics.speedPct;
-  const previous = state.proposals.findLast((p) => p.plantId === plantId);
-  const proposal: Proposal = { id: `p-${state.proposals.length + 14}`, plantId, from, to, status: "voting", votes: [], createdAt: now, parentId: previous?.status === "blocked" ? previous.id : undefined };
-  return { ...state, now, proposals: [...state.proposals, proposal], messages: [...state.messages, message(`${proposal.id}-request`, plantId, "P-100", `Proposing ${Math.round(from)} → ${to}%. Reviewing equipment and cross-plant evidence.`, now, { tag: "P-100", plantId, vendor: "Codex", proposalId: proposal.id })], audit: [...state.audit, { id: `${proposal.id}-audit`, at: now, plantId, text: `Proposal ${proposal.id}: P-100 ${Math.round(from)} → ${to}%` }] };
+  const equipment = state.components.find((c) => c.plantId === plantId && c.tag === tag)!;
+  const from = equipment.metrics[target.setpointMetric ?? metric] ?? equipment.metrics[metric];
+  const previous = state.proposals.findLast((p) => p.plantId === plantId && (p.proposerTag ?? "P-100") === tag && (p.metric ?? "speedPct") === metric);
+  const proposal: Proposal = { id: `p-${state.proposals.length + 14}`, plantId, proposerTag: tag, metric, from, to, status: "voting", votes: [], createdAt: now, parentId: previous?.status === "blocked" ? previous.id : undefined };
+  return { ...state, now, proposals: [...state.proposals, proposal], messages: [...state.messages, message(`${proposal.id}-request`, plantId, tag, `Proposing ${target.loop} ${Math.round(from)} → ${to}${target.unit}. ${metric === "speedPct" ? "Reviewing equipment and cross-plant evidence." : "Browser sample model reviews coupled effects; no live agents are called."}`, now, { tag, plantId, vendor: equipment.vendor === "codex" ? "Codex" : "Claude", proposalId: proposal.id })], audit: [...state.audit, { id: `${proposal.id}-audit`, at: now, plantId, text: `Proposal ${proposal.id}: ${target.loop} ${Math.round(from)} → ${to}${target.unit}` }] };
 }
 
 export function demoReducer(state: DemoState, action: DemoAction): DemoState {
   if (action.type === "reset") return createDemoState(action.now);
   if (action.type === "pause") return { ...state, paused: !state.paused };
-  if (action.type === "propose") return propose(state, action.plantId, action.to, action.now);
+  if (action.type === "propose") return propose(state, action.plantId, action.to, action.now, action.tag, action.metric);
   if (action.type === "send") {
     const text = action.text.trim().slice(0, 4000);
     if (!text) return state;
     const channel = ["plant-a", "plant-b", "company"].includes(action.channel) ? action.channel : "plant-a";
     const next = { ...state, messages: [...state.messages, message(`operator-${action.now}`, channel, "Operator", text, action.now, { kind: "operator" })] };
-    const target = text.match(/(?:^|\s)(\d+(?:\.\d+)?)\s*%/);
-    if (target && channel !== "company") return propose(next, channel as PlantId, Number(target[1]), action.now);
+    const target = parseControlRequest(text);
+    if (target && channel !== "company") return propose(next, channel as PlantId, target.to, action.now, target.tag, target.metric);
     return { ...next, messages: [...next.messages, message(`guide-${action.now}`, channel, "Demo guide", channel === "company" ? "The company channel shows shared-resource reviews and rules. Select a plant to propose an operating change." : "Try “Propose 65%” to watch each equipment agent review a safer target. Select an agent to see its location, current task, decision summary, and evidence.", action.now + 1, { kind: "system" })] };
   }
   if (action.type === "veto") {
@@ -101,7 +121,8 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
   let next = { ...state, now: action.now };
   for (const proposal of state.proposals) {
     if (proposal.status === "voting") {
-      const expected = reviewVotes(proposal.plantId, proposal.to);
+      const isPump = !proposal.metric || proposal.metric === "speedPct";
+      const expected = isPump ? reviewVotes(proposal.plantId, proposal.to) : loopReviewVotes(state, proposal);
       const received = Math.max(0, Math.min(expected.length, Math.floor((action.now - proposal.createdAt - 800) / 1000)));
       let votes = expected.slice(0, received);
       const refusal = votes.findIndex((vote) => vote.vote === "no");
@@ -119,18 +140,20 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
       }
       next = { ...next, proposals: next.proposals.map((p) => p.id === proposal.id ? { ...p, votes, status: blocked ? "blocked" : "veto_window", vetoDeadline: blocked ? undefined : action.now + 10_000 } : p), messages: [...next.messages,
         ...voteMessages,
-        message(`${proposal.id}-decision`, proposal.plantId, blocked ? "LV-101" : "Equipment consensus", blocked ? `NO. Predicted outlet position ${votes[1].predicted}%; safety threshold 81%. ${proposal.plantId === "plant-b" ? "Plant A's shared headroom rule applies here too." : "A 65% target preserves headroom."}` : `All 5 required votes are YES, including the other plant's steam valve. ${proposal.to}% can execute after the 10-second veto window.`, action.now, { tag: blocked ? "LV-101" : "P-100", plantId: proposal.plantId, vendor: blocked ? "Codex" : undefined, evidence: blocked ? ["event-a-088", "rule-lv-03"] : ["event-a-102"], proposalId: proposal.id }),
-      ], audit: [...next.audit, { id: `${proposal.id}-decision`, at: action.now, plantId: proposal.plantId, text: blocked ? `${proposal.id} blocked · evidence-backed outlet constraint` : `${proposal.id} unanimous · 10s human veto window`, evidenceId: blocked ? "rule-lv-03" : "event-a-102" }] };
+        message(`${proposal.id}-decision`, proposal.plantId, blocked ? (isPump ? "LV-101" : votes.find(v => v.vote === "no")!.tag) : "Equipment consensus", !isPump ? blocked ? `Browser sample review refused: ${votes.find(v => v.vote === "no")!.reason}. No target applied.` : `All 5 browser sample reviews accepted. ${proposal.to}${controlTarget(proposal.proposerTag!, proposal.metric!)?.unit ?? ""} can apply after the 10-second veto window.` : blocked ? `NO. Predicted outlet position ${votes[1].predicted}%; safety threshold 81%. ${proposal.plantId === "plant-b" ? "Plant A's shared headroom rule applies here too." : "A 65% target preserves headroom."}` : `All 5 required votes are YES, including the other plant's steam valve. ${proposal.to}% can execute after the 10-second veto window.`, action.now, { tag: blocked ? (isPump ? "LV-101" : votes.find(v => v.vote === "no")!.tag) : proposal.proposerTag ?? "P-100", plantId: proposal.plantId, vendor: blocked ? "Codex" : undefined, evidence: !isPump ? [] : blocked ? ["event-a-088", "rule-lv-03"] : ["event-a-102"], proposalId: proposal.id }),
+      ], audit: [...next.audit, { id: `${proposal.id}-decision`, at: action.now, plantId: proposal.plantId, text: blocked ? `${proposal.id} blocked · evidence-backed outlet constraint` : `${proposal.id} unanimous · 10s human veto window`, evidenceId: !isPump ? undefined : blocked ? "rule-lv-03" : "event-a-102" }] };
     }
     if (proposal.status === "veto_window" && proposal.vetoDeadline && action.now >= proposal.vetoDeadline) {
-      next = { ...next, proposals: next.proposals.map((p) => p.id === proposal.id ? { ...p, status: "executed" } : p), observation: { plantId: proposal.plantId, proposalId: proposal.id, from: proposal.from, target: proposal.to, startedAt: action.now }, messages: [...next.messages, message(`${proposal.id}-execute`, proposal.plantId, "Demo controller", `Veto window passed. Applying the sample ${proposal.to}% target; awaiting observed response.`, action.now, { kind: "system" })], audit: [...next.audit, { id: `${proposal.id}-execute`, at: action.now, plantId: proposal.plantId, text: `${proposal.id} applied in frontend demo · observing response` }] };
+      next = { ...next, proposals: next.proposals.map((p) => p.id === proposal.id ? { ...p, status: "executed" } : p), observation: { plantId: proposal.plantId, proposalId: proposal.id, from: proposal.from, target: proposal.to, startedAt: action.now, proposerTag: proposal.proposerTag, metric: proposal.metric, baseline: state.components.map(c => ({ ...c, metrics: { ...c.metrics } })) }, messages: [...next.messages, message(`${proposal.id}-execute`, proposal.plantId, "Demo controller", `Veto window passed. Applying the sample ${proposal.to}${controlTarget(proposal.proposerTag ?? "P-100", proposal.metric ?? "speedPct")?.unit ?? "%"} target; awaiting observed response.`, action.now, { kind: "system" })], audit: [...next.audit, { id: `${proposal.id}-execute`, at: action.now, plantId: proposal.plantId, text: `${proposal.id} applied in frontend demo · observing response` }] };
     }
   }
   if (next.observation && !next.paused) {
     const observation = next.observation;
     const progress = Math.min(1, (action.now - observation.startedAt) / 5000);
+    const isLoop = !!observation.metric && observation.metric !== "speedPct";
+    if (isLoop) { const baseline = observation.baseline ?? state.components; next.components = interpolateSampleEffects(baseline, sampleControlEffects(baseline, observation.plantId, observation.metric as ControlMetric, observation.target), progress); }
     const speed = observation.from + (observation.target - observation.from) * progress;
-    next.components = next.components.map((c) => {
+    if (!isLoop) next.components = next.components.map((c) => {
       if (c.plantId !== observation.plantId) return c.tag === "TV-101" ? { ...c, metrics: { ...c.metrics, headerBarg: Number((6 - Math.max(0, speed - 50) * 0.012).toFixed(2)) } } : c;
       const metrics = { ...c.metrics };
       if (c.tag === "P-100") Object.assign(metrics, { speedPct: speed, feedM3h: speed * 0.3 });
@@ -142,7 +165,11 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
     });
     if (progress >= 1) {
       const evidenceId = `observed-${observation.proposalId}`;
-      next = { ...next, observation: null, evidence: [...next.evidence, { id: evidenceId, kind: "event", title: `Sample ${observation.target}% run completed`, plantId: observation.plantId, at: new Date(action.now).toISOString(), summary: "Frontend demo observation. These values animate a fixture scenario; no actor, plant simulator, or live agent has been called. This record demonstrates where measured results and calibration will appear after integration.", before: observation.from, after: observation.target, predicted: observation.target + 1, observed: observation.target + 2 }], messages: [...next.messages, message(`${observation.proposalId}-observed`, observation.plantId, "Demo observation", `Outlet position settled at ${observation.target + 2}%. Predicted ${observation.target + 1}%, sample error 1 point. Observation added to this demo's memory.`, action.now, { kind: "system", evidence: [evidenceId] })], audit: [...next.audit, { id: `${observation.proposalId}-observed`, at: action.now, plantId: observation.plantId, text: `Observation recorded · LV-101 ${observation.target + 2}% · sample calibration error 1 point`, evidenceId }] };
+      if (isLoop) {
+        const target = controlTarget(observation.proposerTag!, observation.metric!); const unit = target?.unit ?? "";
+        const observed = next.components.find(c => c.plantId === observation.plantId && c.tag === observation.proposerTag)!.metrics[observation.metric!];
+        next = { ...next, observation: null, evidence: [...next.evidence, { id: evidenceId, kind: "event", title: `Browser sample ${target?.label ?? observation.metric} ${observation.target}${unit}`, plantId: observation.plantId, at: new Date(action.now).toISOString(), summary: "Frontend demo observation. Browser-only sample mass/energy and hydrostatic estimates; these are not measured simulator values or live agent decisions.", before: observation.from, after: observation.target, predicted: observation.target, observed }], messages: [...next.messages, message(`${observation.proposalId}-observed`, observation.plantId, "Demo observation", `Browser sample response: ${target?.label ?? observation.metric} ${Number(observed.toFixed(2))}${unit}. Coupled equipment estimates updated; this is an illustrative browser model.`, action.now, { kind: "system", evidence: [evidenceId] })], audit: [...next.audit, { id: `${observation.proposalId}-observed`, at: action.now, plantId: observation.plantId, text: `Sample ${target?.loop} response ${Number(observed.toFixed(2))}${unit}`, evidenceId }] };
+      } else next = { ...next, observation: null, evidence: [...next.evidence, { id: evidenceId, kind: "event", title: `Sample ${observation.target}% run completed`, plantId: observation.plantId, at: new Date(action.now).toISOString(), summary: "Frontend demo observation. These values animate a fixture scenario; no actor, plant simulator, or live agent has been called. This record demonstrates where measured results and calibration will appear after integration.", before: observation.from, after: observation.target, predicted: observation.target + 1, observed: observation.target + 2 }], messages: [...next.messages, message(`${observation.proposalId}-observed`, observation.plantId, "Demo observation", `Outlet position settled at ${observation.target + 2}%. Predicted ${observation.target + 1}%, sample error 1 point. Observation added to this demo's memory.`, action.now, { kind: "system", evidence: [evidenceId] })], audit: [...next.audit, { id: `${observation.proposalId}-observed`, at: action.now, plantId: observation.plantId, text: `Observation recorded · LV-101 ${observation.target + 2}% · sample calibration error 1 point`, evidenceId }] };
     }
   }
   if (!next.paused) {

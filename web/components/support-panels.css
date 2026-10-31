@@ -114,3 +114,22 @@
 @media(max-width:1150px) { .support-company { padding:23px 20px; } .support-company-intro h2 { font-size:21px; } .support-plant-card { padding-left:14px; padding-right:14px; } .support-card-footer { width:calc(100% + 28px); margin-left:-14px; padding-left:14px; padding-right:14px; } .support-plant-readings { gap:12px; } .support-plant-readings b { font-size:12px; } .support-resource-branch>span { display:none; } }
 @media(max-width:650px) { .support-company-intro { flex-direction:column; } .support-company-plants { grid-template-columns:1fr; } .support-plant-readings { gap:30px; } .support-shared-resource { padding-top:22px; } .support-resource-node { padding:12px; } .support-dialog { width:calc(100vw - 20px); max-height:calc(100dvh - 20px); border-radius:6px; } .support-dialog-header { padding:21px 19px 18px; } .support-dialog-header h2 { font-size:18px; } .support-dialog-header h2 span { display:block; margin-left:0; font-size:14px; } .support-dialog-content { padding:21px 19px; } .support-dialog-footer { padding:12px 19px; } .support-equipment-meta,.support-evidence-meta { padding:12px 19px; gap:10px; } .support-equipment-meta>span:last-child { margin-left:0; } .support-metric-grid { grid-template-columns:1fr; } .support-evidence-values { grid-template-columns:1fr; gap:1px; } .support-evidence-values>div { display:flex; justify-content:space-between; align-items:center; padding:13px; } .support-evidence-values strong { margin:0; font-size:14px; } .support-evidence-meta time { margin-left:0; width:100%; } .support-proposal-input { flex-wrap:wrap; } .support-proposal-input button { margin-left:5px; } }
 @media(prefers-reduced-motion:reduce) { .support-plant-card { transition:none; } }
+
+/* Setpoints and measured process values remain distinct in the proposal form. */
+.support-metric-select { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; padding:0; border:0; background:transparent; text-align:left; color:var(--muted,#aaa); font-size:11px; cursor:pointer; }
+.support-metric-select > span { display:inline-flex; align-items:center; gap:4px; font-size:9px; white-space:nowrap; }
+.support-metric-select:hover { color:var(--text,#eee); }
+.support-metric-card.support-metric-selected { border-color:var(--muted,#aaa); }
+.support-metric-setpoint { margin:-11px 0 15px; font-size:11px; color:var(--muted,#aaa); }
+.support-controller-select { width:100%; min-height:38px; border:1px solid var(--border,#555); border-radius:4px; padding:8px 10px; background:var(--surface,#171717); color:var(--text,#eee); font:inherit; font-size:12px; }
+.support-control-readings { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:14px 0; padding:13px; border:1px solid var(--border,#444); border-radius:4px; }
+.support-control-readings > span { display:flex; flex-direction:column; gap:5px; min-width:0; }
+.support-control-readings small { color:var(--muted,#aaa); font-size:10px; }
+.support-control-readings strong { color:var(--text,#eee); font:15px var(--font-geist-mono),monospace; font-weight:500; }
+.support-proposal-form p.support-control-mode { margin:0 0 16px; color:var(--muted,#aaa); font-size:11px; }
+html[data-theme="light"] .support-metric-select { color:#666; }
+html[data-theme="light"] .support-metric-select:hover { color:#222; }
+html[data-theme="light"] .support-metric-card.support-metric-selected { border-color:#777; }
+
+.support-metric-card[role="button"] { cursor:pointer; }
+.support-metric-card[role="button"]:focus-visible { outline:2px solid var(--text,#eee); outline-offset:3px; }

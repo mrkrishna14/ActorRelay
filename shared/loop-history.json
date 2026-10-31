@@ -1,0 +1,4352 @@
+[
+  {
+    "id": "seed-loop-plant-a-levelPct-45",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-a",
+    "componentId": "plant-a/TK-101",
+    "metric": "levelPct",
+    "before": 50.0,
+    "after": 45,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 44.995515010808326,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.000000586061,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 52.610660333702064,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3333254412738,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.14299826772146,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.1068520202077,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.9998931510130795,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00000058098144,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.333321859389,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.14299816431833,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.1068459073183,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.9998931510130795,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-a-levelPct-45"
+  },
+  {
+    "id": "seed-loop-plant-a-levelPct-50",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-a",
+    "componentId": "plant-a/TK-101",
+    "metric": "levelPct",
+    "before": 50.0,
+    "after": 50,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00000058074407,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3333218701973,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.142998159480754,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.1068459561516,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.9998931540161395,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00000058074407,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3333218701973,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.142998159480754,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.1068459561516,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.9998931540161395,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-a-levelPct-50"
+  },
+  {
+    "id": "seed-loop-plant-a-levelPct-55",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-a",
+    "componentId": "plant-a/TK-101",
+    "metric": "levelPct",
+    "before": 50.0,
+    "after": 55,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 55.00519341017345,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00000058235445,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 47.6358667522787,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3333176776882,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.14299803468815,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.106838836863,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.999893157544151,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00000058043253,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3333218803219,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.1429981537148,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.1068460091303,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.999893157544151,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-a-levelPct-55"
+  },
+  {
+    "id": "seed-loop-plant-a-tempC-74",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-a",
+    "componentId": "plant-a/TK-101",
+    "metric": "tempC",
+    "before": 75.0,
+    "after": 74,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 73.98580531168592,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 880.6555133114309,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 49.31622508693666,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1503.0857420759116,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.014829806111432,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00017940828863,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3316719153969,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.117788920114215,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.255066596904,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.014829806111432,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-a-tempC-74"
+  },
+  {
+    "id": "seed-loop-plant-a-tempC-75",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-a",
+    "componentId": "plant-a/TK-101",
+    "metric": "tempC",
+    "before": 75.0,
+    "after": 75,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00000058074407,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3333218701973,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.142998159480754,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.1068459561516,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.9998931540161395,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00000058074407,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3333218701973,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.142998159480754,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.1068459561516,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.9998931540161395,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-a-tempC-75"
+  },
+  {
+    "id": "seed-loop-plant-a-tempC-76",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-a",
+    "componentId": "plant-a/TK-101",
+    "metric": "tempC",
+    "before": 75.0,
+    "after": 76,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 76.014259310973,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 916.0110689357574,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.96394740073713,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1563.1217178878742,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.984959707919487,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 74.99982078115559,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3349652564486,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.16826665798478,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1532.9584344017192,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.984959707919487,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-a-tempC-76"
+  },
+  {
+    "id": "seed-loop-plant-a-steamKgH-1490",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-a",
+    "componentId": "plant-a/TV-101",
+    "metric": "steamKgH",
+    "before": 1533.1079466773729,
+    "after": 1490,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 73.81437990402351,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 872.99581788653,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 49.032884106432036,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1490.0758244305014,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.021298513929625,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 74.99987793880197,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.335654453671,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.106914950225836,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.3272090191786,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.021298513929625,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-a-steamKgH-1490"
+  },
+  {
+    "id": "seed-loop-plant-a-steamKgH-1500",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-a",
+    "componentId": "plant-a/TV-101",
+    "metric": "steamKgH",
+    "before": 1533.1079466773729,
+    "after": 1500,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 74.08938191051577,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 878.8731078983911,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 49.291750504181465,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1500.0584239346088,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.016332748565113,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 74.99990637595182,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.335113461377,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.115273885341395,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.2761263868204,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.016332748565113,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-a-steamKgH-1500"
+  },
+  {
+    "id": "seed-loop-plant-a-steamKgH-1510",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-a",
+    "componentId": "plant-a/TV-101",
+    "metric": "steamKgH",
+    "before": 1533.1079466773729,
+    "after": 1510,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 74.3644080832185,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 884.7507290558029,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 49.54979408831056,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1510.0409100227164,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.011367051144885,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 74.99993482158243,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3345723851567,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.12363988619825,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.2250210599047,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.011367051144885,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-a-steamKgH-1510"
+  },
+  {
+    "id": "seed-loop-plant-a-steamKgH-1520",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-a",
+    "componentId": "plant-a/TV-101",
+    "metric": "steamKgH",
+    "before": 1533.1079466773729,
+    "after": 1520,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 74.63945832532801,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 890.628680884378,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 49.80703194725258,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1520.023281365824,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.006401422343221,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 74.99996327581967,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3340312233815,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.13201296301134,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.1738930154906,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.006401422343221,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-a-steamKgH-1520"
+  },
+  {
+    "id": "seed-loop-plant-a-steamKgH-1530",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-a",
+    "componentId": "plant-a/TV-101",
+    "metric": "steamKgH",
+    "before": 1533.1079466773729,
+    "after": 1530,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 74.91453254181803,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 896.5069629010528,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.063480898962084,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1530.0055366196914,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.0014358628419,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 74.99999173878683,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.333489974513,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.14039312600767,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.1227422308298,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.0014358628419,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-a-steamKgH-1530"
+  },
+  {
+    "id": "seed-loop-plant-a-steamKgH-1540",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-a",
+    "componentId": "plant-a/TV-101",
+    "metric": "steamKgH",
+    "before": 1533.1079466773729,
+    "after": 1540,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.18963063938087,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 902.385574613853,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.319157498860974,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1539.9876744244405,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.996470373330476,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00002021060544,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3329486370047,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.148780385423265,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.071568683201,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.996470373330476,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-a-steamKgH-1540"
+  },
+  {
+    "id": "seed-loop-plant-a-steamKgH-1550",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-a",
+    "componentId": "plant-a/TV-101",
+    "metric": "steamKgH",
+    "before": 1533.1079466773729,
+    "after": 1550,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.4647525263744,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 908.2645155216723,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.57407804754534,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1549.9696934041838,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.9915049545064,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00004869139462,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3324072093768,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.15717475150492,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.0203723500372,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.9915049545064,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-a-steamKgH-1550"
+  },
+  {
+    "id": "seed-loop-plant-a-steamKgH-1560",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-a",
+    "componentId": "plant-a/TV-101",
+    "metric": "steamKgH",
+    "before": 1533.1079466773729,
+    "after": 1560,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.73989811277025,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 914.1437851140404,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.828258598260575,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1559.9515921666366,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.986539607075257,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00007718127154,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3318656901647,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.16557623450846,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1532.9691532088439,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.986539607075257,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-a-steamKgH-1560"
+  },
+  {
+    "id": "seed-loop-plant-a-steamKgH-1570",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-a",
+    "componentId": "plant-a/TV-101",
+    "metric": "steamKgH",
+    "before": 1533.1079466773729,
+    "after": 1570,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 76.01506731010063,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 920.0233828708905,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 51.08171496415359,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1569.9333693027238,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.9815743317509655,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00010568035164,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3313240779129,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.173984844698374,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1532.9179112371855,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.9815743317509655,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-a-steamKgH-1570"
+  },
+  {
+    "id": "seed-loop-plant-b-levelPct-45",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-b",
+    "componentId": "plant-b/TK-101",
+    "metric": "levelPct",
+    "before": 50.0,
+    "after": 45,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00000058098144,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.333321859389,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.14299816431833,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.1068459073183,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.9998931510130795,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 44.995515010808326,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.000000586061,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 52.610660333702064,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3333254412738,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.14299826772146,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.1068520202077,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.9998931510130795,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-b-levelPct-45"
+  },
+  {
+    "id": "seed-loop-plant-b-levelPct-50",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-b",
+    "componentId": "plant-b/TK-101",
+    "metric": "levelPct",
+    "before": 50.0,
+    "after": 50,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00000058074407,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3333218701973,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.142998159480754,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.1068459561516,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.9998931540161395,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00000058074407,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3333218701973,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.142998159480754,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.1068459561516,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.9998931540161395,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-b-levelPct-50"
+  },
+  {
+    "id": "seed-loop-plant-b-levelPct-55",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-b",
+    "componentId": "plant-b/TK-101",
+    "metric": "levelPct",
+    "before": 50.0,
+    "after": 55,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00000058043253,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3333218803219,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.1429981537148,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.1068460091303,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.999893157544151,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 55.00519341017345,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00000058235445,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 47.6358667522787,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3333176776882,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.14299803468815,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.106838836863,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.999893157544151,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-b-levelPct-55"
+  },
+  {
+    "id": "seed-loop-plant-b-tempC-74",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-b",
+    "componentId": "plant-b/TK-101",
+    "metric": "tempC",
+    "before": 75.0,
+    "after": 74,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00017940828863,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3316719153969,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.117788920114215,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.255066596904,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.014829806111432,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 73.98580531168592,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 880.6555133114309,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 49.31622508693666,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1503.0857420759116,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.014829806111432,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-b-tempC-74"
+  },
+  {
+    "id": "seed-loop-plant-b-tempC-75",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-b",
+    "componentId": "plant-b/TK-101",
+    "metric": "tempC",
+    "before": 75.0,
+    "after": 75,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00000058074407,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3333218701973,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.142998159480754,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.1068459561516,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.9998931540161395,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00000058074407,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3333218701973,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.142998159480754,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.1068459561516,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.9998931540161395,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-b-tempC-75"
+  },
+  {
+    "id": "seed-loop-plant-b-tempC-76",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-b",
+    "componentId": "plant-b/TK-101",
+    "metric": "tempC",
+    "before": 75.0,
+    "after": 76,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 74.99982078115559,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3349652564486,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.16826665798478,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1532.9584344017192,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.984959707919487,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 76.014259310973,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 916.0110689357574,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.96394740073713,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1563.1217178878742,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.984959707919487,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-b-tempC-76"
+  },
+  {
+    "id": "seed-loop-plant-b-steamKgH-1490",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-b",
+    "componentId": "plant-b/TV-101",
+    "metric": "steamKgH",
+    "before": 1533.1079466773729,
+    "after": 1490,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 74.99987793880197,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.335654453671,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.106914950225836,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.3272090191786,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.021298513929625,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 73.81437990402351,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 872.99581788653,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 49.032884106432036,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1490.0758244305014,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.021298513929625,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-b-steamKgH-1490"
+  },
+  {
+    "id": "seed-loop-plant-b-steamKgH-1500",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-b",
+    "componentId": "plant-b/TV-101",
+    "metric": "steamKgH",
+    "before": 1533.1079466773729,
+    "after": 1500,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 74.99990637595182,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.335113461377,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.115273885341395,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.2761263868204,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.016332748565113,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 74.08938191051577,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 878.8731078983911,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 49.291750504181465,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1500.0584239346088,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.016332748565113,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-b-steamKgH-1500"
+  },
+  {
+    "id": "seed-loop-plant-b-steamKgH-1510",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-b",
+    "componentId": "plant-b/TV-101",
+    "metric": "steamKgH",
+    "before": 1533.1079466773729,
+    "after": 1510,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 74.99993482158243,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3345723851567,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.12363988619825,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.2250210599047,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.011367051144885,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 74.3644080832185,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 884.7507290558029,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 49.54979408831056,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1510.0409100227164,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.011367051144885,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-b-steamKgH-1510"
+  },
+  {
+    "id": "seed-loop-plant-b-steamKgH-1520",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-b",
+    "componentId": "plant-b/TV-101",
+    "metric": "steamKgH",
+    "before": 1533.1079466773729,
+    "after": 1520,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 74.99996327581967,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3340312233815,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.13201296301134,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.1738930154906,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.006401422343221,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 74.63945832532801,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 890.628680884378,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 49.80703194725258,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1520.023281365824,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.006401422343221,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-b-steamKgH-1520"
+  },
+  {
+    "id": "seed-loop-plant-b-steamKgH-1530",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-b",
+    "componentId": "plant-b/TV-101",
+    "metric": "steamKgH",
+    "before": 1533.1079466773729,
+    "after": 1530,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 74.99999173878683,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.333489974513,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.14039312600767,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.1227422308298,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.0014358628419,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 74.91453254181803,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 896.5069629010528,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.063480898962084,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1530.0055366196914,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 6.0014358628419,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-b-steamKgH-1530"
+  },
+  {
+    "id": "seed-loop-plant-b-steamKgH-1540",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-b",
+    "componentId": "plant-b/TV-101",
+    "metric": "steamKgH",
+    "before": 1533.1079466773729,
+    "after": 1540,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00002021060544,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3329486370047,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.148780385423265,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.071568683201,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.996470373330476,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.18963063938087,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 902.385574613853,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.319157498860974,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1539.9876744244405,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.996470373330476,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-b-steamKgH-1540"
+  },
+  {
+    "id": "seed-loop-plant-b-steamKgH-1550",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-b",
+    "componentId": "plant-b/TV-101",
+    "metric": "steamKgH",
+    "before": 1533.1079466773729,
+    "after": 1550,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00004869139462,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3324072093768,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.15717475150492,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1533.0203723500372,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.9915049545064,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.4647525263744,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 908.2645155216723,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.57407804754534,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1549.9696934041838,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.9915049545064,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-b-steamKgH-1550"
+  },
+  {
+    "id": "seed-loop-plant-b-steamKgH-1560",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-b",
+    "componentId": "plant-b/TV-101",
+    "metric": "steamKgH",
+    "before": 1533.1079466773729,
+    "after": 1560,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00007718127154,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3318656901647,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.16557623450846,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1532.9691532088439,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.986539607075257,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.73989811277025,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 914.1437851140404,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.828258598260575,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1559.9515921666366,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.986539607075257,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-b-steamKgH-1560"
+  },
+  {
+    "id": "seed-loop-plant-b-steamKgH-1570",
+    "at": "2026-10-30T12:00:00Z",
+    "plantId": "plant-b",
+    "componentId": "plant-b/TV-101",
+    "metric": "steamKgH",
+    "before": 1533.1079466773729,
+    "after": 1570,
+    "upstreamSnapshot": {
+      "feedM3h": 15,
+      "headerBarg": 6
+    },
+    "effects": [
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 75.00010568035164,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 898.3313240779129,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 50.173984844698374,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1532.9179112371855,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-a/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.9815743317509655,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "speedPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/P-100",
+        "metric": "feedM3h",
+        "before": 15.0,
+        "after": 15.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "levelPct",
+        "before": 50.0,
+        "after": 50.0,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TK-101",
+        "metric": "tempC",
+        "before": 75.0,
+        "after": 76.01506731010063,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/LV-101",
+        "metric": "positionPct",
+        "before": 49.93691957532115,
+        "after": 49.93691957532115,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/E-101",
+        "metric": "dutyKw",
+        "before": 898.3333333333331,
+        "after": 920.0233828708905,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "positionPct",
+        "before": 50.14281771994589,
+        "after": 51.08171496415359,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "steamKgH",
+        "before": 1533.1079466773729,
+        "after": 1569.9333693027238,
+        "ticksToSettle": 15
+      },
+      {
+        "componentId": "plant-b/TV-101",
+        "metric": "headerBarg",
+        "before": 6.0,
+        "after": 5.9815743317509655,
+        "ticksToSettle": 15
+      }
+    ],
+    "incident": null,
+    "approvedBy": [],
+    "operator": "generated loop simulation fixture",
+    "proposalId": "seed-loop-plant-b-steamKgH-1570"
+  }
+]

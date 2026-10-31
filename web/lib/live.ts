@@ -2,6 +2,7 @@
 // Pure mapping functions plus thin fetch helpers. The UI components are unchanged.
 import type { AuditItem, DemoState } from "./demo";
 import type { ChatMessage, ComponentTag, Equipment, EvidenceItem, PlantId, Proposal, ProposalVote, TrendPoint } from "./types";
+import type { ControlMetric } from "./controls";
 
 export const GLUE_URL: string = process.env.NEXT_PUBLIC_GLUE_URL ?? "http://127.0.0.1:7200";
 
@@ -45,6 +46,9 @@ async function post(glueUrl: string, path: string, body: unknown): Promise<unkno
 
 export function liveApi(glueUrl: string) {
   return {
+    proposeControl(plantId: PlantId, tag: ComponentTag, metric: ControlMetric, to: number, rationale = `Operator request: ${tag} ${metric} to ${to}`) {
+      return post(glueUrl, "/propose", { plantId, proposerComponentId: `${plantId}/${tag}`, metric, to, rationale });
+    },
     propose(plantId: PlantId, to: number, rationale = `Operator request: P-100 to ${to}%`) {
       return post(glueUrl, "/propose", { plantId, proposerComponentId: `${plantId}/P-100`, metric: "speedPct", to, rationale });
     },
@@ -93,7 +97,7 @@ function toVote(vote: any, proposalPlant: PlantId): ProposalVote {
 
 function toProposal(p: any): Proposal {
   return {
-    id: p.id, plantId: p.plantId, from: num(p.from), to: num(p.to), status: p.status,
+    id: p.id, plantId: p.plantId, proposerTag: tagOf(p.proposerComponentId ?? `${p.plantId}/P-100`), metric: p.metric ?? "speedPct", from: num(p.from), to: num(p.to), status: p.status,
     votes: (p.votes ?? []).map((v: any) => toVote(v, p.plantId)),
     vetoDeadline: ms(p.vetoDeadline), parentId: p.parentProposalId ?? undefined, createdAt: ms(p.at) ?? 0,
   };
@@ -134,9 +138,9 @@ function buildMessages(proposals: any[], audits: any[], vendorById: Map<string, 
   for (const p of proposals) {
     const at = ms(p.at) ?? 0;
     out.push({
-      id: `live-${p.id}-proposal`, channel: p.plantId, sender: "P-100", kind: "agent", at,
-      text: `Proposing ${num(p.from)} → ${num(p.to)}%. ${p.rationale ?? ""}`.trim(),
-      vendor: vendorLabel("", vendorById.get(p.proposerComponentId) ?? "codex"), plantId: p.plantId, tag: "P-100", proposalId: p.id,
+      id: `live-${p.id}-proposal`, channel: p.plantId, sender: tagOf(p.proposerComponentId ?? `${p.plantId}/P-100`), kind: "agent", at,
+      text: JSON.stringify({ type: p.parentProposalId ? "counter" : "proposal", proposal: p }),
+      vendor: vendorLabel("", vendorById.get(p.proposerComponentId) ?? "codex"), plantId: p.plantId, tag: tagOf(p.proposerComponentId ?? `${p.plantId}/P-100`), proposalId: p.id,
     });
     (p.votes ?? []).forEach((v: any, index: number) => {
       const voterPlant = plantOf(v.componentId);
@@ -206,7 +210,7 @@ export function toDemoState(a: GlueState, b: GlueState, prev: DemoState | null, 
   for (const p of plants) {
     const newest = [...(p.proposals ?? [])].sort((x: any, y: any) => String(x.at).localeCompare(String(y.at))).at(-1);
     if (newest?.status === "executed" && !(p.history ?? []).some((e: any) => e.proposalId === newest.id)) {
-      observation = { plantId: newest.plantId, proposalId: newest.id, from: num(newest.from), target: num(newest.to), startedAt: ms(newest.at) ?? now };
+      observation = { plantId: newest.plantId, proposalId: newest.id, proposerTag: tagOf(newest.proposerComponentId ?? `${newest.plantId}/P-100`), metric: newest.metric ?? "speedPct", from: num(newest.from), target: num(newest.to), startedAt: ms(newest.at) ?? now };
       break;
     }
   }

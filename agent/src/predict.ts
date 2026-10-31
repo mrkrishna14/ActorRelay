@@ -55,8 +55,8 @@ export function applicableRules(rules: LearnedRule[], proposal: Proposal, compon
  * Physics priors from the CLAUDE.MD physics summary, used only where history says nothing.
  * Valid for P-100 speedPct proposals (the demo's lever); other changes get no prior.
  */
-export function physicsPrior(self: ComponentState, proposal: Proposal): Basis[] {
-    if (tagOf(proposal.proposerComponentId) !== "P-100" || proposal.metric !== "speedPct") return []
+export function physicsPrior(self: ComponentState, proposal: Proposal, context: ComponentState[] = []): Basis[] {
+    if (tagOf(proposal.proposerComponentId) !== "P-100" || proposal.metric !== "speedPct") return loopPhysicsPrior(self, proposal, context)
     const to = proposal.to
     const tag = self.tag
     const sameplant = self.plantId === proposal.plantId
@@ -81,9 +81,43 @@ export function physicsPrior(self: ComponentState, proposal: Proposal): Basis[] 
     return out
 }
 
+/** Steady mass/energy estimates from bridge/plant/hold_tank.py, not measured outcomes.
+ * Outlet flow = Cv*opening*sqrt(level); Q=feed*rho*Cp*(T-25)+UA_loss*(T-20).
+ * Steam latent heat ~2109 kJ/kg at 6 barg; equal-percentage valve rangeability=50.
+ */
+function loopPhysicsPrior(self: ComponentState, proposal: Proposal, context: ComponentState[]): Basis[] {
+    const source = tagOf(proposal.proposerComponentId)
+    const levelChange = source === "TK-101" && proposal.metric === "levelPct"
+    const tempChange = source === "TK-101" && proposal.metric === "tempC"
+    const flowChange = source === "TV-101" && proposal.metric === "steamKgH"
+    if (!levelChange && !tempChange && !flowChange) return []
+    const own = (tag: string) => context.find(c => c.plantId === proposal.plantId && c.tag === tag)?.metrics ?? (self.plantId === proposal.plantId && self.tag === tag ? self.metrics : {})
+    const pump = own("P-100"), tank = own("TK-101"), steam = own("TV-101"), coil = own("E-101"), outlet = own("LV-101")
+    const feed = pump.feedM3h ?? 15, temperature = tank.tempC ?? 75, level = tank.levelPct ?? 50
+    const cpFlow = feed * 1000 * 4180 / 3600 / 1000
+    const currentDuty = coil.dutyKw ?? cpFlow * (temperature - 25) + .5 * (temperature - 20)
+    const currentSteam = steam.steamKgH ?? currentDuty * 3600 / 2109
+    const targetTemp = tempChange ? proposal.to : flowChange ? (proposal.to * 2109 / 3600 + cpFlow * 25 + 10) / (cpFlow + .5) : temperature
+    const duty = flowChange ? proposal.to * 2109 / 3600 : tempChange ? cpFlow * (targetTemp - 25) + .5 * (targetTemp - 20) : currentDuty
+    const demand = flowChange ? proposal.to : tempChange ? duty * 3600 / 2109 : currentSteam
+    const header = Math.min(6.5, Math.max(4.5, (steam.headerBarg ?? 6) - .0005 * (demand - currentSteam)))
+    const out: Basis[] = []
+    const add = (metric: string, value: number, note: string) => { if (Number.isFinite(value)) out.push({ metric, value: round(value), from: "physics", note }) }
+    if (self.plantId !== proposal.plantId) {
+        if (self.tag === "TV-101") { add("headerBarg", header, "shared-header estimate from changed steam demand"); add("positionPct", (self.metrics.positionPct ?? 50) + Math.max(0, ((self.metrics.headerBarg ?? 6) - header) * 2), "shared steam pressure compensation") }
+        return out
+    }
+    if (self.tag === "P-100") { add("speedPct", pump.speedPct ?? 50, "feed-pump speed is unchanged by this control loop"); add("feedM3h", feed, "constant feed boundary in mass/energy balance") }
+    if (self.tag === "TK-101") { add("levelPct", levelChange ? proposal.to : tank.levelSetpointPct ?? level, "level controller target, steady mass balance"); add("tempC", targetTemp, flowChange ? "energy balance with local steam-flow control; temperature is not held at its old setpoint" : "temperature cascade target") }
+    if (self.tag === "LV-101") add("positionPct", levelChange ? Math.min(100, (outlet.positionPct ?? 50) * Math.sqrt(level / Math.max(1, proposal.to))) : outlet.positionPct ?? 50, "outlet equilibrium from Cv × opening × sqrt(level), constant feed")
+    if (self.tag === "E-101") add("dutyKw", duty, "steady tank energy balance including 500 W/K heat loss")
+    if (self.tag === "TV-101") { add("steamKgH", demand, "coil duty divided by approximate 6-barg latent heat"); add("headerBarg", header, "shared-header draw estimate"); add("positionPct", Math.max(0, Math.min(100, (steam.positionPct ?? 50) + 100 * Math.log(Math.max(.001, duty / Math.max(1, currentDuty) * (165 - temperature) / Math.max(1, 165 - targetTemp))) / Math.log(50))), "equal-percentage steam valve estimate; rangeability 50") }
+    return out
+}
+
 /** Everything the vote is grounded in: similar events, the newest run, applicable rules, and the resulting predictions. */
-export function ground(self: ComponentState, proposal: Proposal, retrieved: HistoryEvent[], history: HistoryEvent[], rules: LearnedRule[]): Grounding {
-    const similar = retrieved.filter(e => Math.abs(e.after - proposal.to) <= RELEVANCE_RADIUS)
+export function ground(self: ComponentState, proposal: Proposal, retrieved: HistoryEvent[], history: HistoryEvent[], rules: LearnedRule[], context: ComponentState[] = []): Grounding {
+    const similar = retrieved.filter(e => e.componentId === proposal.proposerComponentId && e.metric === proposal.metric && Math.abs(e.after - proposal.to) <= RELEVANCE_RADIUS)
     const mine = (e: HistoryEvent) => e.effects.some(f => f.componentId === self.id)
     const anchor = history
         .filter(e => e.componentId === proposal.proposerComponentId && e.metric === proposal.metric && mine(e))
@@ -107,7 +141,7 @@ export function ground(self: ComponentState, proposal: Proposal, retrieved: Hist
             basis.push({ metric, value: floor, from: "rule", note: `rule ${r.id}: ${r.text}` })
         }
     }
-    for (const prior of physicsPrior(self, proposal)) if (!basis.some(b => b.metric === prior.metric)) basis.push(prior)
+    for (const prior of physicsPrior(self, proposal, context)) if (!basis.some(b => b.metric === prior.metric)) basis.push(prior)
 
     const predicted = Object.fromEntries(basis.map(b => [b.metric, b.value]))
     return { similar, anchor, rules: fired, predicted, basis }
@@ -118,6 +152,7 @@ export type Decision = { vote: "yes" | "no"; reasons: string[] }
 /** The vote contract: thresholds and insufficient history. */
 export function decide(self: ComponentState, predicted: Record<string, number>, similarCount: number): Decision {
     const reasons: string[] = []
+    if (!Object.entries(predicted).some(([metric, value]) => self.limits[metric] && Number.isFinite(value))) reasons.push("insufficient grounding: no prediction for a monitored metric")
     for (const [metric, value] of Object.entries(predicted)) {
         const limit = self.limits[metric]
         if (!limit) continue

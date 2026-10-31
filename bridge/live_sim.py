@@ -27,9 +27,9 @@ PLANTS = ("plant-a", "plant-b")
 TAGS = ("P-100", "TK-101", "LV-101", "E-101", "TV-101")
 # Commandable setpoints and their accepted ranges.
 COMMANDS = {("P-100", "speedPct"): (20., 100.), ("TK-101", "levelPct"): (20., 70.),
-            ("TK-101", "tempC"): (70., 80.)}
+            ("TK-101", "tempC"): (70., 80.), ("TV-101", "steamKgH"): (0., 3000.)}
 OBSERVABLE = {("P-100", "feedM3h"), ("LV-101", "positionPct"), ("E-101", "dutyKw"),
-              ("TV-101", "positionPct"), ("TV-101", "steamKgH"), ("TV-101", "headerBarg")}
+              ("TV-101", "positionPct"), ("TV-101", "headerBarg")}
 HEADER_DESIGN_BARG, HEADER_GAIN, HEADER_DESIGN_KGH = 6.0, 0.0005, 3066.0
 HEADER_MIN, HEADER_MAX = 4.5, 6.5
 OBSERVE_TICKS = 5
@@ -193,6 +193,7 @@ class Simulator:
         previous = before[cid][metric]
         if key == ("P-100", "speedPct"): q.set_speed(value)
         elif key == ("TK-101", "tempC"): previous = q.loops["TIC-101"].sp; q.set_temperature_sp(value)
+        elif key == ("TV-101", "steamKgH"): previous = q.loops["FIC-201"].sp; q.set_steam_sp(value)
         else: previous = q.loops["LIC-101"].sp / 4 * 100; q.set_level_sp(value / 100 * 4)
         result = {"proposalId": pid, "componentId": cid, "metric": metric, "value": float(value),
                   "previous": previous, "accepted": True, "tick": self.tick, "at": now_iso()}

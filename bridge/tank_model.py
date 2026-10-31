@@ -55,20 +55,33 @@ class TankPlant:
         self.loops["TIC-101"].sp = temp_c
         self.loops["LIC-101"].sp = level_m
         self.sim_time = 0.
+        self.steam_flow_local = False
 
     # -- commands ---------------------------------------------------------
     def set_speed(self, speed: float):
         self.speed_pct = float(speed)
         self.d["feed_flow"] = .3 * self.speed_pct / 3600
 
-    def set_temperature_sp(self, value: float): self.loops["TIC-101"].sp = float(value)
+    def set_temperature_sp(self, value: float):
+        if self.steam_flow_local:
+            master = self.loops["TIC-101"]
+            master.out = self.loops["FIC-201"].sp / FIC_SP_RANGE
+            master.integral = master.out - master.kc * (float(value) - self.x[1])
+        self.steam_flow_local = False
+        self.loops["TIC-101"].sp = float(value)
+    def set_steam_sp(self, value: float):
+        if not np.isfinite(value) or not 0 <= value <= FIC_SP_RANGE:
+            raise ValueError("Steam flow target must be in [0, 3000] kg/h")
+        self.steam_flow_local = True
+        self.loops["FIC-201"].manual = False
+        self.loops["FIC-201"].sp = float(value)
     def set_level_sp(self, value: float): self.loops["LIC-101"].sp = float(value)
     def set_header(self, barg: float): self.d["steam_header_P"] = float(barg)
 
     # -- stepping ---------------------------------------------------------
     def scan(self):
         """One 10 s DCS scan: cascade controllers, then RK4 with valves held."""
-        self.x = self.unit.scan(self.x, self.u, self.d, self.loops)
+        self.x = self.unit.scan(self.x, self.u, self.d, self.loops, self.steam_flow_local)
         self.sim_time += SCAN_S
 
     def tick(self, scans: int = SCANS_PER_TICK):
@@ -83,11 +96,14 @@ class TankPlant:
         s = self.snapshot()
         return {
             "P-100": {"speedPct": self.speed_pct, "feedM3h": speed_to_feed_m3h(self.speed_pct)},
-            "TK-101": {"levelPct": s["LI-101"] / TANK_HEIGHT_M * 100, "tempC": s["TI-101"]},
+            "TK-101": {"levelPct": s["LI-101"] / TANK_HEIGHT_M * 100, "tempC": s["TI-101"],
+                       "levelSetpointPct": self.loops["LIC-101"].sp / TANK_HEIGHT_M * 100,
+                       "tempSetpointC": self.loops["TIC-101"].sp},
             "LV-101": {"positionPct": self.u["LV-101"] * 100},
             "E-101": {"dutyKw": s["CALC-DUTY"]},
             "TV-101": {"positionPct": self.u["TV-101"] * 100, "steamKgH": s["FI-201"],
-                       "headerBarg": s["PI-201"]},
+                       "headerBarg": s["PI-201"], "steamSetpointKgH": self.loops["FIC-201"].sp,
+                       "steamFlowLocal": float(self.steam_flow_local)},
         }
 
     def reset(self, speed: float | None = None):

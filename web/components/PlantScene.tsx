@@ -88,6 +88,38 @@ function fitPlant(controls: OrbitControlsType, scope: SceneScope, selected: Comp
   controls.update();
 }
 
+/** Sidebar motion changes the container without dispatching a window resize. */
+function ObserveContainerSize({ container }: { container: RefObject<HTMLDivElement | null> }) {
+  const get = useThree((state) => state.get);
+  const setSize = useThree((state) => state.setSize);
+  const invalidate = useThree((state) => state.invalidate);
+  useLayoutEffect(() => {
+    const element = container.current;
+    if (!element) return;
+    let measuredWidth = -1;
+    let measuredHeight = -1;
+    const measure = () => {
+      const { width, height, top, left } = element.getBoundingClientRect();
+      // A hidden or transitioning panel must not erase the last usable drawing buffer.
+      if (width <= 0 || height <= 0) return;
+      if (measuredWidth === width && measuredHeight === height) return;
+      measuredWidth = width; measuredHeight = height;
+      const current = get();
+      if (current.size.width !== width || current.size.height !== height) setSize(width, height, top, left);
+      // Resizing clears WebGL's buffer. Paint before the browser presents this frame,
+      // including when demand rendering or a busy GPU delays the next animation tick.
+      const next = get();
+      next.gl.render(next.scene, next.camera);
+      invalidate();
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    measure();
+    return () => observer.disconnect();
+  }, [container, get, setSize, invalidate]);
+  return null;
+}
+
 function ResponsiveFraming({ controls, manualCamera, scope, selected }: { controls: RefObject<OrbitControlsType | null>; manualCamera: RefObject<boolean>; scope: SceneScope; selected: ComponentTag }) {
   const { size, invalidate } = useThree();
   const initialized = useRef(false);
@@ -429,6 +461,7 @@ function SceneFallback({ components, selected, onSelect }: PlantViewProps) {
 }
 
 export default function PlantScene(props: PlantViewProps) {
+  const container = useRef<HTMLDivElement>(null);
   const light = props.theme === "light";
   const [scope, setScope] = useState<SceneScope>("plant");
   const [webgl, setWebgl] = useState<boolean | null>(null);
@@ -489,7 +522,7 @@ export default function PlantScene(props: PlantViewProps) {
     setCanvasKey((key) => key + 1);
   };
 
-  return <div className={`plant-scene engineering-viewport ${scope === "plant" ? "is-plant-overview" : ""}`} role="group" aria-label="Interactive 3D plant. Drag to orbit, scroll to zoom, or select equipment labels.">
+  return <div ref={container} className={`plant-scene engineering-viewport ${scope === "plant" ? "is-plant-overview" : ""}`} role="group" aria-label="Interactive 3D plant. Drag to orbit, scroll to zoom, or select equipment labels.">
     {webgl === true ? <SceneErrorBoundary key={canvasKey} fallback={loading} onFailure={recover}>
       <Suspense fallback={loading}>
         <Canvas key={canvasKey} shadows dpr={[1, 1.7]} camera={{ position: [OVERVIEW_POSITION.x, OVERVIEW_POSITION.y, OVERVIEW_POSITION.z], fov: 50, near: .1, far: 200 }} frameloop={(animate || autoRotate) && visible ? "always" : "demand"} gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }} onCreated={({ gl }) => {
@@ -522,6 +555,7 @@ export default function PlantScene(props: PlantViewProps) {
           </SceneMotionContext.Provider>
           <LabelProjector labels={labels} leaders={leaders} overview={scope === "plant"} />
           <OrbitControls ref={controls} makeDefault target={[OVERVIEW_TARGET.x, OVERVIEW_TARGET.y, OVERVIEW_TARGET.z]} enableDamping dampingFactor={.08} minDistance={3} maxDistance={60} maxPolarAngle={Math.PI / 2 - .04} minPolarAngle={.2} autoRotate={autoRotate} autoRotateSpeed={.45} />
+          <ObserveContainerSize container={container} />
           <ResponsiveFraming controls={controls} manualCamera={manualCamera} scope={scope} selected={props.selected} />
         </Canvas>
       </Suspense>

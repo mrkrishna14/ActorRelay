@@ -47,11 +47,12 @@ class TK101:
                                     output=u["LV-101"]),
         }
 
-    def scan(self, x, u, d, loops) -> np.ndarray:
+    def scan(self, x, u, d, loops, steam_flow_local=False) -> np.ndarray:
         """One DCS scan: controllers in cascade order (``u`` updated in place), then integrate."""
         sig = self.signals(0.0, x, u, d)
-        master = loops["TIC-101"].step(sig["TI-101"], SCAN_S)
-        loops["FIC-201"].sp = master * STEAM_SP_SPAN_KG_H
+        if not steam_flow_local:
+            master = loops["TIC-101"].step(sig["TI-101"], SCAN_S)
+            loops["FIC-201"].sp = master * STEAM_SP_SPAN_KG_H
         u["TV-101"] = loops["FIC-201"].step(sig["FI-201"], SCAN_S)
         u["LV-101"] = loops["LIC-101"].step(sig["LI-101"], SCAN_S)
         return hold_tank.rk4(x, u, d, self.params, SCAN_S / RK4_STEPS_PER_SCAN, RK4_STEPS_PER_SCAN)

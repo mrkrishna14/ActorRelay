@@ -35,6 +35,7 @@ export type ProposalStatus = "voting" | "blocked" | "veto_window" | "vetoed" | "
 export interface ProposalVote { tag: ComponentTag; plantId: PlantId; vote: "yes" | "no"; predicted: number; reason: string; evidence: string[] }
 export interface Proposal {
   id: string; plantId: PlantId; from: number; to: number; status: ProposalStatus;
+  proposerTag?: ComponentTag; metric?: string;
   votes: ProposalVote[]; vetoDeadline?: number; parentId?: string; createdAt: number;
 }
 export interface ChatMessage {

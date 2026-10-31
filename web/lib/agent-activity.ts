@@ -1,4 +1,5 @@
 import type { DemoState } from "./demo";
+import { controlTarget } from "./controls";
 import type { AgentActivity, ComponentTag, Equipment, Proposal } from "./types";
 
 const locations: Record<ComponentTag, string> = {
@@ -28,7 +29,12 @@ function involves(equipment: Equipment, proposal: Proposal) {
   return equipment.plantId === proposal.plantId || equipment.tag === "TV-101";
 }
 
-/** Public, deterministic demo state. These summaries are not private model reasoning. */
+const proposalDescription = (proposal: Proposal) => {
+  const control = controlTarget(proposal.proposerTag ?? "P-100", proposal.metric ?? "speedPct");
+  return { tag: proposal.proposerTag ?? "P-100", label: control ? `${control.loop} ${control.label.toLowerCase()}` : proposal.metric ?? "pump speed", unit: control?.unit ?? "" };
+};
+
+/** Public state summaries, derived from measurements and recorded votes. */
 export function demoAgentActivities(state: DemoState): AgentActivity[] {
   const active = state.proposals.findLast((proposal) => proposal.status === "voting" || proposal.status === "veto_window");
   const observing = state.observation ? state.proposals.find((proposal) => proposal.id === state.observation?.proposalId) : undefined;
@@ -36,84 +42,73 @@ export function demoAgentActivities(state: DemoState): AgentActivity[] {
     const activity = monitoring(equipment, state.now);
     const proposal = active && involves(equipment, active) ? active : undefined;
     if (proposal) {
+      const description = proposalDescription(proposal);
       const crossPlant = equipment.plantId !== proposal.plantId;
+      const proposer = equipment.tag === description.tag && !crossPlant;
       const vote = proposal.votes.find((item) => item.tag === equipment.tag && item.plantId === equipment.plantId);
-      const reviewTasks: Record<ComponentTag, string> = {
-        "P-100": `Coordinate the pump change · ${proposal.from.toFixed(0)} → ${proposal.to}%`,
-        "TK-101": `Check tank level and temperature at ${proposal.to}% feed`,
-        "LV-101": `Check outlet headroom at ${proposal.to}% feed`,
-        "E-101": `Calculate heating duty at ${proposal.to}% feed`,
-        "TV-101": crossPlant ? `Review ${plantName(proposal.plantId)}'s shared-header demand` : `Review steam demand at ${proposal.to}% feed`,
-      };
-      activity.task = reviewTasks[equipment.tag];
-      activity.updatedAt = proposal.createdAt;
+      const target = `${description.label} ${proposal.from} → ${proposal.to}${description.unit}`;
+      activity.task = proposer ? `Coordinate ${target}` : crossPlant ? `Review ${plantName(proposal.plantId)}'s ${description.label} and shared steam demand` : `Review ${target} against ${equipment.name.toLowerCase()} limits`;
+      activity.updatedAt = state.messages.findLast((message) => message.proposalId === proposal.id && message.tag === equipment.tag && message.plantId === equipment.plantId)?.at ?? proposal.createdAt;
       activity.progress = Math.min(85, 15 + proposal.votes.length * 14);
       if (proposal.status === "veto_window") {
         activity.state = "waiting";
-        activity.summary = equipment.tag === "P-100" ? `All five required agents accepted ${proposal.to}%. The operator can veto before the 10-second window ends.` : `${vote?.reason ?? "Equipment review complete"}. Waiting for the operator veto window; no setpoint has changed yet.`;
-        activity.latestAction = vote ? `Voted ${vote.vote.toUpperCase()} on ${proposal.id}; waiting for human oversight.` : `Collected 5/5 YES votes for ${proposal.id}.`;
+        activity.summary = proposer ? `All required agents accepted ${proposal.to}${description.unit} for ${description.label}. The operator can veto before the 10-second window ends.` : `${vote?.reason ?? "Equipment review complete"}. Waiting for the operator veto window; no setpoint has changed yet.`;
+        activity.latestAction = vote ? `Voted ${vote.vote.toUpperCase()} on ${proposal.id}; waiting for human oversight.` : `Collected ${proposal.votes.length} accepted reviews for ${proposal.id}.`;
         activity.evidence = vote?.evidence ?? [];
-        return activity;
-      }
-      if (equipment.tag === "P-100" && !crossPlant) {
-        activity.state = state.now - proposal.createdAt < 1800 ? "thinking" : "waiting";
-        activity.summary = `Prepare the ${proposal.to}% target and gather tank, outlet, heat-duty, and both steam-valve reviews. ${proposal.votes.length}/5 votes received.`;
-        activity.latestAction = `Opened proposal ${proposal.id}; current pump speed remains ${proposal.from.toFixed(0)}%.`;
       } else if (vote) {
         activity.state = vote.vote === "no" ? "blocked" : "ready";
         activity.summary = vote.reason;
         activity.latestAction = `Submitted ${vote.vote.toUpperCase()} vote on ${proposal.id}.`;
         activity.evidence = vote.evidence;
         activity.progress = 100;
-        activity.updatedAt = state.messages.find((message) => message.id === `${proposal.id}-vote-${equipment.plantId}-${equipment.tag}`)?.at ?? proposal.createdAt;
+      } else if (proposer) {
+        activity.state = state.now - proposal.createdAt < 1800 ? "thinking" : "waiting";
+        activity.summary = `Prepare ${target} and gather the other equipment agents' reviews, including the shared steam header. ${proposal.votes.length}/5 votes received.`;
+        activity.latestAction = `Opened proposal ${proposal.id}; current ${description.label} target remains ${proposal.from}${description.unit}.`;
       } else {
         activity.state = state.now - proposal.createdAt < 1400 ? "thinking" : "reviewing";
-        const steps: Record<ComponentTag, string> = {
-          "P-100": "Review the proposed pump target.",
-          "TK-101": "Compare incoming feed against the tank inventory and temperature envelope.",
-          "LV-101": `Predict outlet travel at ${proposal.to}% feed and compare it against the 81% safety threshold using the sample headroom evidence.`,
-          "E-101": "Calculate the heating duty required by the proposed flow and check the coil envelope.",
-          "TV-101": crossPlant ? `Check how ${plantName(proposal.plantId)}'s demand affects the steam pressure available here.` : "Check local steam demand and shared-header pressure before accepting the flow change.",
-        };
-        activity.summary = steps[equipment.tag];
-        activity.latestAction = crossPlant ? `Received cross-plant review ${proposal.id}.` : `Reading sample measurements and evidence for ${proposal.id}.`;
-        activity.evidence = equipment.tag === "LV-101" ? ["rule-lv-03", "event-a-102"] : [];
+        activity.summary = crossPlant ? `Check how ${plantName(proposal.plantId)}'s ${description.label} change affects steam available here.` : `Compare the proposed ${description.label} of ${proposal.to}${description.unit} with current measurements, equipment limits, and relevant recorded evidence.`;
+        activity.latestAction = `${crossPlant ? "Received cross-plant review" : "Reviewing measurements and evidence for"} ${proposal.id}.`;
       }
       return activity;
     }
     if (observing && involves(equipment, observing)) {
+      const description = proposalDescription(observing);
       activity.state = "observing";
-      activity.task = `Observe the ${observing.to}% run and compare prediction with response`;
-      activity.summary = `${equipment.plantId !== observing.plantId ? "Track shared steam-header pressure" : "Read the changing sample measurements"}. A completed observation is recorded separately from the acceptance vote.`;
-      activity.latestAction = `The veto window ended for ${observing.id}; observing the frontend response.`;
+      activity.task = `Observe ${description.label} at ${observing.to}${description.unit} and compare prediction with response`;
+      activity.summary = `${equipment.plantId !== observing.plantId ? "Track shared steam-header pressure" : "Read the changing simulator measurements"}. A completed observation is recorded separately from the acceptance vote.`;
+      activity.latestAction = `The veto window ended for ${observing.id}; observing the measured response.`;
       activity.updatedAt = state.observation!.startedAt;
       activity.progress = 80 + Math.round(Math.min(1, (state.now - state.observation!.startedAt) / 5000) * 20);
       return activity;
     }
-    const last = state.proposals.findLast((item) => item.plantId === equipment.plantId);
-    if (last?.status === "blocked" && equipment.tag === "LV-101") {
-      const refusal = last.votes.find((vote) => vote.vote === "no" && vote.tag === "LV-101" && vote.plantId === equipment.plantId) ?? last.votes.find((vote) => vote.vote === "no");
+    const last = state.proposals.findLast((item) => involves(equipment, item));
+    if (!last) return activity;
+    const description = proposalDescription(last);
+    const ownVote = last.votes.find((vote) => vote.tag === equipment.tag && vote.plantId === equipment.plantId);
+    const proposer = equipment.plantId === last.plantId && equipment.tag === description.tag;
+    if (last.status === "blocked" && ownVote?.vote === "no") {
       activity.state = "blocked";
-      activity.task = `Prevent an unsafe ${last.to}% feed target`;
-      activity.summary = `Predicted outlet travel ${refusal?.predicted ?? last.to + 4}% exceeds the 81% threshold. The evidence supports refusing this change; current equipment remains at its previous setpoint.`;
-      activity.latestAction = `Rejected ${last.id}. Shared the headroom rule and supporting events.`;
-      activity.updatedAt = state.messages.findLast((message) => message.proposalId === last.id && message.tag === equipment.tag)?.at ?? last.createdAt;
-      activity.evidence = refusal?.evidence ?? ["rule-lv-03"];
+      activity.task = `Refuse the proposed ${description.label} of ${last.to}${description.unit}`;
+      activity.summary = ownVote.reason;
+      activity.latestAction = `Rejected ${last.id}; shared the supporting evidence.`;
+      activity.updatedAt = state.messages.findLast((message) => message.proposalId === last.id && message.tag === equipment.tag && message.plantId === equipment.plantId)?.at ?? last.createdAt;
+      activity.evidence = ownVote.evidence;
       activity.progress = 100;
-    } else if (last?.status === "blocked" && equipment.tag === "P-100") {
+    } else if (last.status === "blocked" && proposer) {
       activity.state = "ready";
-      activity.task = "Prepare a safer counterproposal";
-      activity.summary = `The outlet agent refused ${last.to}%. A lower target that past runs show was safe preserves outlet headroom and still needs a fresh five-agent review.`;
-      activity.latestAction = `Proposed a safer alternative after ${last.id} was blocked.`;
-      activity.updatedAt = state.messages.findLast((message) => message.proposalId === last.id && message.tag === equipment.tag)?.at ?? last.createdAt;
-      activity.evidence = ["event-a-102"];
+      activity.task = "Review the refusal before preparing another proposal";
+      activity.summary = `An equipment agent refused ${last.to}${description.unit} for ${description.label}. Any alternative needs a fresh equipment review.`;
+      activity.latestAction = `Received refusal on ${last.id}; the previous setpoint remains in place.`;
+      activity.updatedAt = last.createdAt;
+      activity.evidence = last.votes.filter((vote) => vote.vote === "no").flatMap((vote) => vote.evidence);
       activity.progress = 100;
-    } else if (last?.status === "vetoed") {
+    } else if (last.status === "vetoed") {
       activity.latestAction = `Operator vetoed ${last.id}. No setpoint was applied.`;
       activity.updatedAt = state.messages.find((message) => message.id === `${last.id}-veto`)?.at ?? last.createdAt;
-    } else if (last?.status === "executed") {
-      activity.latestAction = `Completed ${last.id}; sample observation recorded. Monitoring the new operating point.`;
-      activity.evidence = [`observed-${last.id}`];
+    } else if (last.status === "executed") {
+      activity.latestAction = `Completed ${last.id}; monitoring the measured response.`;
+      activity.evidence = state.evidence.some((record) => record.id === `observed-${last.id}`) ? [`observed-${last.id}`] : [];
       const observedAt = state.evidence.find((record) => record.id === `observed-${last.id}`)?.at;
       activity.updatedAt = observedAt ? Date.parse(observedAt) : last.createdAt;
     }

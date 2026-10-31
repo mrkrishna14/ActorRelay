@@ -58,7 +58,8 @@ export async function decideVote(proposal: Proposal, componentId: ComponentId, d
     const upstream: Record<string, number> = {}
     const retrieved = await backend.similar(proposal.plantId, proposer, proposal.metric, proposal.to, upstream, 5)
     const [plant, rules] = await Promise.all([backend.plant(proposal.plantId), backend.rules(componentId, self.model)])
-    const g = ground(self, proposal, retrieved, plant.history, rules)
+    const context = proposal.metric === "speedPct" ? [] : await Promise.all(plant.components.map(id => backend.component(id)))
+    const g = ground(self, proposal, retrieved, plant.history, rules, context)
     const llm = deps.llmFor(self)
     if (!llm) return buildVote(self, proposal, g, null, "[baseline: no LLM configured] ")
     // Hard budget: every agent answers within VOTE_DEADLINE_MS (default 15 s, under the 20 s vote window).
