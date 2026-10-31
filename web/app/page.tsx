@@ -85,6 +85,10 @@ export default function Dashboard() {
   const components = data.components.filter((component) => component.plantId === plantId);
   const equipment = components.find((component) => component.tag === selected)!;
   const proposal = data.proposals.findLast((item) => item.plantId === plantId) ?? null;
+  // Big banner when this plant refused a change because of a rule learned in the other plant (stays up for 2 minutes).
+  const otherPlant = plantId === "plant-a" ? "Plant B" : "Plant A";
+  const knowledgeBanner = scope !== "company" && data.proposals.some((p) => p.plantId === plantId && p.status === "blocked" && data.now - p.createdAt < 120_000
+    && p.votes.some((v) => v.vote === "no" && v.reason.includes(`Learned in ${otherPlant}`))) ? `${plantName(plantId)} uses knowledge from ${otherPlant}` : null;
   const activities = useMemo(() => demoAgentActivities(data), [data]);
   const selectedActivity = activities.find((activity) => activity.plantId === plantId && activity.tag === selected)!;
   const evidence = data.evidence.find((item) => item.id === evidenceId) ?? null;
@@ -257,6 +261,7 @@ export default function Dashboard() {
       <ResizeHandle kind="sidebar" label="Resize equipment navigator" value={layout.sidebarWidth} {...layout.bounds.sidebar} onPointerDown={layout.startResize} onResizeBy={layout.resizeBy} onReset={resetPanelSizes} />
 
       <main id="plant-workspace" className="plant-workspace" ref={workspace}>
+        {knowledgeBanner && <div className="knowledge-banner" role="status" aria-live="polite">{knowledgeBanner}</div>}
 
 
         {scope === "company" && view !== "agents" ? <CompanyOverview plants={PLANTS.map((plant) => ({ ...plant, components: data.components.filter((component) => component.plantId === plant.id) }))} onOpenPlant={openScope} rules={data.evidence.filter((item) => item.kind === "rule")} onRuleClick={setEvidenceId} /> : <>

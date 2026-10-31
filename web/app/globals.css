@@ -155,3 +155,6 @@ html[data-theme="light"] .topbar-workspace-tools .chart-toggle[aria-expanded="tr
 @media (prefers-reduced-motion: reduce) {
   .workspace-grid, .workspace-grid > :is(.equipment-sidebar,.panel-resize-sidebar,.sidebar-backdrop) { transition: none !important; }
 }
+
+.knowledge-banner{flex-shrink:0;display:flex;align-items:center;justify-content:center;margin:10px 12px 4px;padding:16px 20px;border-radius:8px;background:#1d64e8;color:#fff;font-size:28px;font-weight:700;letter-spacing:-.3px;text-align:center;box-shadow:0 6px 22px #1d64e866;animation:knowledge-pop .35s ease-out}
+@keyframes knowledge-pop{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
