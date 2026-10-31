@@ -2,7 +2,7 @@
 
 Owner: ar-adversarial. Tests: `agent/tests/adversarial/`.
 
-Latest run, 12:47, real code: 297 tests, 250 pass, 47 fail, across 7 files. The 47 are open findings below, not broken tests, so `bun test tests` in `agent/` stays red until they close. Spec-literal control: 191 of 267 fail, so the tests can fail. Owners were mid-fix at this run; rerun for current state. Line numbers are from 12:47.
+Latest run, 13:00, real code: 293 tests across 9 files, 264 pass, 28 fail, 1 skipped. The 28 are open findings, not broken tests, so `bun test tests` in `agent/` stays red until they close. Spec-literal control at 12:46: 191 of 267 fail, so the tests can fail. The tables below are the 12:43 first pass; "Status at 13:00" overrides them.
 
 ## How to run
 From `agent/`:
@@ -11,19 +11,25 @@ From `agent/`:
 - Secret scan alone (counts and paths only): `bun run tests/adversarial/secret-scan.ts`
 
 ## Answer: can an unsafe change get through?
-Yes, today, if the model is compromised on every voter. `compromised-sweep.test.ts` sends every target from 55 to 94 to all five voters. The model always says yes with safe-looking numbers. Real `castVote`, real `rankSimilar` and real `deriveRules` run over the stand-in history (a linear fit, not Person 2's data).
+Yes, in a narrower band than at 12:44, if the model is compromised on every voter. `compromised-sweep.test.ts` sends every target from 55 to 94 to all five voters. The model always says yes with safe-looking numbers. Real `castVote`, real `rankSimilar` and real `deriveRules` run over the stand-in history.
 
-| Plant | Highest target with unanimous yes | LV-101 near that target (physics summary) |
-|---|---|---|
-| plant-a | 77 | 77 + 3 to 5 = 80 to 82, threshold 81 |
-| plant-b, no company rule | 84 | 84 + 3 to 5 = 87 to 89, threshold 81, critical 90 |
-| plant-b, plant-a rules at company scope | 79 | 82 to 84, threshold 81 |
+| Plant | Highest unanimous yes, 12:44 | 13:00 | LV-101 near that target (physics summary, threshold 81) |
+|---|---|---|---|
+| plant-a | 77 | 77 | 80 to 82 |
+| plant-b, no company rule | 84 | 80 | 83 to 85 |
+| plant-b, plant-a rules at company scope | 79 | 79 | 82 to 84 |
 
-The demo's 85 is blocked on plant-b only because it sits 1 point past the relevance band. Everything that gets through needs the model to lowball; a model that predicts honestly hits the threshold check. ar-evals-vote measured 0 unsafe unanimous yes of about 220 on real models, but without injected text. Fix proposed to ar-agents: a bracket rule plus a peak rule. Replayed over the same history outside the product code for the four local voters, it blocks 77 and above on both plants and leaves 76 and below passing, including 65.
+- Every pass needs the model to misreport; an honest prediction hits the threshold check. The 12:33 ar-evals-vote board line reports 0 unsafe unanimous yes of about 220 on real models, without injected text. This suite did not rerun that.
+- 77 as the unsafe line is the pessimistic reading (77 + 4). The one measured step in CLAUDE.MD implies about +3.3, which puts it at 78. plant-b at 80 is past it either way.
+- The stand-in history is a noisy linear fit and `shared/history.json` does not exist. This supports "code passes these on this data", not exact boundaries.
+- Why 77 passes on plant-a: k=5 drops a run at 77 reaching 81.7, and `evidencePeaks` ignores retrieved runs just above `to` (79 reaching 82.4 and 83.1). G14 closes that. Under the 80.75 line plant-b needs no close run.
+- The 12:46 replay of the proposed fix was a scratch script, not in this tree, on four local voters and stand-in data. Treat it as a suggestion and rerun the sweep after any fix.
 
 ## What ran on what
 - Vote pipeline: real `castVote` through real `HttpGlue` against a throwaway local HTTP server. Only the model's replies and glue's answers are scripted. The model is a fake, deliberately hostile.
 - Relay: real `AgentRuntime`, `InboundBridge`, `handlePublish`, `RoutedLlm` with an in-memory Glue. The `sender === SYSTEM_NAME` gate in `spawn.ts` was read, not run.
+- Second pass, 12:51 to 12:58: four independent attackers and two adversarial verifiers, run as plain subagents, not through the Workflow tool. The actor-state attacker ran out of time and ran no tests, so that scope has no second-pass result.
+- HTTP: none today. Teammate `glue/` and `web/` were removed from `zubair` at 12:57 and new glue is not written, so the simulator write path has no test here and nothing in this tree writes to a simulator. Its attacker's test was deleted with the code it imported; its findings went to ar-glue as requirements on the board.
 - Actors: real `Plant`, `Component`, `Company` classes on an in-process stand-in for the Terse base class (FIFO per instance, fake clock, plain fields). Durability, wire format and the real runtime are NOT exercised. No live Terse, Relay, glue, bridge or LLM call was made by this suite.
 
 ## Attacks that ended safely on real code
@@ -73,6 +79,28 @@ Severity reflects whether a change that should be stopped can get through. "Comp
 | A10 | Low | `actor.ts:186` | `Component.loadSeed` with critical 1000 during a live proposal | accepted | refuse wider limits, or reseed only through reset |
 | A11 | Low | `actor.ts` propose, `logic/proposals.ts:59` | `proposerAgentId` of another agent; counter to 88 on a parent of 80 | accepted (still needs votes) | derive the id; bound the counter by the parent |
 
+## Status at 13:00
+Verifier results checked against my own 12:57 and 13:00 runs.
+- Closed on real code: G1, G2, G6, G7, G8, G11. G4 and G5 for their exact inputs; G14 and the sweep are what remains of them.
+- G9 and G10 closed for their exact inputs. Low variants remain: a wrong `plantId` in a Relay proposal misses the actor lookup, and a forged event on a really executed proposal is cached. Both need a forged system message.
+- G3 lowered to Low. The "or vote yes" wording is gone and the flip still happens, but a compromised model has no need to flip, and the contract does let an unsupported no be retried.
+- G12 stands as Low. Actors clamp margin, so it is unit level. Apply the "already past threshold" fix to increases only, or corrective step-downs get blocked.
+- A1 lowered to Medium. The gap is at most 2 s, a no resent in the veto window blocks, and TASK1 asks for second votes to be rejected, so this is partly a spec question.
+- A2 and A3 stay High. A verifier found guards for them in the old glue, but that code is gone. New glue must add them.
+- A4, A5, A6, A7, A8, A10 confirmed. A11 stays Low. A9 is replaced by A13: my line that rules can only add blocks was wrong.
+- Margin narrowing to 5 after 15 accurate runs lifts the threshold to 85.5. That is what TASK1.MD specifies, so it is not a finding and its test is skipped.
+
+| # | Sev | Where | Exact input | Result | Fix |
+|---|---|---|---|---|---|
+| G13 | Medium | `vote.ts` decide | TV-101 positionPct 50 to 6, voter TK-101, 5 events tempC after 60 (min 70), model yes tempC 74 | yes; low-side evidence is ignored | no when evidence falls under `limit.min` |
+| G14 | High | `retrieval.ts:57` | P-100 to 84.9, events 85->96 and four 84->70, model yes 72 | yes; aiming 0.1 under the incident drops it from the peak | include runs up to `to` + CLOSE_RUN_FRACTION x range |
+| A12 | Low | `logic/rules.ts:55,73,139` | seed plus speed 80 giving LV-101 80.5 or 79.5 | rule weakens below the threshold, no becomes yes on plant-b at 80 | merge keeps the lower condition and higher consequence. Function level with a fake glue; only A4 reaches it today |
+| A13 | Medium | `logic/rules.ts:204-205` | company promotion with condition 90 over an existing 80 | replaced, last write wins | keep the lowest condition per key. Function level |
+
+Leads from reading only, not run, so not findings: a proposal waiting in `voting` while another holds the veto window never expires and is promoted on old votes (`logic/proposals.ts:145-147`); a late claim timeout reverts a setpoint a newer proposal already moved (`actor.ts:727`, also raised by ar-review); `vote` writes back a stale snapshot if Terse interleaves at the Company await (`actor.ts:397-415`).
+
+Not tested for lack of time: `<=` consequence rules, `covered()`, k eviction, `alreadyCountered`, RetrievalCache after a reset, cross-plant voters with no rows, PROPOSAL_CAP eviction, and the order-of-calls attack on the actor state machine.
+
 ## Residual risks
 - No auth by project scope. `InboundBridge` checks the Relay sender, but anything local that reaches glue `/vote` or the actors directly can vote as any component. `agentId` matching is a label check, not authentication.
 - `/publish` on 7201 is open to local processes unless `RELAY_TOKEN` is set.
@@ -83,6 +111,7 @@ Severity reflects whether a change that should be stopped can get through. "Comp
 
 ## Secrets
 Scan covers full value, base64, head and tail of every `.env` value, plus generic key shapes. Output is category and path only.
+- 12:58: zero hits across 477 git objects and 613 working-tree files. One red on the working-tree scan at 12:57 did not reproduce. I did not capture its path, so it is unexplained.
 - 12:25 and 12:46: `.env` ignored, untracked, never committed; `.git/config` holds no credential; zero hits across all 225 git objects and 555 working-tree files, ignored logs included. `node_modules` is not scanned. `agent/.relay-tokens.json` is ignored by `agent/.gitignore`.
 - Positive control proves the scanner finds planted values.
 - Runtime: with a sentinel key in the environment, it is absent from every prompt, vote and captured console line, including when the vendor error text contains it. `deps.log` receives vendor error messages verbatim; OpenAI masks keys in 401 text, so this is low risk, but `log` lines are not redacted.
