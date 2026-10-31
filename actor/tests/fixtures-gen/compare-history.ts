@@ -145,10 +145,11 @@ class EvidenceModel implements Llm {
 
 function grounds(vote: Vote): string {
   if (vote.vote === "yes") return "yes";
-  if (vote.reason.includes("insufficient history")) return "no: insufficient history";
-  if (/\brule\b/.test(vote.reason.split(";")[0])) return "no: rule";
-  if (vote.reason.includes("threshold")) return "no: threshold";
-  return `no: ${vote.reason.slice(0, 50)}`;
+  const reason = vote.reason.replace(/^\[[^\]]*\]\s*/, ""); // A provenance prefix can hold its own semicolon.
+  if (reason.includes("insufficient history")) return "no: insufficient history";
+  if (/\brule\b/.test(reason.split(";")[0])) return "no: rule";
+  if (reason.includes("threshold")) return "no: threshold";
+  return `no: ${reason.slice(0, 50)}`;
 }
 
 let proposalSeq = 0;
