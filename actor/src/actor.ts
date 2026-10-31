@@ -149,11 +149,11 @@ function errorText(error: unknown): string {
     return error instanceof Error ? error.message : String(error)
 }
 
-// Local alarms may not survive a runtime restart, so every entry point re-arms a missing or overdue alarm.
+// Local alarms do not survive a runtime restart, and a lost alarm reads null, so entry points re-arm only then.
+// An overdue alarm is not lost: its delivery may be queued behind this call. Re-arming it would schedule a second
+// delivery, and under load every call would add one, so the backlog would feed itself.
 function armAlarm(alarm: Actor["alarm"]): void {
-    const now = Date.now()
-    const scheduled = alarm.get()
-    if (scheduled === null || scheduled <= now) alarm.set(now + TICK_MS)
+    if (alarm.get() === null) alarm.set(Date.now() + TICK_MS)
 }
 
 export class Component extends Actor {
@@ -303,6 +303,7 @@ export class Plant extends Actor {
     @Persisted private registeredWithCompany = false
     @Ephemeral private companySyncing = false
     @Ephemeral private companyRuleIds: string[] = []
+    @Ephemeral private lastTickAt = 0
 
     @Persisted @Emittable name = ""
     @Persisted @Emittable components: ComponentId[] = []
@@ -660,7 +661,11 @@ export class Plant extends Actor {
 
     async onAlarm(): Promise<void> {
         // Re-armed first: an uncaught failure below must not end the tick loop.
-        this.alarm.set(Date.now() + TICK_MS)
+        const now = Date.now()
+        this.alarm.set(now + TICK_MS)
+        // The scheduler retries a delivery that outlives its 30s request, so one tick can arrive more than once.
+        if (now - this.lastTickAt < TICK_MS / 2) return
+        this.lastTickAt = now
         try {
             await this.tick()
         } catch (error) {
