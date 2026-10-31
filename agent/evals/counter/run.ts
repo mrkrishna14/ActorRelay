@@ -52,7 +52,7 @@ type Round = {
   raw: number | null;
   to: number | null;
   refused: string | null;
-  decidedBy: string | null;
+  explainedBy: string | null;
   note: string | null;
   inRange: boolean;
   equalsFrom: boolean;
@@ -146,7 +146,7 @@ async function runScenario(impl: Impl, s: Scenario, llm: ReturnType<typeof creat
       const counterMs = sink.reduce((sum, c) => sum + c.ms, 0);
       const raw = rawValue(sink);
       if (!made.proposal) {
-        record.rounds.push({ n, raw, to: null, refused: made.note ?? "no counter", decidedBy: null, note: null, inRange: false, equalsFrom: false, equalsBlocked: false, clearsTruth: false, headroomUsed: null, unanimous: false, blockers: [], counterMs, voteMs: 0, rationale: "", citesBlocker: false, llmCalls: sink.length });
+        record.rounds.push({ n, raw, to: null, refused: made.note ?? "no counter", explainedBy: null, note: null, inRange: false, equalsFrom: false, equalsBlocked: false, clearsTruth: false, headroomUsed: null, unanimous: false, blockers: [], counterMs, voteMs: 0, rationale: "", citesBlocker: false, llmCalls: sink.length });
         return record;
       }
       const counter = made.proposal;
@@ -164,7 +164,7 @@ async function runScenario(impl: Impl, s: Scenario, llm: ReturnType<typeof creat
         raw,
         to: value,
         refused: null,
-        decidedBy: made.decidedBy ?? null,
+        explainedBy: made.explainedBy ?? null,
         note: made.note ?? null,
         inRange: value > lo && value < hi,
         equalsFrom: value === s.from,

@@ -15,7 +15,7 @@ type Eval = ReturnType<typeof createLlm>;
 export type Impl = {
   name: string;
   vote(proposal: Proposal, voterId: string, view: Plantview, llm: Eval, sink: LlmCall[], log: (line: string) => void, broken: boolean): Promise<Vote>;
-  counter(chain: Proposal[], view: Plantview, s: Scenario, llm: Eval, sink: LlmCall[]): Promise<{ proposal: Proposal | null; note?: string; decidedBy?: string }>;
+  counter(chain: Proposal[], view: Plantview, s: Scenario, llm: Eval, sink: LlmCall[]): Promise<{ proposal: Proposal | null; note?: string; explainedBy?: string }>;
 };
 
 const candidateCounter: Impl["counter"] = async (chain, view, s, llm, sink) => {
@@ -41,7 +41,7 @@ const counterWith = (build: typeof realBuildCounter): Impl["counter"] => async (
   const blocked = chain[chain.length - 1]!;
   const made = await build({ glue: new FixtureGlue(view), llm: llm.agentLlm(sink), log: (line) => lines.push(line) }, blocked, chain);
   if (!made) return { proposal: null, note: lines.join("; ") || "buildCounter returned null with no log line" };
-  return { proposal: makeProposal(s, view, made.proposal.to, blocked, made.proposal.rationale), decidedBy: made.decidedBy, note: lines.join("; ") || undefined };
+  return { proposal: makeProposal(s, view, made.proposal.to, blocked, made.proposal.rationale), explainedBy: made.explainedBy, note: lines.join("; ") || undefined };
 };
 
 const IMPLS: Record<string, Impl> = {

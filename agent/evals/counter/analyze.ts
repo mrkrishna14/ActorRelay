@@ -91,8 +91,8 @@ of counters that clear physics, voted through: ${pct(safe.filter((f: any) => f.u
     const noLv = partial.filter((r) => r.parentBlockers.some((b: string) => b.endsWith("LV-101")) && !r.visibleVotes.includes("LV-101:no"));
     console.log(`partial votes at block: counter saw fewer than all voters in ${pct(missing.length, partial.length)}; LV-101's no not yet in: ${pct(noLv.length, partial.length)}`);
   }
-  const byCode = voted.filter((f: any) => f.decidedBy === "code").length;
-  console.log(`counters chosen by code fallback (model gave no valid reply): ${byCode}/${voted.length}`);
+  const unexplained = voted.filter((f: any) => (f.explainedBy ?? f.decidedBy) === "nobody" || f.decidedBy === "code").length;
+  console.log(`counters the model did not explain: ${unexplained}/${voted.length}`);
   const refusals: Record<string, number> = {};
   for (const r of recs) for (const f of r.rounds) if (f.refused) refusals[`${r.group} r${f.n}: ${String(f.refused).replace(/^[^:]*: /, "").replace(/\d+/g, "#").slice(0, 60)}`] = (refusals[`${r.group} r${f.n}: ${String(f.refused).replace(/^[^:]*: /, "").replace(/\d+/g, "#").slice(0, 60)}`] ?? 0) + 1;
   console.log(`no counter produced: ${JSON.stringify(refusals)}`);

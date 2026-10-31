@@ -65,8 +65,8 @@ describe("value bounds, enforced by code", () => {
       expect(made).not.toBeNull();
       expect(made!.proposal.to).toBeGreaterThan(50);
       expect(made!.proposal.to).toBeLessThan(85);
-      expect(made!.decidedBy).toBe("code");
-      expect(made!.proposal.rationale).toContain("[chosen by code");
+      expect(made!.explainedBy).toBe("nobody");
+      expect(made!.proposal.rationale).toContain("[target set by code");
       expect(llm.requests.length).toBe(2); // one re-request, never more
     });
   }
@@ -74,7 +74,7 @@ describe("value bounds, enforced by code", () => {
   test("model throws on every call: still bounded, still labelled", async () => {
     const { view, proposal } = blocked(demo);
     const made = await buildCounter({ glue: new FixtureGlue(view), llm: scripted(new Error("timeout")) }, proposal, [proposal]);
-    expect(made!.decidedBy).toBe("code");
+    expect(made!.explainedBy).toBe("nobody");
     expect(made!.proposal.to).toBeLessThan(85);
   });
 
@@ -179,8 +179,9 @@ describe("not hard-coded", () => {
       return made?.proposal.to ?? null;
     };
     const base = await landing(demo, 89);
-    const tighter = await landing({ ...demo, limits: { "LV-101": { positionPct: { critical: 80 } } } }, 89);
-    const wider = await landing({ ...demo, limits: { "LV-101": { positionPct: { critical: 110 } } } }, 105);
+    // thresholdFor floors at limit.max, so a moved critical has to move max with it.
+    const tighter = await landing({ ...demo, limits: { "LV-101": { positionPct: { critical: 85, max: 75 } } } }, 89);
+    const wider = await landing({ ...demo, limits: { "LV-101": { positionPct: { critical: 110, max: 100 } } } }, 105);
     expect(base).not.toBeNull();
     expect(tighter).not.toBe(base);
     expect(wider).not.toBe(base);

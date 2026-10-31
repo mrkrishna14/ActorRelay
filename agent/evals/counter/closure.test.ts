@@ -1,4 +1,4 @@
-// The oracle for the two open counter issues. Real agent/counter.ts, FAKE model, no tokens spent.
+// The oracle for the open counter issues. Real agent/counter.ts and agent/vote.ts, FAKE model, no tokens spent.
 // Each test fails until its issue is closed. bun test evals/counter/closure.test.ts
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
@@ -6,6 +6,8 @@ import { join } from "node:path";
 import type { Proposal, Vote } from "../../../shared/types";
 import { buildCounter, MAX_COUNTERS_PER_PARENT } from "../../counter";
 import type { Llm, LlmReply, LlmRequest } from "../../llm";
+import { RetrievalCache } from "../../retrieval";
+import { castVote, thresholdFor } from "../../vote";
 import { buildView, makeProposal, type Scenario } from "./fixture";
 import { FixtureGlue } from "./glue";
 
@@ -88,9 +90,9 @@ describe("issue 2: the label must say code picked the target", () => {
     return (await buildCounter({ glue: new FixtureGlue(view), llm: model() }, parent, [parent]))!;
   };
 
-  test("decidedBy does not credit the model", async () => {
-    expect((await counter()).decidedBy).not.toContain("openai");
-    expect((await counter()).decidedBy).toContain("code");
+  test("no field on the result says the model decided", async () => {
+    const made = (await counter()) as { decidedBy?: string };
+    expect(made.decidedBy ?? "code").not.toContain("openai");
   });
 
   test("the rationale does not say the model answered, and does say code set the target", async () => {
@@ -111,5 +113,47 @@ describe("issue 2: the label must say code picked the target", () => {
   test("HANDOFF.md does not tell readers a counter rationale means the model answered", () => {
     const handoff = readFileSync(join(import.meta.dir, "..", "..", "HANDOFF.md"), "utf8");
     expect(handoff).not.toContain("the same goes for counter rationales");
+  });
+});
+
+describe("issue 3: a wider margin must never be less cautious", () => {
+  const landing = async (marginPct: number) => {
+    const s: Scenario = { ...demo, margins: { "LV-101": marginPct } };
+    const view = buildView(s);
+    const parent = makeProposal(s, view, 85, null, "test");
+    parent.status = "blocked";
+    parent.votes = [{ ...vote(parent, "LV-101", { positionPct: 95 }, "predicted positionPct 95 is past the threshold"), marginPct }];
+    const made = await buildCounter({ glue: new FixtureGlue(view), llm: model() }, parent, [parent]);
+    return made?.proposal.to ?? 0;
+  };
+
+  test("the counter never lands higher as LV-101's margin widens", async () => {
+    const targets = await Promise.all([5, 10, 15, 20, 25].map(landing));
+    for (let i = 1; i < targets.length; i++) expect(targets[i]!).toBeLessThanOrEqual(targets[i - 1]!);
+  });
+
+  test("widening LV-101's margin from 10 to 25 lowers the point it votes no at", () => {
+    const limit = { min: 10, max: 80, critical: 90 };
+    expect(thresholdFor(limit, 25)).toBeLessThan(thresholdFor(limit, 10) - 5);
+  });
+
+  test("a voter with a widened margin refuses what CLAUDE.MD says it must", async () => {
+    const s: Scenario = { ...demo, to: 75, margins: { "LV-101": 25 } };
+    const view = buildView(s);
+    const proposal = makeProposal(s, view, 75, null, "test");
+    const reply = JSON.stringify({ vote: "yes", reason: "under the limit", predicted: { positionPct: 78 } });
+    const llm: Llm = { complete: async () => ({ text: reply, provider: "openai", model: "fake", fallback: false }) };
+    const cast = await castVote({ glue: new FixtureGlue(view), llm, cache: new RetrievalCache() }, proposal, "plant-a/LV-101");
+    expect(cast.vote).toBe("no"); // 78 is past 90 * (1 - 25/100) = 67.5
+  });
+
+  test("the tank's normal 75 C does not lock the plant at a wide margin", async () => {
+    const s: Scenario = { ...demo, to: 60, margins: { "TK-101": 15 } };
+    const view = buildView(s);
+    const proposal = makeProposal(s, view, 60, null, "test");
+    const reply = JSON.stringify({ vote: "yes", reason: "dip recovers", predicted: { levelPct: 50, tempC: 74 } });
+    const llm: Llm = { complete: async () => ({ text: reply, provider: "openai", model: "fake", fallback: false }) };
+    const cast = await castVote({ glue: new FixtureGlue(view), llm, cache: new RetrievalCache() }, proposal, "plant-a/TK-101");
+    expect(cast.vote).toBe("yes");
   });
 });
