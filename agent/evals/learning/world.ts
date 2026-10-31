@@ -17,6 +17,7 @@ import type {
 import { applyCalibration } from "../../../actor/src/logic/component.ts";
 import { deriveRules, mergeCompanyRule, mergeDerivedRules, mergeSubmittedRule, toCompanyRule } from "../../../actor/src/logic/rules.ts";
 import { rankSimilar } from "../../../actor/src/logic/similar.ts";
+import { crossPlantEffects, OBSERVE_TICKS, PARAMS, SteamUnit, summarizeEffects, type Snapshot } from "../../../bridge/tank_model.ts";
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -92,14 +93,16 @@ const PLANT_B_NEAR = [68, 70, 72, 74, 75, 76, 78];
 
 export type PlantsFile = { company: { plants: PlantId[]; sharedResources: { id: string; name: string; components: string[] }[] }; plants: { id: PlantId; name: string; components: ComponentState[] }[] };
 
-// Person 2's history when it exists, else the ar-fixtures stand-in, else the generated fixture below.
-const HISTORY_FILES = [["shared/history.json", "history.json"], ["actor/tests/fixtures-gen/history.json", "stand-in"]] as const;
+// shared/history.json when it exists, else the ar-fixtures stand-in, else the generated fixture below.
+const HISTORY_FILES = [["shared/history.json", "shared-history"], ["actor/tests/fixtures-gen/history.json", "stand-in"]] as const;
 let seedCache: { events: HistoryEvent[]; source: string } | null | undefined;
 function seedFile() {
   if (seedCache !== undefined) return seedCache;
   seedCache = null;
-  for (const [path, source] of HISTORY_FILES) {
-    const full = join(ROOT, ...path.split("/"));
+  const override = process.env.LEARNING_HISTORY;
+  const files = override ? ([[override, "person2"]] as const) : HISTORY_FILES;
+  for (const [path, source] of files) {
+    const full = override ? path : join(ROOT, ...path.split("/"));
     if (!existsSync(full)) continue;
     const raw = JSON.parse(readFileSync(full, "utf8"));
     seedCache = { events: Array.isArray(raw) ? raw : (raw.events ?? raw.history ?? []), source };
@@ -130,7 +133,7 @@ export class World {
   source: string = "fixture";
 
   // shape "settled" rewrites LV-101 rows to the steady value, as if history recorded 5 ticks after the overshoot decayed.
-  constructor(public seed: number, public plantBReach: 65 | 78 = 65, historyMode: "auto" | "fixture" = "auto", public shape: "as-is" | "settled" = "as-is") {
+  constructor(public seed: number, public plantBReach: 65 | 78 = 65, historyMode: "auto" | "fixture" = "auto", public shape: "as-is" | "settled" = "as-is", public plantModel = false) {
     this.r = rng(seed);
     this.clock = Date.parse("2026-10-31T17:00:00Z");
     for (const p of this.plants.plants) for (const c of p.components) this.components.set(c.id, structuredClone(c));
@@ -260,9 +263,25 @@ export class World {
     return p;
   }
 
-  // TASK2 says live runs land near history, because both come from the model. With a history file, a run's
-  // observations are a nearby seeded run's rows plus small sensor noise; the fixture falls back to observe().
+  // Steps the real tank model the way live_sim does: both plants at steady state, then OBSERVE_TICKS after the write.
+  // Feed temperature varies per run, so calibration is not scored against one fixed answer.
+  private simulated(p: Proposal) {
+    const other = p.plantId === "plant-a" ? "plant-b" : "plant-a";
+    const feedTempC = PARAMS.feedTempC + (this.r() - 0.5) * 4;
+    const speedOf = (id: PlantId) => this.components.get(`${id}/P-100`)!.metrics.speedPct;
+    const unit = new SteamUnit(PARAMS, { [p.plantId]: { speedPct: p.from, feedTempC }, [other]: { speedPct: speedOf(other), feedTempC } });
+    const samples: Snapshot[] = [unit.snapshot()];
+    unit.plants[p.plantId].speedPct = p.to;
+    for (let tick = 0; tick < OBSERVE_TICKS; tick++) {
+      unit.tick();
+      samples.push(unit.snapshot());
+    }
+    return [...summarizeEffects(p.plantId, samples), ...crossPlantEffects(other, samples)];
+  }
+
+  // Without the model, TASK2 says live runs land near history: a nearby seeded run's rows plus small sensor noise.
   private observed(p: Proposal) {
+    if (this.plantModel) return this.simulated(p);
     const pool = this.history[p.plantId].filter((e) => !e.proposalId && e.componentId === p.proposerComponentId && Math.abs(e.after - p.to) <= 1);
     if (this.source === "fixture" || pool.length === 0) return observe(p.plantId, p.to, p.from, this.r);
     const base = pool[Math.floor(this.r() * pool.length)];

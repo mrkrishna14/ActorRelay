@@ -19,7 +19,7 @@ export type Verdict = {
   why: string;
 };
 
-const RUBRIC = `You audit one vote from a component agent in a simulated plant. Your job is to find reasoning a careful process engineer would reject. You are given the reason, the vote, and ONLY the evidence the agent cited, expanded in full. Judge the reason against that cited evidence, the agent's limits and the physics summary. Nothing else counts as support.
+export const RUBRIC = `You audit one vote from a component agent in a simulated plant. Your job is to find reasoning a careful process engineer would reject. You are given the reason, the vote, and ONLY the evidence the agent cited, expanded in full. Judge the reason against that cited evidence, the agent's limits and the physics summary. Nothing else counts as support.
 
 Answer each field strictly.
 
@@ -59,6 +59,7 @@ export function packet(p: Proposal, v: Vote, world: World) {
     vote: v.vote,
     reason: v.reason,
     predicted: v.predicted,
+    similarEventsRetrieved: v.similarCount,
     limits: Object.fromEntries(Object.entries(c.limits).map(([m, l]) => [m, { ...l, noGoThreshold: +(l.critical * (1 - v.marginPct / 100)).toFixed(1) }])),
     citedEvents: v.evidenceEventIds.map((id) => world.event(id)).filter(Boolean).map((e) => expand(e!, c)),
     citedRules: v.evidenceRuleIds.map((id) => world.rule(id)).filter(Boolean).map((r) => ({ id: r!.id, scope: r!.scope, text: r!.text, supportEventIds: r!.supportEventIds.length })),

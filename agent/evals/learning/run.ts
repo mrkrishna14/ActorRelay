@@ -7,7 +7,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { CalibrationEntry, ComponentId, HistoryEvent, Proposal, Vote } from "../../../shared/types.ts";
 import { canaries, deterministic, judge, packet, type Verdict } from "./judge.ts";
-import { stats } from "./llm.ts";
+import { pace, stats, usage } from "./llm.ts";
 import { calibrate, castVote, VARIANTS, type Flags, type VoteRecord } from "./reference.ts";
 import { World } from "./world.ts";
 
@@ -25,6 +25,7 @@ const seed0 = Number(arg("seed", "1000"));
 const model = { model: arg("model", "gpt-6-luna"), effort: arg("effort", "none") };
 const noJudge = has("no-judge");
 const lvOnly = has("judge-lv-only");
+const dumpPackets = has("dump-packets");
 const reach = Number(arg("plant-b-reach", "65")) as 65 | 78;
 const historyMode = arg("history", "auto") as "auto" | "fixture";
 const shape = arg("history-shape", "as-is") as "as-is" | "settled";
@@ -56,6 +57,7 @@ async function loadPipeline(): Promise<{ cast: Cast; learn: Learn; onVotes: OnVo
 }
 
 const castAll = async (cast: Cast, p: Proposal, world: World) => {
+  await pace(p.requiredVoters.length);
   const recs = await Promise.all(p.requiredVoters.map((id) => cast(p, id, world)));
   p.votes = recs.map((r) => r.vote);
   p.status = recs.some((r) => r.vote.vote === "no") ? "blocked" : "veto_window";
@@ -76,8 +78,12 @@ const pct = (k: number, n: number) => {
 type Row = Record<string, any>;
 
 async function sequence(i: number, p: Awaited<ReturnType<typeof loadPipeline>>): Promise<Row> {
-  const { cast, learn, onVotes } = p;
-  const world = new World(fromSeed(i), reach, historyMode, shape);
+  const { learn, onVotes } = p;
+  const cast: Cast = async (prop, id, w) => {
+    await pace();
+    return p.cast(prop, id, w);
+  };
+  const world = new World(fromSeed(i), reach, historyMode, shape, has("plant-model"));
   const row: Row = { run: i, seed: fromSeed(i), source: world.source, label: p.label };
 
   // Demo order in one world, so plant-b sees exactly what plant-a produced.
@@ -92,24 +98,24 @@ async function sequence(i: number, p: Awaited<ReturnType<typeof loadPipeline>>):
   }
 
   const p1 = world.proposal("plant-a", 85, 50, "Increase throughput");
-  const v1 = await castAll(cast, p1, world);
+  const v1 = await castAll(p.cast, p1, world);
   await onVotes(p1, p1.votes, world);
   const ruleAfterBlock = world.companyRules.find((r) => r.model === "outlet-valve-A") ?? null;
 
   const p2 = world.proposal("plant-a", 65, 50, "Counter-proposal after block", p1.id);
-  const v2 = await castAll(cast, p2, world);
+  const v2 = await castAll(p.cast, p2, world);
   const counterPassed = p2.status === "veto_window";
   const event = world.execute(p2, p2.votes);
   await learn(p2, p2.votes, event, world);
 
   const p3 = world.proposal("plant-a", 85, 65, "Operator forces 85 again");
-  const v3 = await castAll(cast, p3, world);
+  const v3 = await castAll(p.cast, p3, world);
   await onVotes(p3, p3.votes, world);
   const p3b = world.proposal("plant-a", 66, 65, "Control: small step at the safe value");
   const control = await cast(p3b, "plant-a/LV-101", world);
 
   const pb1 = world.proposal("plant-b", 85, 50, "Increase throughput");
-  const after = await castAll(cast, pb1, world);
+  const after = await castAll(p.cast, pb1, world);
   const pb2 = world.proposal("plant-b", 65, 50, "Control: rule must not apply at 65");
   const belowRule = await cast(pb2, "plant-b/LV-101", world);
   const rule = world.companyRules.find((r) => r.model === "outlet-valve-A") ?? null;
@@ -166,6 +172,12 @@ async function sequence(i: number, p: Awaited<ReturnType<typeof loadPipeline>>):
     belowRule: sum(belowRule, pb2, world, null),
   };
 
+  // The packets each judge sees, for a second panel to score the same reasons without spending OpenAI tokens.
+  if (dumpPackets) {
+    const dump = (step: string, prop: Proposal, recs: VoteRecord[]) => recs.map((r) => ({ key: `${i}-${step}-${r.vote.componentId}`, step, ...packet(prop, r.vote, world) }));
+    row.packets = [...dump("repeat", p3, v3), ...dump("plant-b", pb1, after), ...dump("counter", p2, v2)];
+  }
+
   if (!noJudge) {
     const judged = async (r: VoteRecord, prop: Proposal) => (lvOnly && !r.vote.componentId.endsWith("LV-101") ? [] : judge(packet(prop, r.vote, world)));
     const [a, b, c] = await Promise.all([
@@ -190,7 +202,7 @@ function report(rows: Row[], canaryResults: Row[]) {
   const count = <T,>(xs: T[], f: (x: T) => boolean) => xs.filter(f).length;
   const LV = (recs: Row[]) => recs.find((r) => r.component.endsWith("LV-101"))!;
 
-  say(`pipeline ${rows[0].label}, model ${model.model}/${model.effort}, history ${rows[0].source}/${shape}, ${n} runs, LV-101 unless stated. [..] is a 95% Wilson interval.`);
+  say(`pipeline ${rows[0].label}, model ${model.model}/${model.effort}, history ${rows[0].source}/${shape}, observed from ${has("plant-model") ? "the real tank model" : "history rows"}, ${n} runs, LV-101 unless stated. [..] is a 95% Wilson interval.`);
   say("");
   say("SEQUENCE A: block 85, execute 65, repeat 85");
   say(`first 85 blocked                     ${pct(count(rows, (r) => r.a.first.status === "blocked"), n)}`);
@@ -281,7 +293,7 @@ function report(rows: Row[], canaryResults: Row[]) {
     for (const c of canaryResults) say(`${c.name.padEnd(26)} ${c.pass ? "pass" : "MISS"} ${c.pass ? "" : JSON.stringify(c.got)}`);
   }
   say("");
-  say(`LLM: ${stats.calls} calls, ${stats.tokens} tokens, ${stats.retries} retries`);
+  say(`OpenAI: ${usage.calls} calls, ${usage.tokens} tokens, peak ${usage.peak} in any 60 s, mean ${Math.round(usage.tokens / Math.max((Date.now() - usage.started) / 60_000, 1 / 60))}/min, ${usage.rateLimited} 429s`);
   return lines.join("\n");
 }
 
@@ -332,6 +344,7 @@ console.log(`\nwall ${((Date.now() - started) / 1000).toFixed(0)}s`);
 const out = join(HERE, "out");
 if (!existsSync(out)) mkdirSync(out);
 const tag = `${pipeline.label}-${model.model}-${new Date().toISOString().replaceAll(":", "").slice(11, 17)}`;
-writeFileSync(join(out, `${tag}.json`), JSON.stringify({ rows, canaryResults }, null, 1));
+if (dumpPackets) writeFileSync(join(out, `${tag}.packets.json`), JSON.stringify(rows.flatMap((r) => r.packets)));
+writeFileSync(join(out, `${tag}.json`), JSON.stringify({ rows: rows.map(({ packets, ...r }) => r), canaryResults }, null, 1));
 writeFileSync(join(out, `${tag}.txt`), text);
 console.log(`raw: agent/evals/learning/out/${tag}.json`);
