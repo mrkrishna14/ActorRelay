@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { Proposal, Vote } from "../../shared/types";
 import { bestCandidate, buildCounter, MAX_COUNTERS_PER_PARENT } from "../counter";
-import { FakeGlue, makeProposal } from "./fake-glue";
+import { FakeGlue, makeProposal, safeExecution } from "./fake-glue";
 import { ScriptedLlm } from "./scripted-llm";
 
 const noVote = (proposalId: string): Vote => ({
@@ -25,6 +25,19 @@ const blocked = (overrides: Partial<Proposal> = {}): Proposal => {
 
 const pick = (value: unknown) => new ScriptedLlm(() => JSON.stringify({ value, rationale: "65 has safe history" }));
 const deps = (glue: FakeGlue, llm: ScriptedLlm) => ({ glue, llm, log: () => undefined });
+
+test("a candidate needs runs that reached it, so 70 waits for runs at 70 or more", async () => {
+  const run = (id: string, before: number, after: number) => ({ ...safeExecution(id), id, before, after, proposalId: null, effects: [{ componentId: "plant-a/LV-101", metric: "positionPct", before, after: after + 1, ticksToSettle: 3 }] });
+  const glue = new FakeGlue([run("a", 50, 65), run("b", 50, 66), run("c", 50, 67), run("d", 50, 68), run("e", 50, 69), run("f", 50, 69.9)]);
+  const parent = blocked();
+  const counter = await buildCounter(deps(glue, pick(65)), parent, [parent]);
+  expect(counter?.proposal.to).toBe(65);
+});
+
+test("a blocked change with no safe run reaching any target gets no counter", async () => {
+  const parent = blocked();
+  expect(await buildCounter(deps(new FakeGlue([]), pick(65)), parent, [parent])).toBeNull();
+});
 
 describe("buildCounter", () => {
   test("posts the model's pick when it is an allowed candidate, in the strict glue shape", async () => {
@@ -114,6 +127,6 @@ describe("buildCounter", () => {
 test("bestCandidate prefers the target closest to what was asked, among those with safe history", () => {
   const c = (value: number, safeRuns: number) => ({ value, safeRuns, peaks: {} });
   expect(bestCandidate([c(55, 4), c(60, 9), c(65, 5), c(70, 1)])?.value).toBe(65);
-  expect(bestCandidate([c(55, 1), c(60, 2)])?.value).toBe(60);
+  expect(bestCandidate([c(55, 1), c(60, 2)])).toBeNull();
   expect(bestCandidate([])).toBeNull();
 });

@@ -171,6 +171,14 @@ describe("safety lives in code", () => {
     expect(vote).toMatchObject({ vote: "no", reason: "retrieval failed" });
   });
 
+  test("a hot run from a step down says nothing about a step up", async () => {
+    const glue = new FakeGlue();
+    const run = (id: string, before: number, tempC: number) => ({ ...safeExecution(id), id, before, after: 64, proposalId: null, effects: [{ componentId: "plant-a/TK-101", metric: "levelPct", before: 50, after: 50, ticksToSettle: 3 }, { componentId: "plant-a/TK-101", metric: "tempC", before: 75, after: tempC, ticksToSettle: 3 }] });
+    glue.history.splice(0, glue.history.length, run("up1", 50, 74), run("up2", 50, 74), run("up3", 50, 74), run("down", 70, 77.5));
+    const vote = await castVote(deps(glue, new ScriptedLlm(() => answer("yes", { levelPct: 50, tempC: 74 }))), makeProposal({ to: 65 }), "plant-a/TK-101");
+    expect(vote.vote).toBe("yes");
+  });
+
   test("one bad run at a smaller change is not averaged away", async () => {
     const glue = new FakeGlue();
     const near = (id: string, after: number, valve: number) => ({ ...safeExecution(id), id, after, proposalId: null, effects: [{ componentId: "plant-a/LV-101", metric: "positionPct", before: 50, after: valve, ticksToSettle: 3 }] });

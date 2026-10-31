@@ -16,6 +16,7 @@ import {
   relevantEvents,
   ruleApplies,
   RetrievalCache,
+  sameDirection,
   tagOf,
 } from "./retrieval";
 
@@ -138,6 +139,7 @@ async function gatherContext(deps: VoteDeps, notified: Proposal, componentId: Co
   const thresholds = Object.fromEntries(
     Object.entries(own.limits).map(([metric, limit]) => [metric, thresholdFor(limit, own.marginPct)]),
   );
+  const moved = sameDirection(retrieved, proposal);
   return {
     proposal,
     own,
@@ -146,8 +148,8 @@ async function gatherContext(deps: VoteDeps, notified: Proposal, componentId: Co
     newest,
     rules,
     applicable: rules.filter((r) => ruleApplies(r, proposal, own)),
-    estimates: evidenceEstimates(retrieved, own, proposal.to),
-    peaks: evidencePeaks(retrieved, own, proposal.to),
+    estimates: evidenceEstimates(moved, own, proposal.to),
+    peaks: evidencePeaks(moved, own, proposal.to),
     thresholds,
   };
 }
@@ -204,7 +206,8 @@ function eventRow(event: HistoryEvent, context: VoteContext): string {
   const rows = ownRows(event, context.own)
     .map((r) => `${r.counterpart ? `shared-header twin ${r.metric}` : r.metric} ${r.before}->${r.after} in ${r.ticksToSettle} ticks`)
     .join(", ");
-  return `${event.id} | ${event.at} | ${tagOf(event.componentId)} ${event.metric} ${event.before}->${event.after} | ${rows || "no rows for you"} | incident: ${event.incident ?? "none"}`;
+  const direction = sameDirection([event], context.proposal).length ? "" : " (step in the opposite direction, its peaks do not apply)";
+  return `${event.id} | ${event.at} | ${tagOf(event.componentId)} ${event.metric} ${event.before}->${event.after}${direction} | ${rows || "no rows for you"} | incident: ${event.incident ?? "none"}`;
 }
 
 export function buildVotePrompt(context: VoteContext): string {
@@ -288,7 +291,7 @@ function contradicted(context: VoteContext, answer: LlmVote): string | null {
   if (context.retrieved.length < MIN_SIMILAR) return null;
   for (const [metric, threshold] of Object.entries(context.thresholds)) {
     if (answer.predicted[metric] < threshold) continue;
-    const farEnough = context.retrieved.filter((e) => e.after >= context.proposal.to);
+    const farEnough = sameDirection(context.retrieved, context.proposal).filter((e) => e.after >= context.proposal.to);
     const rows = farEnough.flatMap((e) => ownRows(e, context.own)).filter((r) => r.metric === metric);
     if (rows.length < MIN_SIMILAR) continue;
     const peak = Math.max(...rows.map((r) => r.after));

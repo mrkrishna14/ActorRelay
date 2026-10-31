@@ -109,8 +109,7 @@ describe("rule promotion from evidence", () => {
 
   test("one safe run in the range rules a rule out", async () => {
     const glue = new FakeGlue();
-    const run = glue.history.find((e) => e.plantId === "plant-a" && e.after >= 85 && e.after <= 86);
-    if (!run) throw new Error("fixture has no run near 85");
+    const [run] = await glue.similar({ componentId: "plant-a/P-100", metric: "speedPct", to: 85, k: 1 });
     run.effects = run.effects.map((r) => (r.componentId === "plant-a/LV-101" ? { ...r, after: 70 } : r));
     expect(await block(glue)).toBeNull();
   });

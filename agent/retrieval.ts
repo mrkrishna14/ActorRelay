@@ -36,6 +36,11 @@ export function ownRows(event: HistoryEvent, own: ComponentState): OwnRow[] {
     .map((e) => ({ ...e, counterpart: true }));
 }
 
+/** Runs that moved the way the proposal does. A step down heats the tank and a step up cools it, so peaks do not carry across. */
+export function sameDirection(events: HistoryEvent[], proposal: Pick<Proposal, "from" | "to">): HistoryEvent[] {
+  return events.filter((e) => Math.sign(e.after - e.before) === Math.sign(proposal.to - proposal.from));
+}
+
 /** Closeness-weighted mean of what past events did to each metric, so the nearest runs dominate. */
 export function evidenceEstimates(events: HistoryEvent[], own: ComponentState, to: number): Record<string, number> {
   const totals: Record<string, { sum: number; weight: number }> = {};

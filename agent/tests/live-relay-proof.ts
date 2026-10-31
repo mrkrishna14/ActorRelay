@@ -18,8 +18,9 @@ const timings: Record<string, number> = {};
 
 // glue/ has no node_modules on the Linux filesystem, so its real bridge runs beside the agents' copy of the SDK.
 const glueDir = join(runDir, "glue");
+const glueSource = process.env.PROOF_GLUE_SRC ?? join(repo, "glue");
 mkdirSync(glueDir, { recursive: true });
-for (const file of ["relay.ts", "actors.ts", "journal.ts", "schemas.ts"]) copyFileSync(join(repo, "glue", file), join(glueDir, file));
+for (const file of ["relay.ts", "actors.ts", "journal.ts", "schemas.ts"]) copyFileSync(join(glueSource, file), join(glueDir, file));
 if (!existsSync(join(glueDir, "node_modules"))) symlinkSync(join(runDir, "agent", "node_modules"), join(glueDir, "node_modules"));
 const { RelayBridge } = await import(join(glueDir, "relay.ts"));
 const { Journal } = await import(join(glueDir, "journal.ts"));

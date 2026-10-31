@@ -3,7 +3,7 @@ import type { HistoryEvent, Proposal, Vote } from "../shared/types";
 import type { ComponentView, Glue } from "./glue";
 import type { Llm, LlmReply } from "./llm";
 import { llmCounterSchema, proposalInputSchema, type ProposalInput } from "./schemas";
-import { ownRows, tagOf } from "./retrieval";
+import { ownRows, sameDirection, tagOf } from "./retrieval";
 import { thresholdFor } from "./vote";
 
 export const MAX_COUNTERS_PER_PARENT = 2;
@@ -59,7 +59,8 @@ function peakAt(blocker: Blocker, events: HistoryEvent[], proposal: Proposal, va
 }
 
 /** Round targets between from and to that every blocking voter can live with, nearest the blocked target last. */
-export function safeCandidates(proposal: Proposal, blockers: Blocker[], events: HistoryEvent[]): Candidate[] {
+export function safeCandidates(proposal: Proposal, blockers: Blocker[], allEvents: HistoryEvent[]): Candidate[] {
+  const events = sameDirection(allEvents, proposal);
   const step = proposal.to > proposal.from ? CANDIDATE_STEP : -CANDIDATE_STEP;
   const first = Math.floor(proposal.from / CANDIDATE_STEP) * CANDIDATE_STEP + (step > 0 ? CANDIDATE_STEP : 0);
   const candidates: Candidate[] = [];
@@ -67,21 +68,16 @@ export function safeCandidates(proposal: Proposal, blockers: Blocker[], events: 
     if (value === proposal.from) continue;
     const peaks = Object.fromEntries(blockers.map((b) => [`${b.voter.id}.${b.metric}`, peakAt(b, events, proposal, value)]));
     if (blockers.some((b) => peaks[`${b.voter.id}.${b.metric}`] >= b.ceiling)) continue;
-    const near = rowsNear(events, value);
-    const safeRuns = near.filter((e) => blockers.every((b) => ownRows(e, b.voter).every((r) => r.metric !== b.metric || r.after < b.ceiling))).length;
+    // Only a run that reached the candidate speaks for it. Runs that stopped short say nothing about going further.
+    const reached = rowsNear(events, value).filter((e) => (step > 0 ? e.after >= value : e.after <= value));
+    const safeRuns = reached.filter((e) => blockers.every((b) => ownRows(e, b.voter).every((r) => r.metric !== b.metric || r.after < b.ceiling))).length;
     candidates.push({ value, safeRuns, peaks });
   }
   return candidates;
 }
 
-/** Enough safe runs to trust. Without any, every safe candidate stays on the table. */
-function allowedCandidates(candidates: Candidate[]): Candidate[] {
-  const supported = candidates.filter((c) => c.safeRuns >= MIN_SAFE_RUNS);
-  return supported.length ? supported : candidates;
-}
-
-/** The target that keeps the most of what was asked for. Candidates run from `from` towards the blocked target. */
-export const bestCandidate = (candidates: Candidate[]): Candidate | null => allowedCandidates(candidates).at(-1) ?? null;
+/** The target that keeps the most of what was asked for, among those safe history reached. Candidates run from `from` towards the blocked target. */
+export const bestCandidate = (candidates: Candidate[]): Candidate | null => candidates.filter((c) => c.safeRuns >= MIN_SAFE_RUNS).at(-1) ?? null;
 
 const COUNTER_SYSTEM = `You are the proposer's agent on a simulated hold-tank unit. Your last proposal was blocked by the connected equipment. Pick a safer target for the same metric.
 Rules:

@@ -10,10 +10,11 @@ const root = join(import.meta.dir, "..", "..");
 const realHistory = join(root, "shared", "history.json");
 const standIn = join(root, "actor", "tests", "fixtures-gen", "history.json");
 
-export const usingStandInHistory = !existsSync(realHistory);
+const historyOverride = process.env.AGENT_TEST_HISTORY;
+export const usingStandInHistory = !historyOverride && !existsSync(realHistory);
 
 export function seedHistory(): HistoryEvent[] {
-  return JSON.parse(readFileSync(usingStandInHistory ? standIn : realHistory, "utf8"));
+  return JSON.parse(readFileSync(historyOverride ?? (usingStandInHistory ? standIn : realHistory), "utf8"));
 }
 
 export function seedComponents(): ComponentState[] {
