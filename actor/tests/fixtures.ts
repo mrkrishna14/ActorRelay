@@ -3,10 +3,22 @@
 import plantsJson from "../../shared/plants.json" with { type: "json" }
 import type { ComponentState, HistoryEvent, PlantId } from "../../shared/types.js"
 
-export const plants = plantsJson as unknown as {
+type PlantsFile = {
     company: { plants: PlantId[]; sharedResources: { id: string; name: string; components: string[] }[] }
     plants: { id: PlantId; name: string; components: ComponentState[] }[]
 }
+/** shared/plants.json in either layout (flat `components` + `sharedResources`, or nested) → the nested seed shape. */
+export function normalizePlants(raw: any): PlantsFile {
+    if (Array.isArray(raw.components)) {
+        const comps = raw.components as ComponentState[]
+        return {
+            company: { plants: raw.plants.map((p: { id: PlantId }) => p.id), sharedResources: raw.sharedResources ?? [] },
+            plants: raw.plants.map((p: { id: PlantId; name: string }) => ({ id: p.id, name: p.name, components: comps.filter(c => c.plantId === p.id) })),
+        }
+    }
+    return raw as PlantsFile
+}
+export const plants = normalizePlants(plantsJson)
 
 export const plantSeed = (id: PlantId) => plants.plants.find(p => p.id === id)!
 

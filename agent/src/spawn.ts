@@ -12,8 +12,8 @@ import { calibrationsFor, counterFor, decideVote, type Deps } from "./pipeline.j
 import { plantOf, tagOf } from "./predict.js"
 import { RelayBus, relayName, type Channel, type RelayMessage } from "./relay.js"
 
-const plants = plantsJson as unknown as { plants: { id: PlantId; components: ComponentState[] }[] }
-const all = plants.plants.flatMap(p => p.components)
+const raw = plantsJson as unknown as { components?: ComponentState[]; plants: { id: PlantId; components: (ComponentState | string)[] }[] }
+const all: ComponentState[] = raw.components ?? raw.plants.flatMap(p => p.components as ComponentState[])
 const wanted = process.env.AGENT_COMPONENTS?.split(",").map(s => s.trim()).filter(Boolean)
 const owned = new Set<ComponentId>(all.filter(c => !wanted || wanted.includes(c.id)).map(c => c.id))
 const vendorOf = new Map(all.map(c => [c.id, c.vendor]))

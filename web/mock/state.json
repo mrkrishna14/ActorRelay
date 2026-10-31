@@ -1,0 +1,313 @@
+{
+  "mode": "mock",
+  "plant": {
+    "id": "plant-a",
+    "name": "Plant A",
+    "components": [
+      "plant-a/P-100",
+      "plant-a/TK-101",
+      "plant-a/LV-101",
+      "plant-a/E-101",
+      "plant-a/TV-101"
+    ],
+    "proposals": [],
+    "history": [],
+    "rules": [],
+    "audit": [],
+    "tick": 0,
+    "connected": false
+  },
+  "components": [
+    {
+      "id": "plant-a/P-100",
+      "plantId": "plant-a",
+      "tag": "P-100",
+      "name": "Feed pump",
+      "role": "mechanic",
+      "vendor": "codex",
+      "model": "P-100",
+      "metrics": {
+        "speedPct": 50,
+        "feedM3h": 15
+      },
+      "limits": {
+        "speedPct": {
+          "min": 0,
+          "max": 90,
+          "critical": 95
+        }
+      },
+      "upstream": [],
+      "downstream": [],
+      "sharedResources": [],
+      "status": "ok",
+      "marginPct": 10,
+      "lastTick": "2026-10-31T18:00:00Z",
+      "calibration": []
+    },
+    {
+      "id": "plant-a/TK-101",
+      "plantId": "plant-a",
+      "tag": "TK-101",
+      "name": "Hold tank",
+      "role": "process_engineer",
+      "vendor": "claude",
+      "model": "TK-101",
+      "metrics": {
+        "tempC": 75,
+        "levelPct": 50
+      },
+      "limits": {
+        "tempC": {
+          "min": 0,
+          "max": 80,
+          "critical": 85
+        }
+      },
+      "upstream": [],
+      "downstream": [],
+      "sharedResources": [],
+      "status": "ok",
+      "marginPct": 10,
+      "lastTick": "2026-10-31T18:00:00Z",
+      "calibration": []
+    },
+    {
+      "id": "plant-a/LV-101",
+      "plantId": "plant-a",
+      "tag": "LV-101",
+      "name": "Outlet valve",
+      "role": "mechanic",
+      "vendor": "codex",
+      "model": "LV-101",
+      "metrics": {
+        "positionPct": 50
+      },
+      "limits": {
+        "positionPct": {
+          "min": 0,
+          "max": 80,
+          "critical": 90
+        }
+      },
+      "upstream": [],
+      "downstream": [],
+      "sharedResources": [],
+      "status": "ok",
+      "marginPct": 10,
+      "lastTick": "2026-10-31T18:00:00Z",
+      "calibration": []
+    },
+    {
+      "id": "plant-a/E-101",
+      "plantId": "plant-a",
+      "tag": "E-101",
+      "name": "Steam coil",
+      "role": "chemical_engineer",
+      "vendor": "claude",
+      "model": "E-101",
+      "metrics": {
+        "dutyKw": 899
+      },
+      "limits": {
+        "dutyKw": {
+          "min": 0,
+          "max": 1600,
+          "critical": 1800
+        }
+      },
+      "upstream": [],
+      "downstream": [],
+      "sharedResources": [],
+      "status": "ok",
+      "marginPct": 10,
+      "lastTick": "2026-10-31T18:00:00Z",
+      "calibration": []
+    },
+    {
+      "id": "plant-a/TV-101",
+      "plantId": "plant-a",
+      "tag": "TV-101",
+      "name": "Steam valve",
+      "role": "safety",
+      "vendor": "claude",
+      "model": "TV-101",
+      "metrics": {
+        "positionPct": 50.5,
+        "headerBarg": 6,
+        "steamKgH": 1533
+      },
+      "limits": {
+        "positionPct": {
+          "min": 0,
+          "max": 85,
+          "critical": 95
+        }
+      },
+      "upstream": [],
+      "downstream": [],
+      "sharedResources": [
+        "steam-header-1"
+      ],
+      "status": "ok",
+      "marginPct": 10,
+      "lastTick": "2026-10-31T18:00:00Z",
+      "calibration": []
+    },
+    {
+      "id": "plant-b/P-100",
+      "plantId": "plant-b",
+      "tag": "P-100",
+      "name": "Feed pump",
+      "role": "mechanic",
+      "vendor": "codex",
+      "model": "P-100",
+      "metrics": {
+        "speedPct": 50,
+        "feedM3h": 15
+      },
+      "limits": {
+        "speedPct": {
+          "min": 0,
+          "max": 90,
+          "critical": 95
+        }
+      },
+      "upstream": [],
+      "downstream": [],
+      "sharedResources": [],
+      "status": "ok",
+      "marginPct": 10,
+      "lastTick": "2026-10-31T18:00:00Z",
+      "calibration": []
+    },
+    {
+      "id": "plant-b/TK-101",
+      "plantId": "plant-b",
+      "tag": "TK-101",
+      "name": "Hold tank",
+      "role": "process_engineer",
+      "vendor": "claude",
+      "model": "TK-101",
+      "metrics": {
+        "tempC": 75,
+        "levelPct": 50
+      },
+      "limits": {
+        "tempC": {
+          "min": 0,
+          "max": 80,
+          "critical": 85
+        }
+      },
+      "upstream": [],
+      "downstream": [],
+      "sharedResources": [],
+      "status": "ok",
+      "marginPct": 10,
+      "lastTick": "2026-10-31T18:00:00Z",
+      "calibration": []
+    },
+    {
+      "id": "plant-b/LV-101",
+      "plantId": "plant-b",
+      "tag": "LV-101",
+      "name": "Outlet valve",
+      "role": "mechanic",
+      "vendor": "codex",
+      "model": "LV-101",
+      "metrics": {
+        "positionPct": 50
+      },
+      "limits": {
+        "positionPct": {
+          "min": 0,
+          "max": 80,
+          "critical": 90
+        }
+      },
+      "upstream": [],
+      "downstream": [],
+      "sharedResources": [],
+      "status": "ok",
+      "marginPct": 10,
+      "lastTick": "2026-10-31T18:00:00Z",
+      "calibration": []
+    },
+    {
+      "id": "plant-b/E-101",
+      "plantId": "plant-b",
+      "tag": "E-101",
+      "name": "Steam coil",
+      "role": "chemical_engineer",
+      "vendor": "claude",
+      "model": "E-101",
+      "metrics": {
+        "dutyKw": 899
+      },
+      "limits": {
+        "dutyKw": {
+          "min": 0,
+          "max": 1600,
+          "critical": 1800
+        }
+      },
+      "upstream": [],
+      "downstream": [],
+      "sharedResources": [],
+      "status": "ok",
+      "marginPct": 10,
+      "lastTick": "2026-10-31T18:00:00Z",
+      "calibration": []
+    },
+    {
+      "id": "plant-b/TV-101",
+      "plantId": "plant-b",
+      "tag": "TV-101",
+      "name": "Steam valve",
+      "role": "safety",
+      "vendor": "claude",
+      "model": "TV-101",
+      "metrics": {
+        "positionPct": 50.5,
+        "headerBarg": 6,
+        "steamKgH": 1533
+      },
+      "limits": {
+        "positionPct": {
+          "min": 0,
+          "max": 85,
+          "critical": 95
+        }
+      },
+      "upstream": [],
+      "downstream": [],
+      "sharedResources": [
+        "steam-header-1"
+      ],
+      "status": "ok",
+      "marginPct": 10,
+      "lastTick": "2026-10-31T18:00:00Z",
+      "calibration": []
+    }
+  ],
+  "company": {
+    "plants": [
+      "plant-a",
+      "plant-b"
+    ],
+    "sharedResources": [
+      {
+        "id": "steam-header-1",
+        "name": "Shared steam header",
+        "components": [
+          "plant-a/TV-101",
+          "plant-b/TV-101"
+        ]
+      }
+    ],
+    "rules": [],
+    "crossPlantProposals": [],
+    "audit": []
+  }
+}
