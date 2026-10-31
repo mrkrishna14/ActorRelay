@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useLayoutEffect, useMemo, useState } from "react";
-import { activeProposer, captionFor, mergedAudit, outlinesFor, plantOf, tagOf, type Tag } from "@/lib/derive";
+import { activeProposer, captionFor, mergedAudit, outlinesFor, PLANT_IDS, plantOf, tagOf, type Tag } from "@/lib/derive";
 import { seriesKey, useGlue } from "@/lib/store";
 import type { ComponentView, PlantId, View } from "@/lib/types";
 import { ComponentPanel } from "./ComponentPanel";
@@ -12,13 +12,15 @@ import { EventsFeed } from "./EventsFeed";
 import { EvidenceDrawer } from "./EvidenceDrawer";
 import { OperatorStrip } from "./OperatorStrip";
 import { Stage } from "./Stage";
+import { StoryCard } from "./StoryCard";
+import { UnderTheHood } from "./UnderTheHood";
 import { ProposalPanel, type EvidenceRef } from "./ProposalPanel";
 import { TimingChart } from "./TimingChart";
 import { TopBar } from "./TopBar";
 import { Plate } from "./ui";
 
 const STAGE_WIDTH = 1920;
-const MIN_STAGE_HEIGHT = 900;
+const MIN_STAGE_HEIGHT = 640;
 
 const KEY_METRIC: Record<Tag, string> = {
   "P-100": "speedPct",
@@ -52,6 +54,7 @@ function chartMetrics(component: ComponentView | undefined): string[] {
 export function Dashboard() {
   const glue = useGlue();
   const stage = useStage();
+  const [details, setDetails] = useState(false);
   const [view, setView] = useState<View>("plant-a");
   const [selected, setSelected] = useState("plant-a/LV-101");
   const [metricChoice, setMetricChoice] = useState<Record<string, string>>({});
@@ -85,8 +88,8 @@ export function Dashboard() {
     <div className="stage" style={{ transform: `scale(${stage.scale})`, height: stage.height }}>
       <TopBar glue={glue} view={view} onView={changeView} now={Date.now()} />
       {showData ? (
-        <main className={`grid min-h-0 flex-1 grid-cols-[18%_52%_30%] grid-rows-[1fr_216px] ${glue.conn === "reconnecting" ? "opacity-60" : ""}`}>
-          <aside className="panel flex min-h-0 flex-col border-r border-hairline">
+        <main className={`grid min-h-0 flex-1 ${details ? "grid-cols-[18%_52%_30%] grid-rows-[minmax(0,1fr)_216px]" : "grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)]"} ${glue.conn === "reconnecting" ? "opacity-60" : ""}`}>
+          <aside className={`panel min-h-0 flex-col border-r border-hairline ${details ? "flex" : "hidden"}`}>
             <EquipmentTree plants={plants} components={components} view={view} selected={selected} onView={changeView} onSelect={select} />
             {plantView ? <OtherPlantCard view={plantView} plants={plants} components={components} company={company} onView={changeView} now={now} /> : null}
           </aside>
@@ -94,16 +97,14 @@ export function Dashboard() {
           {plantView ? (
             <>
               <section className="panel flex min-h-0 flex-col">
-                <Plate right={<span className="plate">Unit TK-101</span>}>
-                  <span className="text-ink">{plant?.name ?? plantView}</span>
-                </Plate>
-                <div className="min-h-0 flex-1">
-                  <Stage plantId={plantView} components={components} outlines={outlines} proposer={activeProposer(plantView, plants)} selected={selected} onSelect={select} caption={caption} now={now} />
-                </div>
                 <OperatorStrip plantId={plantView} plant={plant} pump={components[`${plantView}/P-100`]} live={glue.conn === "live"} />
+                <div className="min-h-0 flex-1">
+                  <Stage plantId={plantView} components={components} outlines={outlines} proposer={activeProposer(plantView, plants)} selected={selected} onSelect={select} caption={caption} now={now} hood={<UnderTheHood plants={PLANT_IDS.flatMap((id) => plants[id] ?? [])} company={company} components={Object.values(components)} audit={audit} />} />
+                </div>
+                <StoryCard view={plantView} plants={plants} components={components} now={now} details={details} onDetails={() => setDetails((value) => !value)} />
               </section>
 
-              <aside className="panel relative flex min-h-0 flex-col border-l border-hairline">
+              <aside className={`panel relative min-h-0 flex-col border-l border-hairline ${details ? "flex" : "hidden"}`}>
                 <div className="flex max-h-[42%] min-h-0 flex-col">
                   <ComponentPanel component={component} />
                 </div>
@@ -115,7 +116,7 @@ export function Dashboard() {
             <CompanyView company={company} plants={plants} components={components} onView={changeView} now={now} />
           )}
 
-          <div className="col-span-3 grid min-h-0 grid-cols-[60%_40%] border-t border-rule">
+          <div className={`col-span-3 min-h-0 grid-cols-[60%_40%] border-t border-rule ${details ? "grid" : "hidden"}`}>
             <section className="panel min-h-0 border-r border-hairline">
               <TimingChart component={component} metric={metric} metrics={metrics} onMetric={(next) => setMetricChoice((choice) => ({ ...choice, [selected]: next }))} samples={glue.series[seriesKey(selected, metric)] ?? []} audit={audit} now={now} />
             </section>

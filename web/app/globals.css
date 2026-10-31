@@ -19,33 +19,33 @@
   --font-sans: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
 
-  --color-ground: #080c10;
-  --color-panel: #0d1318;
-  --color-raised: #131b22;
-  --color-lift: #1a242d;
-  --color-hairline: #26323d;
-  --color-rule: #3a4a58;
+  --color-ground: #f5f4f0;
+  --color-panel: #ffffff;
+  --color-raised: #fbfaf7;
+  --color-lift: #eff0f1;
+  --color-hairline: #e4e5e6;
+  --color-rule: #cfd3d7;
 
-  --color-ink: #eaf0f5;
-  --color-ink-2: #b4c2ce;
-  --color-ink-3: #8c9dac;
+  --color-ink: #17212b;
+  --color-ink-2: #46535f;
+  --color-ink-3: #6a7782;
 
   /* Not a status colour: identity, selection and anything learned in this session. */
-  --color-ice: #93dbff;
+  --color-ice: #1a6db0;
 
   /* Status only. Green yes/ok/executed, amber warning/voting, red no/critical/blocked/vetoed. */
-  --color-ok: #46dca0;
-  --color-warn: #ffbb52;
-  --color-bad: #ff6262;
-  --color-vote: #a7b4bf;
+  --color-ok: #12794b;
+  --color-warn: #9a5f00;
+  --color-bad: #c42b2b;
+  --color-vote: #5f6c78;
 }
 
 :root {
   color-scheme: dark;
-  --tint-ok: rgb(70 220 160 / 0.12);
-  --tint-warn: rgb(255 187 82 / 0.14);
-  --tint-bad: rgb(255 98 98 / 0.14);
-  --tint-ice: rgb(147 219 255 / 0.12);
+  --tint-ok: rgb(18 121 75 / 0.1);
+  --tint-warn: rgb(154 95 0 / 0.1);
+  --tint-bad: rgb(196 43 43 / 0.09);
+  --tint-ice: rgb(26 109 176 / 0.09);
 }
 
 /* Layered so Tailwind utilities always win over these on a conflict. */
@@ -93,7 +93,7 @@
     display: flex;
     flex-direction: column;
     background:
-      radial-gradient(1400px 700px at 46% 0%, rgb(147 219 255 / 0.05), transparent 70%),
+      radial-gradient(1400px 700px at 46% 0%, rgb(26 109 176 / 0.03), transparent 70%),
       var(--color-ground);
   }
 
@@ -204,8 +204,8 @@
   /* ---------- P&ID ---------- */
 
   .pid-field {
-    background-color: #0a1015;
-    background-image: radial-gradient(rgb(147 219 255 / 0.1) 1px, transparent 1px);
+    background-color: #fbfaf7;
+    background-image: radial-gradient(rgb(23 33 43 / 0.08) 1px, transparent 1px);
     background-size: 22px 22px;
     background-position: 11px 11px;
   }

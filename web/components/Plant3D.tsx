@@ -9,10 +9,11 @@ import { metricLevel, PLANT_IDS, TAGS, type Caption, type Outline } from "@/lib/
 import { formatMetric, metricLabel } from "@/lib/format";
 import type { ComponentView, PlantId } from "@/lib/types";
 import { CaptionBand } from "./PidStage";
+import { addFactoryFloor } from "./plant3d/floor";
 import { addAccess, addGauge, addHall } from "./plant3d/hall";
 
 const ORIGIN: Record<PlantId, THREE.Vector3> = { "plant-a": new THREE.Vector3(0, 0, 0), "plant-b": new THREE.Vector3(24, 0, 0) };
-const CAMERA_OFFSET = new THREE.Vector3(14, 6.5, 19);
+const CAMERA_OFFSET = new THREE.Vector3(15, 7.5, 21);
 const TANK_RADIUS = 2.4;
 const TANK_HEIGHT = 4.6;
 const TANK_BASE = 1.1;
@@ -30,10 +31,10 @@ const PLATES: { tag: string; metrics: string[] }[] = [
 
 const CHIP: Record<string, string> = {
   voting: "border-vote text-ink bg-lift",
-  yes: "border-ok text-ok bg-[#0b2219]",
-  no: "border-bad text-bad bg-[#2a1214]",
+  yes: "border-ok text-ok bg-panel",
+  no: "border-bad text-bad bg-panel",
   "no vote": "border-rule text-ink-2 bg-lift",
-  proposer: "border-ice text-ice bg-[#0d2230]",
+  proposer: "border-ice text-ice bg-panel",
 };
 
 type Flow = { curve: THREE.Curve<THREE.Vector3>; dots: THREE.Mesh[]; offset: number; visible: boolean };
@@ -415,7 +416,7 @@ function applyState(unit: Unit, plantId: PlantId, live: Live, delta: number, tim
 
 function Plate({ component, tag, metrics, word, fromPlant, selected, onSelect, bind }: { component: ComponentView | undefined; tag: string; metrics: string[]; word: string | null; fromPlant: string | null; selected: boolean; onSelect: () => void; bind: (element: HTMLButtonElement | null) => void }) {
   return (
-    <button ref={bind} onClick={onSelect} aria-label={`Select ${tag}`} className={`absolute left-0 top-0 z-10 min-w-[176px] rounded-md border bg-[#071018]/80 px-3 py-1 text-left shadow-lg backdrop-blur-md will-change-transform ${selected ? "border-ice" : "border-white/15 hover:border-white/40"}`}>
+    <button ref={bind} onClick={onSelect} aria-label={`Select ${tag}`} className={`absolute left-0 top-0 z-10 min-w-[176px] rounded-md border bg-panel/92 px-3 py-1 text-left shadow-md backdrop-blur-md will-change-transform ${selected ? "border-ice" : "border-rule hover:border-ink-3"}`}>
       <div className="flex items-center justify-between gap-3">
         <span className="num font-semibold tracking-wide text-ice">{tag}</span>
         {word ? (
@@ -432,7 +433,7 @@ function Plate({ component, tag, metrics, word, fromPlant, selected, onSelect, b
         return (
           <div key={key} className="flex items-baseline justify-between gap-4 whitespace-nowrap leading-[25px]">
             <span className="text-ink-2">{metricLabel(key)}</span>
-            <span className={`num font-medium ${level === "critical" ? "text-bad" : level === "warning" ? "text-vote" : "text-ink"}`}>
+            <span className={`num font-medium ${level === "critical" ? "text-bad" : level === "warning" ? "text-warn" : "text-ink"}`}>
               {value === undefined ? "--" : formatMetric(key, value)}
               {level === "ok" ? null : ` ${level}`}
             </span>
@@ -498,6 +499,7 @@ export function Plant3D({ plantId, components, outlines, proposer, selected, onS
     controls.autoRotateSpeed = 0.22;
 
     addHall(scene);
+    addFactoryFloor(scene);
 
     // Plain daylight through the skylights, nothing colored.
     scene.add(new THREE.HemisphereLight(0xf4f7fa, 0x8b8f92, 1.15));

@@ -31,10 +31,10 @@ const CHIP_BELOW = new Set(["TV-101"]);
 
 const VOTE_CHIP: Record<string, string> = {
   voting: "border-vote text-ink bg-lift",
-  yes: "border-ok text-ok bg-[#0b2219]",
-  no: "border-bad text-bad bg-[#2a1214]",
+  yes: "border-ok text-ok bg-panel",
+  no: "border-bad text-bad bg-panel",
   "no vote": "border-rule text-ink-2 bg-lift",
-  proposer: "border-ice text-ice bg-[#0d2230]",
+  proposer: "border-ice text-ice bg-panel",
 };
 
 const percent = (value: number, total: number) => `${(value / total) * 100}%`;
@@ -57,7 +57,7 @@ function Reading({ component, metric }: { component: ComponentView | undefined; 
 export function CaptionBand({ caption, now }: { caption: Caption; now: number }) {
   const voter = tagOf(caption.vote.componentId);
   return (
-    <div key={caption.proposal.id} className="caption-in absolute bottom-3 left-3 z-20 w-[640px] border-l-[6px] border-ice bg-[#071018]/96 py-2 pl-5 pr-4 shadow-[0_0_0_1px_var(--color-rule)]">
+    <div key={caption.proposal.id} className="caption-in absolute bottom-3 left-3 z-20 w-[640px] border-l-[6px] border-ice bg-panel/95 py-2 pl-5 pr-4 shadow-[0_0_0_1px_var(--color-rule)]">
       <div className="text-[52px] font-bold leading-[58px] tracking-tight text-ink">{caption.text}</div>
       {caption.kind === "it-learned" ? (
         <div className="text-lg text-ink-2">
@@ -221,7 +221,7 @@ export function PidStage({
                   onClick={() => onSelect(id)}
                   aria-label={`Select ${plate.tag}`}
                   style={{ left: percent(anchor.x + plate.dx, width), top: percent(anchor.y + plate.dy, height), transform: plate.transform }}
-                  className={`absolute z-10 min-w-[150px] border bg-[#0a1016]/95 px-2 py-[2px] text-left ${selected === id ? "border-ice" : "border-rule hover:border-ink-3"}`}
+                  className={`absolute z-10 min-w-[150px] border bg-panel/95 px-2 py-[2px] text-left ${selected === id ? "border-ice" : "border-rule hover:border-ink-3"}`}
                 >
                   {plate.metrics.map((metric) => (
                     <Reading key={metric} component={components[id]} metric={metric} />
@@ -234,7 +234,7 @@ export function PidStage({
               onClick={() => onSelect(`${plantId}/TV-101`)}
               aria-label="Select TV-101, steam header pressure"
               style={{ left: percent(HEADER_PLATE.x, width), top: percent(HEADER_PLATE.y, height), transform: HEADER_PLATE.transform }}
-              className="absolute z-10 min-w-[170px] border border-rule bg-[#0a1016]/95 px-2 py-[2px] text-left hover:border-ink-3"
+              className="absolute z-10 min-w-[170px] border border-rule bg-panel/95 px-2 py-[2px] text-left hover:border-ink-3"
             >
               <Reading component={valve} metric="headerBarg" />
             </button>
