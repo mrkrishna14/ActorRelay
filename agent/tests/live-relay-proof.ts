@@ -53,8 +53,11 @@ process.env.RELAY_WORKSPACE_KEY = workspace.workspaceKey;
 process.env.RELAY_BASE_URL = RELAY_URL;
 delete process.env.RELAY_AGENT_TOKEN;
 const dispatched: string[] = [];
+let lastPublish = Date.now();
+const since = () => `+${Date.now() - lastPublish}ms`;
 const bridge = new RelayBridge(async (path: string, body: never, sender: string) => {
   dispatched.push(`${path} from ${sender}`);
+  console.log(`[glue ${since()}] ${path} from ${sender}`);
   const b = body as Record<string, never>;
   if (path === "/vote") await glue.vote(b.vote);
   else if (path === "/counter") await glue.counter(b.parentProposalId, b.proposal);
@@ -71,7 +74,7 @@ const child = spawn("bash", [agentScript], {
 let ready = false;
 child.stdout.on("data", (d) => {
   const text = String(d);
-  process.stdout.write(`[agents] ${text}`);
+  process.stdout.write(`[agents ${since()}] ${text}`);
   if (text.includes("ready:")) ready = true;
 });
 
@@ -84,7 +87,11 @@ async function until(check: () => boolean, ms: number, label: string) {
   throw new Error(`timed out: ${label}`);
 }
 
-const publish = (type: string, payload: unknown, channels: string[]): Promise<void> => bridge.publish(type, payload, channels);
+async function publish(type: string, payload: unknown, channels: string[]) {
+  lastPublish = Date.now();
+  await bridge.publish(type, payload, channels);
+  console.log(`[publish returned ${since()}]`);
+}
 
 const votesOn = (id: string): Vote[] => glue.votes.filter((v) => v.proposalId === id);
 const show = (v: Vote) => `${v.componentId} ${v.vote} ${JSON.stringify(v.predicted)} similar=${v.similarCount} evidence=${v.evidenceEventIds.length} :: ${v.reason.slice(0, 160)}`;

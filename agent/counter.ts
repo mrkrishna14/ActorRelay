@@ -21,7 +21,10 @@ export type Candidate = { value: number; safeRuns: number; peaks: Record<string,
 
 const isBlocking = (vote: Vote) => vote.vote === "no";
 
-/** Each blocking metric, with the ceiling a counter must stay under: the voter's threshold less its margin again. */
+/**
+ * Each blocking metric, with the ceiling a counter must stay under: the voter's threshold less its margin again. A
+ * metric that normally runs above that line, like tank temperature, cannot be held under it, so its threshold is the ceiling.
+ */
 async function blockersOf(deps: CounterDeps, proposal: Proposal): Promise<Blocker[]> {
   const blockers: Blocker[] = [];
   for (const vote of proposal.votes.filter(isBlocking)) {
@@ -30,7 +33,10 @@ async function blockersOf(deps: CounterDeps, proposal: Proposal): Promise<Blocke
       const limit = voter.limits[metric];
       if (!limit) continue;
       const threshold = thresholdFor(limit, vote.marginPct);
-      if (predicted >= threshold) blockers.push({ voter, metric, predicted, ceiling: threshold * (1 - vote.marginPct / 100) });
+      if (predicted < threshold) continue;
+      const withMargin = threshold * (1 - vote.marginPct / 100);
+      const now = voter.metrics[metric] ?? -Infinity;
+      blockers.push({ voter, metric, predicted, ceiling: now >= withMargin ? threshold : withMargin });
     }
   }
   return blockers;
@@ -59,8 +65,8 @@ export function safeCandidates(proposal: Proposal, blockers: Blocker[], events: 
   const candidates: Candidate[] = [];
   for (let value = first; step > 0 ? value < proposal.to : value > proposal.to; value += step) {
     if (value === proposal.from) continue;
-    const peaks = Object.fromEntries(blockers.map((b) => [`${b.voter.tag}.${b.metric}`, peakAt(b, events, proposal, value)]));
-    if (blockers.some((b) => peaks[`${b.voter.tag}.${b.metric}`] >= b.ceiling)) continue;
+    const peaks = Object.fromEntries(blockers.map((b) => [`${b.voter.id}.${b.metric}`, peakAt(b, events, proposal, value)]));
+    if (blockers.some((b) => peaks[`${b.voter.id}.${b.metric}`] >= b.ceiling)) continue;
     const near = rowsNear(events, value);
     const safeRuns = near.filter((e) => blockers.every((b) => ownRows(e, b.voter).every((r) => r.metric !== b.metric || r.after < b.ceiling))).length;
     candidates.push({ value, safeRuns, peaks });

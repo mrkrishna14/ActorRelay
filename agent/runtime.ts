@@ -12,6 +12,8 @@ import { castVote } from "./vote";
 const MAX_PROPOSAL_AGE_MS = 30_000;
 const BLOCK_POLL_MS = 800;
 const BLOCK_WATCH_MS = 40_000;
+const LEARN_TRIES = 3;
+const LEARN_RETRY_MS = 1000;
 
 export type Post = (message: WireMessage, channel: string, from: ComponentId) => Promise<void>;
 
@@ -122,7 +124,16 @@ export class AgentRuntime {
 
   private async onExecuted(message: Extract<WireMessage, { type: "executed" }>) {
     if (!this.once(`executed|${message.proposalId}`)) return;
-    const entries = await learnFromExecution({ glue: this.options.glue, cache: this.cache, log: this.log }, message.event, this.owned);
-    this.log(`calibrated ${entries.length} metrics for ${message.proposalId}`);
+    for (let attempt = 1; ; attempt++) {
+      try {
+        const entries = await learnFromExecution({ glue: this.options.glue, cache: this.cache, log: this.log }, message.event, this.owned);
+        return this.log(`calibrated ${entries.length} metrics for ${message.proposalId}`);
+      } catch (error) {
+        // learn.ts skips what is already recorded, so a retry after a partial failure repeats nothing.
+        if (attempt >= LEARN_TRIES) throw error;
+        this.log(`learning failed for ${message.proposalId}, retrying: ${error}`);
+        await Bun.sleep(this.options.pollMs ?? LEARN_RETRY_MS);
+      }
+    }
   }
 }

@@ -44,6 +44,22 @@ describe("buildCounter", () => {
     expect(offered).not.toMatch(/^(70|75|80) \|/m);
   });
 
+  test("a blocker on a metric that normally runs near its limit still leaves a counter", async () => {
+    const parent = blocked();
+    parent.votes.push({ ...noVote(parent.id), componentId: "plant-a/TK-101", agentId: "agent:plant-a/TK-101", predicted: { levelPct: 51, tempC: 77 } });
+    const counter = await buildCounter(deps(new FakeGlue(), pick(65)), parent, [parent]);
+    expect(counter?.proposal.to).toBe(65);
+  });
+
+  test("the same tag in both plants keeps separate ceilings", async () => {
+    const parent = blocked();
+    parent.votes.push({ ...noVote(parent.id), componentId: "plant-b/TV-101", agentId: "agent:plant-b/TV-101", predicted: { positionPct: 90 } }, { ...noVote(parent.id), componentId: "plant-a/TV-101", agentId: "agent:plant-a/TV-101", predicted: { positionPct: 88 } });
+    const llm = pick(65);
+    await buildCounter(deps(new FakeGlue(), llm), parent, [parent]);
+    expect(llm.requests[0].user).toContain("plant-a/TV-101.positionPct");
+    expect(llm.requests[0].user).toContain("plant-b/TV-101.positionPct");
+  });
+
   test("a value outside the safe candidates is rejected, then the code's pick is labelled", async () => {
     const parent = blocked();
     const llm = pick(84);

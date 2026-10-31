@@ -91,8 +91,10 @@ export async function findRule(deps: LearnDeps, changed: { componentId: Componen
     const crossing = { componentId: own.id, metric };
     if (covered(knownRules, changed.metric, target, crossing)) continue;
     const near = await deps.glue.similar({ ...changed, to: target, k: RULE_K });
-    const support = near.filter((e) => e.after >= target - SUPPORT_BELOW && crosses(e, crossing, limit.max));
-    if (support.length >= MIN_SIMILAR) return ruleFrom(deps, crossing, changed, own.model, support);
+    const inRange = near.filter((e) => e.after >= target - SUPPORT_BELOW);
+    const support = inRange.filter((e) => crosses(e, crossing, limit.max));
+    // A rule states what always happens, so one safe run in the same range rules it out.
+    if (support.length >= MIN_SIMILAR && support.length === inRange.length) return ruleFrom(deps, crossing, changed, own.model, support);
   }
   return null;
 }

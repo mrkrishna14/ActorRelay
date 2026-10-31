@@ -122,6 +122,15 @@ describe("safety lives in code", () => {
     expect(vote.reason).toContain("insufficient history");
   });
 
+  test("thin history near critical stays a no however low the model predicts", async () => {
+    const glue = new FakeGlue();
+    const near = (id: string, after: number, valve: number) => ({ ...safeExecution(id, "plant-b"), id, after, proposalId: null, effects: [{ componentId: "plant-b/LV-101", metric: "positionPct", before: 50, after: valve, ticksToSettle: 3 }] });
+    glue.history.splice(0, glue.history.length, near("a", 70, 78), near("b", 71, 78));
+    const vote = await castVote(deps(glue, new ScriptedLlm(() => answer("yes", { positionPct: 60 }))), makeProposal({ plantId: "plant-b", to: 72 }), "plant-b/LV-101");
+    expect(vote.vote).toBe("no");
+    expect(vote.reason).toContain("insufficient history");
+  });
+
   test("a binding rule overrules a low prediction and a yes", async () => {
     const glue = new FakeGlue();
     glue.companyRules.push(companyRule());

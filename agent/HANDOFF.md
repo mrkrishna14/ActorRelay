@@ -114,9 +114,9 @@ History raises the prediction: if a run that went no further than the target rea
 
 **Slow models.** A `no` already proven by evidence or a rule is posted at 6 s on a first block and 1.5 s when a live execution exists, whether or not the model has answered. The reason then starts `[decided from retrieved evidence; the model did not answer in time]`. A `yes` always waits for the model.
 
-**Counters.** The ceiling is `threshold × (1 − margin/100)`, 72.9 for LV-101 at margin 10. Candidates are multiples of 5 between `from` and `to` whose highest observed row stays under the ceiling. Code fixes the target as the largest candidate with at least 3 safe runs, because a free choice sometimes landed on 60 and the demo needs about 65. The model confirms it and writes the rationale; if it fails twice, the rationale says code chose. Max 2 per root proposal. A forced repeat of a target already countered gets no counter.
+**Counters.** The ceiling is `threshold × (1 − margin/100)`, 72.9 for LV-101 at margin 10. A metric that normally runs above that line, like TK-101 `tempC`, uses its threshold instead. Candidates are multiples of 5 between `from` and `to` whose highest observed row stays under the ceiling. Code fixes the target as the largest candidate with at least 3 safe runs, because a free choice sometimes landed on 60 and the demo needs about 65. The model confirms it and writes the rationale; if it fails twice, the rationale says code chose. Max 2 per root proposal. A forced repeat of a target already countered gets no counter.
 
-**Rules.** After a `no` backed by at least 3 evidence ids, and after any execution that crosses a limit, an agent looks for at least 3 runs sharing the crossing and posts a rule through `/rule`, with an id derived from its content. Rule ids and support ids come only from retrieved data.
+**Rules.** After a `no` backed by at least 3 evidence ids, and after any execution that crosses a limit, an agent looks for at least 3 runs sharing the crossing, with no safe run in the same range, and posts a rule through `/rule`, with an id derived from its content. Rule ids and support ids come only from retrieved data.
 
 **Reset.** `plant.history` and `/rules` are the truth. The local cache only covers a failed history read, so a reset between demo takes needs no signal to agents.
 
@@ -131,6 +131,7 @@ History raises the prediction: if a run that went no further than the target rea
 - `tests/*.test.ts` run on a fake glue built from `shared/plants.json`. History is `shared/history.json` if it exists, otherwise the labelled stand-in `actor/tests/fixtures-gen/history.json`. `shared/history.json` has not landed, so every result here is on the stand-in.
 - `tests/vote.real.test.ts` makes real OpenAI calls. `tests/live-relay-proof.ts` adds a real Relay server and glue's real `RelayBridge`. Neither touches real actors, glue's HTTP server or the simulator.
 - `tests/scripted-llm.ts` is a test double and exists only under `tests/`. Production code has no stub flag.
+- Measured on the Relay proof, with the machine under heavy load from other sessions (load average about 17): repeat 85, publish to LV-101's `no` at glue's bridge 1.8 s, leaving the sweep to finish inside 5 s. One Relay hop is about 120 ms unloaded. Under this load, posts from other voters took 1 to 4 s to reach glue, so stop sweeps before the demo.
 - Restart with stored tokens reconnects without `name_conflict`; that was run. Losing the tokens file while keeping the workspace does give `name_conflict`, because registration is create-only. Delete `~/.actorrelay/relay-workspace-key` to start a fresh workspace, then restart glue too.
 
 ## Known limits

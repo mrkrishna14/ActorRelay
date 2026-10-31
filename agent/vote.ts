@@ -288,7 +288,8 @@ function contradicted(context: VoteContext, answer: LlmVote): string | null {
   if (context.retrieved.length < MIN_SIMILAR) return null;
   for (const [metric, threshold] of Object.entries(context.thresholds)) {
     if (answer.predicted[metric] < threshold) continue;
-    const rows = context.retrieved.flatMap((e) => ownRows(e, context.own)).filter((r) => r.metric === metric);
+    const farEnough = context.retrieved.filter((e) => e.after >= context.proposal.to);
+    const rows = farEnough.flatMap((e) => ownRows(e, context.own)).filter((r) => r.metric === metric);
     if (rows.length < MIN_SIMILAR) continue;
     const peak = Math.max(...rows.map((r) => r.after));
     if (peak < threshold) return `you predicted ${metric} ${answer.predicted[metric]}, but the ${rows.length} retrieved runs peaked at ${peak}, under the ${threshold} threshold. Re-read the table`;
@@ -423,7 +424,7 @@ function decide(context: VoteContext, answered: Answered | null, missing: NoAnsw
   const { prefix, suffix } = provenance(answered?.reply ?? null, missing);
   const note = answered ? `Agent said ${answered.answer.vote}: ${agentNote(answered.answer.reason)}` : null;
   const binding = bindingRules(context);
-  const nearLimit = nearCritical(context, predicted) || changeNearCritical(context);
+  const nearLimit = nearCritical(context, predicted) || nearCritical(context, context.estimates) || changeNearCritical(context);
 
   let grounds: string | null = null;
   if (binding.length) {

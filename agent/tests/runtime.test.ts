@@ -113,6 +113,22 @@ describe("executed handling", () => {
   });
 });
 
+test("a failed read during learning is retried, and every voter still gets calibrated", async () => {
+  const { runtime, glue } = setup();
+  const proposal = makeProposal({ id: "p-flaky", to: 65, status: "executed", requiredVoters: ["plant-a/LV-101"] });
+  proposal.votes = [{ proposalId: "p-flaky", componentId: "plant-a/LV-101", agentId: "agent:plant-a/LV-101", vote: "yes", reason: "ok", predicted: { positionPct: 66 }, marginPct: 10, evidenceEventIds: [], evidenceRuleIds: [], similarCount: 5 }];
+  glue.addProposal(proposal);
+  const realPlant = glue.plant.bind(glue);
+  let calls = 0;
+  glue.plant = async (id) => {
+    if (++calls === 1) throw new Error("glue blip");
+    return realPlant(id);
+  };
+  runtime.onMessage({ type: "executed", proposalId: "p-flaky", event: safeExecution("p-flaky") });
+  await runtime.drain();
+  expect(glue.calibrations).toHaveLength(1);
+});
+
 describe("relay envelope", () => {
   test("agents send glue's {type, payload} shape, which its strict /vote and /counter schemas accept", () => {
     const vote = { proposalId: "p", componentId: "plant-a/LV-101", agentId: agentName("plant-a/LV-101"), vote: "no" as const, reason: "r", predicted: {}, marginPct: 10, evidenceEventIds: [], evidenceRuleIds: [], similarCount: 0 };
