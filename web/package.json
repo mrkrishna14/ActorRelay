@@ -1,0 +1,30 @@
+{
+  "name": "actorrelay-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test ./lib"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5",
+    "@fontsource/ibm-plex-sans-condensed": "^5",
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/bun": "^1",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/three": "0.186.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
