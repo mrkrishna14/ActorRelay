@@ -1,6 +1,6 @@
 # Vote pipeline accuracy
 
-**Verdict, corrected 2026-10-31 13:10.** The four demo steps that must never be faked passed all 530 replay runs. No throughput increase with `gpt-6.1-terra` or `gpt-6.1-sol` got an unsafe change to unanimous yes. Feed reductions are not clean: see the correction below, which replaces the 13:05 claim of zero physical unsafe votes. Single-vote accuracy is 91%, not 100%, and most of the gap is code policy rather than model error.
+**Verdict, corrected 2026-10-31 13:13.** The four demo steps that must never be faked passed all 530 replay runs. No throughput increase with `gpt-6.1-terra` or `gpt-6.1-sol` got an unsafe change to unanimous yes, and on simulated history feed reductions are handled too (see the correction below, which replaces the 13:05 claim). Single-vote accuracy is 91%, not 100%, and most of the gap is code policy rather than model error.
 
 Use `AGENT_OPENAI_MODEL=gpt-6.1-terra` and `AGENT_OPENAI_EFFORT=low` for every role. The default in code is still `gpt-6-luna`, which leaked 2 unsafe proposals of 159 at 720ea5c.
 
@@ -19,7 +19,9 @@ The oracle held TK-101 at 75 °C on a downward step. Simulated history shows it 
 | Unsafe proposals reaching unanimous yes, of 186 | 15 | 15 | 17 |
 | All of those on feed reductions | 15 | 15 | 15 |
 
-Every model voted yes on all 15, predicting about 75.5 °C. Two things limit how much this means. The stored runs retrieved history written by the old oracle, so the models never saw the rise, and the physics summary does not mention it. It also breaks the margin rule rather than the plant: simulated peaks are 76.8-78.1 °C on steps of 15-30 points, under the 80 max and the 85 critical. The demo has no feed reduction.
+Every model voted yes on all 15, predicting about 75.5 °C, but that came from the eval, not the models: those runs retrieved history written by the old oracle, so they never saw the rise.
+
+The fair test is `reductions.ts`: 20 TK-101 votes at 731b03a with terra, margin 10, simulated history, real `rankSimilar`. All 12 reductions past the line voted no, and temperature error was 0.13 °C. Of the 8 below the line, 6 passed. The other 2 (60->52, 65->55) were false no from `evidencePeaks`: the model predicted correctly, but a larger step in history that ended at or below the target peaked higher. These rise past the margin line, not the limits: simulated peaks are 76.8-78.1 °C on steps of 15-30 points, under the 80 max and the 85 critical. The demo has no feed reduction.
 
 The tables below used the oracle before this correction, so their unsafe and accuracy rows do not include these votes.
 
