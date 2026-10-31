@@ -144,7 +144,7 @@ function stepFor(plants: Plants, now: number, tour: { onView: (view: PlantId) =>
       number: 8,
       step: {
         title: "It learned",
-        say: "Refused again, much faster, and the outlet valve pointed to the run it just saw. Now the best part: Plant B is a separate factory that has never run this fast. Will it know what Plant A learned?",
+        say: "Refused again, and the outlet valve pointed to the run it just saw. Now the best part: Plant B is a separate factory that has never run this fast. Will it know what Plant A learned?",
         inside: "Plant A's lesson was promoted to a company rule, because Plant B has the same model of valve.",
         action: {
           label: "Try it in Plant B",
