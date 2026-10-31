@@ -97,8 +97,8 @@ All are async. Inputs are validated at the actor; agent output is treated as dat
 - `veto(proposalId, by)` returns `Proposal`. Works until the proposal leaves `veto_window`.
 - `execute(proposalId)` returns `Execution`. Idempotent.
 - `claimDispatch(proposalId, measured?)`, `reportDispatchFailure(proposalId, reason)`, `getExecution(proposalId)`.
-- `recordEvent({proposalId, effects, upstreamSnapshot?, incident?, operator?})` returns `HistoryEvent`. Plant fills the rest from the proposal. One event per proposal; a repeat returns the same event.
-- `promoteRule(rule)` returns `LearnedRule`. Every cited event must show the rule.
+- `recordEvent({proposalId, effects, upstreamSnapshot?, incident?, operator?})` returns `HistoryEvent`. Plant fills the rest from the proposal. Effect rows must name known tags and metrics; the values are trusted, so the first observation for a run decides them. One event per proposal; a repeat returns the same event.
+- `promoteRule(rule)` returns `LearnedRule`. A submitted rule must name its components, every cited event must show it, and no recorded run may refute it.
 - `similar(componentId, metric, to, upstreamSnapshot = {}, k = 5)` returns `HistoryEvent[]`.
 - `rulesFor(componentId?, model?)` returns plant rules plus company rules.
 - `tick()`, `sweep()`, `setConnected(bool)`, `recordAudit(entry)`.
@@ -158,7 +158,7 @@ Codes: `not_seeded`, `invalid_seed`, `invalid_metrics`, `invalid_metric`, `inval
 
 | Suite | Runs on | Latest result |
 |---|---|---|
-| `tests/logic/logic.test.ts` | pure functions, no runtime | 41 pass, 0 fail, current code |
+| `tests/logic/logic.test.ts` | pure functions, no runtime | 42 pass, 0 fail, current code |
 | `tests/runtime/runtime.test.ts` | real `terse actor dev`, fake glue inside the test | see below |
 | `tests/runtime/durability.ts` | real server plus kill -9 | not yet completed by this suite |
 

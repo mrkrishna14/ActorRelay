@@ -51,6 +51,7 @@ import {
     mergeDerivedRules,
     mergeSubmittedRule,
     toCompanyRule,
+    counterexampleId,
     unsupportedEventId,
     type ComponentDef,
     type Topology
@@ -640,8 +641,11 @@ export class Plant extends Actor {
     async promoteRule(r: LearnedRule): Promise<LearnedRule> {
         this.#assertSeeded()
         assertRuleShape(r)
+        if (r.condition.componentId === null || r.consequence.componentId === null) fail("invalid_rule", "a submitted rule must name its components")
         const unsupported = unsupportedEventId(r, this.history)
         if (unsupported !== null) fail("invalid_rule", `event ${unsupported} does not show this rule`)
+        const refuted = counterexampleId(r, this.history)
+        if (refuted !== null) fail("invalid_rule", `event ${refuted} refutes this rule`)
         const at = nowIso()
         const { rules, rule } = mergeSubmittedRule(this.rules, r, at)
         await this.db.transaction(async () => {
@@ -833,6 +837,11 @@ export class Plant extends Actor {
         if (proposal.status !== "executed" || execution === undefined) fail("not_executed", `${proposalId} is ${proposal.status}`)
         // An observation needs a dispatched command behind it: acceptance alone proves nothing moved.
         if (execution.state !== "claimed" && execution.state !== "applied" && execution.state !== "unknown") fail("not_dispatched", `${proposalId} is ${execution.state}`)
+        // Rows may name the other plant, which is a copy of this one, so they are checked by tag.
+        for (const { componentId, metric } of e.effects) {
+            const known = this.setpoints[`${this.id}/${componentId.split("/")[1]}`]
+            if (!/^plant-[a-z0-9]+\//.test(componentId) || known === undefined || !Object.hasOwn(known, metric)) fail("invalid_event", `unknown effect ${componentId} ${metric}`)
+        }
         if (e.upstreamSnapshot !== undefined && !isFiniteRecord(e.upstreamSnapshot)) fail("invalid_event", "upstreamSnapshot must be finite numbers")
         if (e.incident !== undefined && e.incident !== null && typeof e.incident !== "string") fail("invalid_event", "incident must be a string or null")
         if (e.operator !== undefined && e.operator !== null && typeof e.operator !== "string") fail("invalid_event", "operator must be a string or null")

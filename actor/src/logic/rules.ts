@@ -181,6 +181,19 @@ export function unsupportedEventId(rule: LearnedRule, history: HistoryEvent[]): 
     return null
 }
 
+// A rule states what always happens, so one recorded run that meets the condition without the consequence refutes it.
+// Without this, a rule citing real unsafe runs could claim a threshold low enough to bind a safe change.
+export function counterexampleId(rule: LearnedRule, history: HistoryEvent[]): string | null {
+    const { condition, consequence } = rule
+    for (const event of history) {
+        const matches = event.metric === condition.metric && event.componentId === condition.componentId && satisfies(event.after, condition.op, condition.value)
+        if (!matches) continue
+        const rows = event.effects.filter(effect => effect.metric === consequence.metric && effect.componentId === consequence.componentId)
+        if (rows.length > 0 && !rows.some(effect => satisfies(effect.after, consequence.op, consequence.value))) return event.id
+    }
+    return null
+}
+
 // Company rules drop component ids so the same equipment model matches in any plant.
 export function toCompanyRule(rule: LearnedRule, plantId: string): LearnedRule {
     const key = [rule.model, rule.condition.metric, rule.consequence.metric, rule.consequence.op === ">=" ? "high" : "low"].join(":")
