@@ -100,6 +100,7 @@ export class PiController {
 
 /** TV-101: equal-percentage trim, and flow proportional to absolute header pressure because the valve runs choked. */
 export function steamFlowKgH(p: Params, valve: number, headerBarg: number): number {
+  if (valve <= 0) return 0; // Equal-percentage trim bottoms out at max/rangeability; a shut valve still passes nothing.
   const pressure = (headerBarg + p.atmosphereBar) / (p.headerDesignBarg + p.atmosphereBar);
   return p.tvMaxKgH * p.tvRangeability ** (valve - 1) * pressure;
 }

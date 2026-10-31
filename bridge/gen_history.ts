@@ -6,9 +6,9 @@
 // Check: node actor/tests/fixtures-gen/validate-history.mjs shared/history.json
 //
 // INCIDENT TEXT. TASK2.MD requires the text below on runs at P-100 88-100. In the model LV-101 only reaches 100 % when
-// overshoot gets it there, which needs about 96 % speed from the design point. At 88-95 the LV-101 row shows the real
-// 91-99 % and the incident text is fictional provenance, kept because the spec asks for it. No run in this file has a
-// model of the LAH-101 alarm: the level rows are real, the alarm is part of that text.
+// overshoot gets it there, which needs about 97 % speed from the design point. Below that the LV-101 row shows the real
+// 90-99 % and the incident text is fictional provenance, kept because the spec asks for it. The model has no LAH-101
+// alarm either: the level rows are real, the alarm exists only in that text.
 import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
