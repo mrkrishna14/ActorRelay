@@ -4,7 +4,7 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import type { CalibrationEntry, ComponentId, HistoryEvent, PlantId, PlantState, Proposal, Role, Vote } from "../../shared/types.js"
 import type { Backend, ComponentSnapshot, CounterInput } from "./backend.js"
-import { draftWithRetry, type Llm } from "./llm.js"
+import { DeadlineError, draftWithRetry, type Llm } from "./llm.js"
 import { buildVote, ground, ownPoints, plantOf, tagOf, threshold, type Grounding } from "./predict.js"
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -52,6 +52,7 @@ function prompt(self: ComponentSnapshot, proposal: Proposal, g: Grounding, retri
 /** TASK vote pipeline steps 1–6: state, similar(), rules, prompt, validated draft, code-enforced contract. */
 export async function decideVote(proposal: Proposal, componentId: ComponentId, deps: Deps): Promise<Vote> {
     const { backend } = deps
+    const started = Date.now()
     const self = await backend.component(componentId)
     const proposer = proposal.proposerComponentId
     const upstream: Record<string, number> = {}
@@ -60,7 +61,16 @@ export async function decideVote(proposal: Proposal, componentId: ComponentId, d
     const g = ground(self, proposal, retrieved, plant.history, rules)
     const llm = deps.llmFor(self)
     if (!llm) return buildVote(self, proposal, g, null, "[baseline: no LLM configured] ")
-    const draft = await draftWithRetry(llm, rolePrompt(self.role), prompt(self, proposal, g, retrieved.length), deps.log)
+    // Hard budget: every agent answers within VOTE_DEADLINE_MS (default 15 s, under the 20 s vote window).
+    const budget = Math.max(1000, Number(process.env.VOTE_DEADLINE_MS ?? 15_000) - (Date.now() - started))
+    let draft
+    try {
+        draft = await draftWithRetry(llm, rolePrompt(self.role), prompt(self, proposal, g, retrieved.length), deps.log, budget)
+    } catch (error) {
+        if (!(error instanceof DeadlineError)) throw error
+        deps.log?.(`${componentId}: ${llm.label} ${error.message} → grounded baseline`)
+        return buildVote(self, proposal, g, null, `[${llm.label} timed out → baseline] `)
+    }
     if (!draft) {
         const vote = buildVote(self, proposal, g, { vote: "no", reason: "malformed prediction", predicted: {} }, `[${llm.label}] `)
         return { ...vote, vote: "no" }

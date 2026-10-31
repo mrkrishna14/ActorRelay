@@ -23,6 +23,7 @@ const backend: Backend = process.env.GLUE_URL ? new GlueBackend(process.env.GLUE
 const submitDirect = (process.env.AGENT_SUBMIT ?? (process.env.GLUE_URL ? "relay" : "actors")) === "actors"
 const deps: Deps = { backend, llmFor: self => llmFor(vendorOf.get(self.id) ?? self.vendor), log }
 const pollMs = Number(process.env.AGENT_POLL_MS ?? 2000)
+const STALE_MS = 30_000 // the vote window: older proposals are history (agents never wait on this)
 
 let bus: RelayBus | null = null
 const done = new Set<string>() // `${proposalId}|${componentId}` voted, `counter|id`, `cal|id`
@@ -42,8 +43,9 @@ async function onProposal(p: Proposal) {
         try {
             const vote = await decideVote(p, id, deps)
             const channel: Channel = plantOf(id) === p.plantId ? (p.plantId as Channel) : "company"
-            await say(id, channel, { type: "vote", vote })
+            // Decision path first; the Relay broadcast never delays the vote reaching the Plant.
             if (submitDirect) await backend.submitVote(p.plantId, vote).catch(e => log(`  submit ${id}: ${String(e).slice(0, 160)}`))
+            void say(id, channel, { type: "vote", vote })
             log(`${p.id} ${tagOf(p.proposerComponentId)} ${p.from}→${p.to}: ${id} votes ${vote.vote.toUpperCase()} in ${Date.now() - t0} ms (similar ${vote.similarCount}, evidence ${vote.evidenceEventIds.slice(0, 3).join(",")}${vote.evidenceRuleIds.length ? `, rules ${vote.evidenceRuleIds.length}` : ""}) — ${vote.reason.slice(0, 140)}`)
         } catch (error) {
             done.delete(`${p.id}@${p.at}|${id}`)
@@ -60,7 +62,7 @@ async function onBlocked(p: Proposal, plant: PlantState) {
     if (!input) return log(`${p.id} blocked; no evidence-backed counter-proposal`)
     const counter = await backend.propose(p.plantId, input)
     log(`${p.id} blocked → ${p.proposerComponentId} counter-proposes ${counter.id}: ${p.metric} ${counter.from} → ${counter.to}`)
-    await say(p.proposerComponentId, p.plantId as Channel, { type: "counter", parentProposalId: input.parentProposalId, proposal: counter })
+    void say(p.proposerComponentId, p.plantId as Channel, { type: "counter", parentProposalId: input.parentProposalId, proposal: counter })
     void onProposal(counter)
 }
 
@@ -86,6 +88,7 @@ async function poll() {
             continue
         }
         for (const p of plant.proposals) {
+            if (Date.now() - Date.parse(p.at) > STALE_MS) continue // left over from an earlier run
             if (p.status === "voting") void onProposal(p)
             else if (p.status === "blocked") void onBlocked(p, plant)
             else if (p.status === "executed") void onExecuted(p.id, plant)

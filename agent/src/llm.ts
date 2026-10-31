@@ -48,7 +48,7 @@ export class CodexLlm implements Llm {
         const res = await fetch("https://api.openai.com/v1/responses", {
             method: "POST",
             headers: { Authorization: `Bearer ${this.key}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ model: CODEX_MODEL, instructions: system, input: user, reasoning: { effort: "medium" } }),
+            body: JSON.stringify({ model: CODEX_MODEL, instructions: system, input: user, reasoning: { effort: process.env.CODEX_EFFORT || "low" } }),
             signal: AbortSignal.timeout(18_000),
         })
         const body = (await res.json()) as { error?: { message?: string }; output?: { content?: { text?: string }[] }[] }
@@ -72,13 +72,22 @@ export function llmFor(vendor: Vendor): Llm | null {
 }
 
 /** One request, one re-request on invalid output; null when both fail (caller votes a safe no). */
-export async function draftWithRetry(llm: Llm, system: string, user: string, log: (msg: string) => void = () => {}): Promise<Draft | null> {
+export class DeadlineError extends Error {}
+
+/** One request, one re-request on invalid output, all inside `deadlineMs`; null when both fail. Throws DeadlineError on timeout. */
+export async function draftWithRetry(llm: Llm, system: string, user: string, log: (msg: string) => void = () => {}, deadlineMs = Infinity): Promise<Draft | null> {
+    const end = Date.now() + deadlineMs
     for (let attempt = 1; attempt <= 2; attempt++) {
+        const left = end - Date.now()
+        if (left <= 0) throw new DeadlineError(`no answer within ${deadlineMs} ms`)
         try {
-            const parsed = DraftSchema.safeParse(await llm.draft(system, attempt === 1 ? user : `${user}\n\nYour previous answer was not valid. Return ONLY the JSON object described above.`))
+            const call = llm.draft(system, attempt === 1 ? user : `${user}\n\nYour previous answer was not valid. Return ONLY the JSON object described above.`)
+            const answer = await Promise.race([call, new Promise<never>((_, reject) => setTimeout(() => reject(new DeadlineError(`no answer within ${deadlineMs} ms`)), left))])
+            const parsed = DraftSchema.safeParse(answer)
             if (parsed.success) return parsed.data
             log(`${llm.label}: invalid draft (attempt ${attempt}): ${parsed.error.issues.slice(0, 2).map(i => i.message).join("; ")}`)
         } catch (error) {
+            if (error instanceof DeadlineError) throw error
             log(`${llm.label}: request failed (attempt ${attempt}): ${error instanceof Error ? error.message : String(error)}`)
         }
     }
