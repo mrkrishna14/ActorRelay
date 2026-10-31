@@ -1,31 +1,71 @@
-# Dashboard handoff
+# ActorRelay frontend
 
-## Start
-From web/: `bun install`, then `bun run dev` (http://127.0.0.1:3000).
-Production: `bun run build`, then `bun run start`.
-`NEXT_PUBLIC_GLUE_URL` optionally overrides http://127.0.0.1:7200. This variable is browser-visible; never put secrets in it.
+Frontend-only implementation on branch `frontend`. The visual targets are the approved 2D P&ID and 3D Plant mockups. The application uses Next.js static export, React, self-hosted Geist Sans/Mono, Phosphor icons, and a lazily loaded Three.js viewport.
 
-## Integration
-Polls GET /state?plantId=plant-a (or plant-b) every second. Expects {plant, components, company, mode}; filters all-ten-component arrays by selected plant. POST /propose, /counter, /veto, /reset follow TASK3.MD. Controls disabled if disconnected or plant response is stale after switching.
+## Run
 
-## Included
-Equipment tree, native interactive SVG schematic, two plant views and company view, metrics and limits, prediction calibration, proposal/vote/evidence inspection, countdown veto, 120-second measurement samples, audit feed, and responsive layout.
+From the repository root:
 
-## Honest fallbacks
-Static web/mock/state.json is a disconnected preview fixture; always prominently labeled and controls disabled. Mock integration states are explicitly labeled. Dashboard never generates votes or conversational reasoning. Native SVG is a labeled schematic preview, pending the final diagram from Person 2. No backup video recording or external submission performed.
+```sh
+bun install --cwd web
+bun run web:dev
+```
 
-## Verification
-`bun x tsc --noEmit` and `bun run build` pass. Browser walkthrough at 1920x1080 against the mock API on 7200: Reset demo, Increase throughput to blocked (LV-101 no), Propose 65% to veto countdown to executed, plant-b block, and company view during a veto window and with a test rule. Not verified: the live-mode learning captions (mock mode never shows them), the reduced-motion rendering (CSS rule present, not emulated), and the final P&ID overlay (file absent).
+Open http://127.0.0.1:3000 directly into the plant workspace. There is no sign-in, token entry, connection wizard, or service configuration. From `web/`, `bun run build` emits a standalone static frontend in `out/`; `bun run start` serves that export on the same local port. Stop the development preview before starting the production preview.
 
-## Completed UI contract details
-All CSS UI text has an 18px minimum; process SVG retains a 950px minimum drawing width with horizontal scrolling so labels are readable. Equipment rows include status words. Proposal panel includes proposer identity and original/counter family. Voters have pulsing gray/green/red schematic outlines with reduced-motion support. Operator buttons: Increase throughput, Force P-100 → 85% (normal review, never bypasses votes), Propose 65% (kept because mock mode has no automatic counterproposal), Reset demo. The "It learned" caption appears only in live mode, only when a blocked proposal cites an execution recorded in this browser session, and links that event id; "Plant B learned from Plant A" is also live-only and links the cited company rule. Counterproposal cards nest under their parent with their own voters, status pill, and veto countdown.
+```sh
+bun run web:check
+bun run web:test
+bun run web:build
+```
 
-Fixture preview dropdown explicitly selects static examples for all six proposal statuses; controls are disabled and no fixtures are sent upstream. When `/pid-tk-101.svg` becomes available it is used automatically on next page load, as sanitized inline SVG with tag-group selection, live labels, and voter outlines, plus equipment value/selection controls below. Script/event handlers, foreign content, embedded resources, style blocks, animation elements, and external references are removed before insertion. Until then the labeled interactive native schematic remains visible. Trends use actual sample timestamps across a fixed 120-second window, with maximum and critical limits.
+No API routes, server actions, application backend, external backend calls, actor changes, simulator changes, provider calls, or automatic agent spawning are part of this frontend.
 
-The bottom layout pairs the timestamp-based 120-second trend with the operations timeline. SVG labels retain readable minimum widths and horizontal scrolling. Company rules show only source plants confirmed by included evidence records; unavailable provenance is explicitly marked.
+## Working interface
 
-Verification performed: production compilation and TypeScript pass; fixture JSON has all six Proposal.status values. The final external P&ID is absent, so its runtime overlay appearance remains unverified; fallback and loader source path are implemented.
+- Plant A / Plant B / Company navigation, searchable equipment tree, and linked component selection.
+- 2D P&ID with values, instrument links, selection, proposal forecast, directed liquid/steam/condensate particles, and tank circulation. The flow control pauses these illustrative animations; reduced-motion preferences disable them automatically.
+- Interactive 3D tank skid with orbit, zoom, fit/reset, projected equipment labels, and selection. A generated local plant image provides a clearly marked fallback when WebGL is unavailable.
+- Equipment details with measurements, supplied limits, safety margin, and a validated P-100 proposal form.
+- Agent conversation, channel selection, composer, evidence links, proposal review, and human veto countdown.
+- Human-friendly agent context in 2D, 3D, and chat: equipment location, specialist role, vendor, current task, state, decision summary, latest action, and evidence. The state inspector defines monitoring, thinking, reviewing, waiting, blocked, ready, and observing.
+- Agent Relay harness directly beneath the chat composer, showing browser-demo sessions, task progress, and expandable activity details. It does not connect to a live harness.
+- Metric chart with pause/resume, threshold, proposal event, and pointer inspection; expandable audit history.
+- History/rule dialogs and company view showing the two plants and shared steam header.
+- Responsive layout, native modal focus handling, reduced motion, keyboard access, and shortcuts: 1/2 for views, I for equipment details, Command/Ctrl K for search.
 
-Each plant view shows the other plant as a card (status and reporting count derived from the ten `components`, plus its shared-steam vote) and a cross-plant feed. /state returns only the requested plant's proposals, so rows for the other plant are built from `company.crossPlantProposals` and `company.audit`; a row with no outcome after 45 seconds reads "unresolved", and a veto window on the other plant reads "voting". The events feed merges plant and company audit with a plant badge on each row. The timing chart samples every component's key metric on each poll (P-100 speedPct, TK-101 levelPct, LV-101 positionPct, E-101 dutyKw, TV-101 steamKgH), so switching selection keeps its 120 seconds. A rule card slides into the company library the first time it is shown, with reduced-motion support.
+## Workspace controls
 
-Colour: red only for no/critical/blocked/vetoed, green for yes/ok/executed, amber for warning/voting/veto window, neutral grey for everything else. Schematic tags carry the vote word. Steam lines use lavender so they do not read as amber.
+- Light mode is the default. The sun/moon button switches between light and dark; the versioned `actorrelay-theme-v1` preference is remembered locally. Theme switching still works when browser storage is unavailable.
+- Drag the equipment and conversation dividers to change their widths. Drag the bottom chart divider down to shrink the chart and extend the plant view, or up to enlarge the chart. The conversation/harness divider adjusts their relative heights.
+- Focus a divider and use its arrow keys; hold Shift for larger steps. Double-click an equipment/conversation/chart divider to reset panel sizes. Double-click the conversation/harness divider to reset that split. The toolbar's **Reset panel sizes** control resets every split. Panel sizes are session-only.
+- **Expand plant view** hides the equipment navigator, agent panel, chart, and audit area. Use the restore button or Escape to return to the workspace. The separate **Fullscreen plant view** button requests native browser fullscreen; Escape exits it. Where fullscreen is unavailable, it falls back to the expanded view.
+- Flow animation pause and chart pause are separate controls. Animated paths illustrate direction and activity; they are not a calibrated flow simulation.
+
+## Demo data
+
+The default mode is an interactive frontend demo. Measurements, history, messages, votes, and observation/calibration are illustrative fixtures. They are not live agent reasoning or a physics model. The mode is labeled in the header, conversation, harness, measurements, and evidence dialogs.
+
+Initial state: Plant A's 50 → 85% pump proposal is blocked by the outlet-valve limit. Send `Propose 65%` or create a P-100 proposal in equipment details. Votes arrive in stages over about six seconds; an unsafe proposal stops as soon as a refusal arrives. All five required yes votes, including the other plant's steam valve, open a ten-second veto window. Veto leaves values unchanged. Otherwise the UI applies the sample target and animates a five-second observation separately from command acceptance. A single proposal runs at a time across both sample plants. Reset clears session-only observations and restores both plants.
+
+Agent context is derived deterministically from this scenario. State changes, task progress, and decision summaries explain the sample workflow; they do not represent live LLM execution, tool calls, or private model reasoning. Latest-action times use America/Los_Angeles, matching the workspace clock.
+
+All plant demo state stays in React memory. Reloading resets it; the saved theme preference is separate. The sample rule has three high-feed support records; a safe observation is not represented as proof of an unsafe higher-speed outcome.
+
+## Agent Relay boundary
+
+The visible harness and conversations run entirely from browser demo state. The application does not authenticate, request tokens, connect to external services, create a Relay workspace, or launch harness processes.
+
+`lib/relay-client.ts` retains an unused `@relaycast/sdk` adapter for subsequent integration. Its transport and credential boundaries are exercised by in-memory service tests; the current application does not instantiate it or make its network calls. Enabling a live runtime is a separate integration task.
+
+## Future service handoff
+
+`lib/types.ts` defines the UI projection of equipment, proposals, votes, evidence, and Relay activity. `lib/demo.ts` is isolated sample state. Replace its data/action boundary with the agreed actor and integration-service clients when those modules are supplied. Preserve the distinction between proposed, accepted, and observed values. Never route a chat message directly to a physical setpoint.
+
+For a future live integration, `lib/relay-client.ts` supplies the independent transport boundary. Runtime observation is operational telemetry; authoritative plant audit history must come from the external actor service.
+
+## Validation
+
+TypeScript and nineteen tests pass, with 164 assertions reported. Tests cover staged equipment votes and derived agent activity, the proposal/veto/observation lifecycle, cross-plant serialization, cross-plant voters, client permissions, message normalization/deduplication, WebSocket delivery, errors, credential boundaries, and disconnect races. Focused layout checks also covered forty viewport combinations and short-window chart bounds.
+
+Production static export and TypeScript pass. Browser verification covers direct entry without setup, both themes, the modeled plant yard, cross-plant agent identity, staged votes, veto/observation, agent details, panel resizing, and expanded/fullscreen views. Visual evidence and responsive checks are recorded in the repository’s `design-qa.md`.

@@ -1,68 +1,219 @@
 "use client";
-import {useEffect,useRef,useState} from "react";
-import fixture from "../mock/state.json";
-import previewFixtures from "../mock/proposals.json";
-import type {DashboardState,ComponentState,Proposal} from "../lib/types";
-const API=process.env.NEXT_PUBLIC_GLUE_URL||"http://127.0.0.1:7200";
-const units:Record<string,string>={speedPct:"%",positionPct:"%",levelPct:"%",tempC:"°C",dutyKw:"kW",headerBarg:"barg",steamKgH:"kg/h",feedM3h:"m³/h"};
-const tags=["P-100","TK-101","LV-101","E-101","TV-101"];
-const keyMetrics:Record<string,string>={"P-100":"speedPct","TK-101":"levelPct","LV-101":"positionPct","E-101":"dutyKw","TV-101":"steamKgH"};
-const keyMetric=(c?:ComponentState)=>!c?"":c.metrics[keyMetrics[c.tag]]!==undefined?keyMetrics[c.tag]:Object.keys(c.metrics)[0]||"";
-const seenRules=new Set<string>();
-const fmt=(v:number)=>Number.isFinite(v)?v.toLocaleString(undefined,{maximumFractionDigits:1}):"—";
-const label=(s:string)=>s.replace(/([A-Z])/g," $1");
-function Pill({value}:{value:string}){return <span className={`pill ${["no","critical","blocked","vetoed"].includes(value)?"red":["yes","ok","executed"].includes(value)?"green":["warning","voting","veto_window"].includes(value)?"amber":"neutral"}`}><i/>{value.replaceAll("_"," ")}</span>}
-export default function Dashboard(){
-const [view,setView]=useState("plant-a"),[selected,setSelected]=useState("P-100"),[apiData,setData]=useState<DashboardState>(fixture as unknown as DashboardState),[offline,setOffline]=useState(true),[busy,setBusy]=useState(false),[notice,setNotice]=useState(""),[now,setNow]=useState(Date.now()),[evidence,setEvidence]=useState<string|null>(null),[samples,setSamples]=useState<Record<string,{at:number;value:number}[]>>({});
-const [fixtureStatus,setFixtureStatus]=useState(""),[sessionStarted]=useState(Date.now());
-const data:DashboardState=fixtureStatus?{...(fixture as unknown as DashboardState),plant:{...(fixture as unknown as DashboardState).plant,proposals:[previewFixtures.find(p=>p.status===fixtureStatus) as Proposal]}}:apiData;
-const preview=!!fixtureStatus;
-const plantId=view==="company"?"plant-a":view;
-useEffect(()=>{let active=true;const load=async()=>{try{const r=await fetch(`${API}/state?plantId=${plantId}`,{cache:"no-store",signal:AbortSignal.timeout(2500)});if(!r.ok)throw Error();const next=await r.json();if(!next.plant||!Array.isArray(next.components)||!next.company)throw Error();if(active){setData(next);setOffline(false)}}catch{if(active)setOffline(true)}};void load();const timer=setInterval(()=>{setNow(Date.now());void load()},1000);return()=>{active=false;clearInterval(timer)}},[plantId]);
-const components=data.components.filter(c=>c.plantId===plantId),component=components.find(c=>c.tag===selected)||components[0],metric=keyMetric(component),value=component?.metrics[metric]||0,proposals=[...(data.plant.proposals||[])].sort((a,b)=>Date.parse(b.at)-Date.parse(a.at)),proposal=proposals[0],votes=proposal?.votes||[];
-useEffect(()=>{if(offline||preview)return;const at=Date.now();setSamples(old=>{const next={...old};for(const c of apiData.components){const m=keyMetric(c);if(m)next[c.id]=[...(old[c.id]||[]).filter(p=>p.at>at-120000),{at,value:c.metrics[m]}]}return next})},[apiData,offline,preview]);useEffect(()=>{if(!apiData.company.rules.length)seenRules.clear()},[apiData.company.rules.length]);
-const points=preview||!component?[]:samples[component.id]||[];
-async function command(path:string,body:unknown){if(preview)return;setBusy(true);try{const r=await fetch(API+path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body),signal:AbortSignal.timeout(8000)});const result=await r.json().catch(()=>({}));if(!r.ok)throw Error(typeof result.error==="string"?result.error:JSON.stringify(result));setNotice(`${path.slice(1)} request accepted${data.mode==="mock"?" by mock service":""}.`)}catch(e){setNotice(e instanceof Error?e.message:"Request failed")}finally{setBusy(false)}}
-const learnedEvent=data.mode==="live"&&!preview&&proposal?.status==="blocked"?votes.flatMap(v=>v.evidenceEventIds).map(id=>data.plant.history.find(e=>e.id===id)).find(e=>e&&Date.parse(e.at)>=sessionStarted&&e.proposalId):undefined;
-const plantLabel=(id:string)=>`Plant ${id.slice(-1).toUpperCase()}`;
-const learnedRule=data.mode==="live"&&!preview&&proposal?.status==="blocked"?data.company.rules.find(r=>r.scope==="company"&&votes.some(v=>v.evidenceRuleIds.includes(r.id))&&r.condition.componentId&&r.condition.componentId.split("/")[0]!==proposal.plantId):undefined;
-const learnedFromPlant=learnedRule?.condition.componentId?.split("/")[0];
-let rootProposal=proposal;for(let i=0;i<10&&rootProposal?.parentProposalId;i++){const parent=proposals.find(p=>p.id===rootProposal?.parentProposalId);if(!parent)break;rootProposal=parent}
-const otherId=plantId==="plant-a"?"plant-b":"plant-a",otherVoter=proposal?.requiredVoters.find(id=>id.startsWith(`${otherId}/`));
-const reporting=(id:string)=>offline&&!preview?0:data.components.filter(c=>c.plantId===id&&c.status!=="offline").length;
-const plantStatus=(id:string)=>{const list=data.components.filter(c=>c.plantId===id);return offline&&!preview?"offline":list.some(c=>c.status==="critical")?"critical":list.some(c=>c.status==="warning")?"warning":reporting(id)?"ok":"offline"};
-const auditFeed=[...data.plant.audit,...data.company.audit].filter((e,i,all)=>all.findIndex(o=>o.at===e.at&&o.kind===e.kind&&o.refId===e.refId&&o.summary===e.summary)===i).sort((a,b)=>Date.parse(b.at)-Date.parse(a.at));
-const closedKinds:Record<string,string>={block:"blocked",execute:"executed",veto:"vetoed"};
-const crossFeed=[...new Set([...data.company.crossPlantProposals,...data.plant.proposals.filter(p=>p.crossPlant).map(p=>p.id)])].map(id=>{const known=data.plant.proposals.find(p=>p.id===id),entries=auditFeed.filter(e=>e.refId===id),closed=entries.find(e=>closedKinds[e.kind]),opened=entries.find(e=>e.kind==="proposal")||entries[entries.length-1];return {id,plant:known?.plantId||opened?.plantId||"company",at:known?.at||opened?.at||"",summary:opened?.summary||(known?`${known.proposerComponentId} ${known.from} → ${known.to}`:"Details not included in this state response"),status:known?.status||(closed?closedKinds[closed.kind]:entries[0]&&now-Date.parse(entries[0].at)<45000?"voting":"unresolved")}}).sort((a,b)=>Date.parse(b.at)-Date.parse(a.at)).slice(0,5);
-const crossOpen=crossFeed.some(f=>["voting","veto_window"].includes(f.status));
-const crossFeedView=crossFeed.length?<div className="cross-feed">{crossFeed.map(f=><div className="cross-row" key={f.id}><span className="plant-badge">{f.plant}</span><Pill value={f.status}/><p>{f.summary}</p><span className="mono">{f.at&&new Date(f.at).toLocaleTimeString([],{hour12:false})}</span></div>)}</div>:<p className="muted">No cross-plant proposals.</p>;
-const proposalCard=(p:Proposal,depth=0):React.ReactNode=><div className={depth?"counter-card":"proposal-card"} key={p.id}><div className="proposal-title"><h3>{depth?"↳ Counterproposal":"Throughput change"}</h3><Pill value={p.status}/></div><p className="proposer">Proposed by <strong>{p.proposerAgentId}</strong><br/>Equipment: {p.proposerComponentId}</p>{p.id===proposal?.id&&learnedEvent&&<div className="learning-caption">It learned · this block cites execution <button onClick={()=>setEvidence(learnedEvent.id)}>↗ {learnedEvent.id}</button> from this session.</div>}{p.id===proposal?.id&&learnedRule&&learnedFromPlant&&<div className="learning-caption">{plantLabel(p.plantId)} learned from {plantLabel(learnedFromPlant)} · this block cites company rule <button onClick={()=>setEvidence(learnedRule.id)}>↗ {learnedRule.id}</button></div>}<div className="proposal-values"><span>{fmt(p.from)}<small>%</small></span><i>→</i><strong>{fmt(p.to)}<small>%</small></strong></div><p className="muted">{p.rationale}</p><div className="vote-summary"><span>CONNECTED EQUIPMENT</span><span>{p.votes.length}/{p.requiredVoters.length} reviewed</span></div>{p.requiredVoters.map(id=>{const vote=p.votes.find(v=>v.componentId===id);return <div className="voter" key={id}><div className="voter-title"><strong>{id.replace(`${plantId}/`,"")}</strong><Pill value={vote?.vote||"waiting"}/></div>{vote&&<><p>{vote.reason}</p><div className="predicted">{Object.entries(vote.predicted).map(([m,v])=><span key={m}>{label(m)}: <strong>{fmt(v)}</strong></span>)}</div><div className="evidence-chips">{[...vote.evidenceEventIds,...vote.evidenceRuleIds].map(id=><button onClick={()=>setEvidence(id)} key={id}>↗ {id}</button>)}</div></>}</div>})}{p.status==="veto_window"&&<button className="veto" disabled={preview||offline||busy||data.plant.id!==plantId} onClick={()=>command("/veto",{proposalId:p.id,by:"operator"})}>Veto change · {Math.max(0,Math.ceil((new Date(p.vetoDeadline||0).getTime()-now)/1000))}s</button>}{proposals.filter(c=>c.parentProposalId===p.id).sort((a,b)=>Date.parse(a.at)-Date.parse(b.at)).map(c=>proposalCard(c,depth+1))}</div>;
-const propose=(to:number)=>{const body={plantId,proposerComponentId:`${plantId}/P-100`,metric:"speedPct",to,rationale:"Evaluate a throughput increase with connected equipment"};return to===65&&proposal?.status==="blocked"?command("/counter",{parentProposalId:proposal.id,proposal:body}):command("/propose",body)};
-return <main><header><div className="brand"><b className="brand-icon">⌘</b><div>ActorRelay · simulated plant</div></div><nav>{["plant-a","plant-b","company"].map(id=><button className={view===id?"active":""} key={id} onClick={()=>setView(id)}>{id==="company"?"Company":id==="plant-a"?"Plant A":"Plant B"}</button>)}</nav><div className="header-status"><span className="mono">TICK {String(data.plant.tick).padStart(4,"0")}</span><Pill value={offline?"offline":data.mode}/><span className="sim-label">SIM {offline?"OFFLINE":data.mode==="mock"?"MOCK":data.plant.connected?"CONNECTED":"DISCONNECTED"}</span></div></header><div className="mode-banner"><i className="dot"/>{preview?"FIXTURE PREVIEW · Static proposal examples. All controls disabled.":offline?"API DISCONNECTED · Static preview fixtures. Controls are unavailable.":data.mode==="mock"?"MOCK SERVICE · Example state and fixture votes. No live agent reasoning.":"LIVE CONNECTION · Measurements and decisions from connected services."}<span>{offline?"Waiting for integration service":`${data.components.length} components`}</span></div>
-<div className="fixture-toolbar"><label htmlFor="fixture-status">UI fixture preview</label><select id="fixture-status" value={fixtureStatus} onChange={e=>{setFixtureStatus(e.target.value);if(e.target.value)setView("plant-a")}}><option value="">Off — integration state</option>{["voting","blocked","veto_window","vetoed","executed","expired"].map(status=><option key={status} value={status}>{status.replaceAll("_"," ")}</option>)}</select><span>Static examples only; never sent to actors or agents.</span></div><div className="workspace"><aside className="sidebar"><div className="section-title">ASSET EXPLORER <span>10</span></div><button className="company-tree" onClick={()=>setView("company")}>▦ &nbsp; Company</button>{["plant-a","plant-b"].map(id=><div className="tree" key={id}><button className="tree-label" onClick={()=>setView(id)}>⌄ &nbsp; {id==="plant-a"?"Plant A":"Plant B"}<span>05</span></button>{tags.map(tag=>{const c=data.components.find(c=>c.id===`${id}/${tag}`);return <button className={`asset ${view===id&&selected===tag?"selected":""}`} key={tag} onClick={()=>{setView(id);setSelected(tag)}}><span className="asset-icon">{tag==="P-100"?"◉":tag==="TK-101"?"▥":"◇"}</span><div><strong>{tag}</strong><small>{c?.name||tag}</small></div><span className={`asset-status ${c?.status||"offline"}`}><i className={`dot ${c?.status||"offline"}`}/>{offline&&!preview?"offline":c?.status||"offline"}</span></button>})}</div>)}<div className="sidebar-footer">Equipment has a voice.<br/><span>Every change needs consensus.</span></div></aside>
-{view==="company"?<section className="company-view"><div className="eyebrow">CROSS-PLANT INTELLIGENCE</div><h1>One network. Shared memory.</h1><p className="muted">Coordinate connected equipment across your operations.</p><div className="company-cards">{["plant-a","plant-b"].map(id=><button className="plant-card" key={id} onClick={()=>setView(id)}><span className="eyebrow">HEATED HOLD TANK</span><h2>{id==="plant-a"?"Plant A":"Plant B"} ↗</h2><Pill value={plantStatus(id)}/><p>{reporting(id)}/5 components reporting · 5 equipment agents</p></button>)}</div><section className={`shared-card ${crossOpen?"shared-open":""}`}><div className="section-title">SHARED RESOURCE <Pill value={crossOpen?"voting":"ok"}/></div><h2>{data.company.sharedResources[0]?.name||"Steam header"}</h2><div className="network"><span>PLANT A / TV-101</span><i/><strong>{fmt(data.components.find(c=>c.tag==="TV-101")?.metrics.headerBarg??NaN)} barg</strong><i/><span>PLANT B / TV-101</span></div><p className="muted">Shared-resource equipment reviews changes that affect both plants.</p></section><section className="shared-card"><div className="section-title">COMPANY RULE LIBRARY <span>{data.company.rules.length}</span></div>{data.company.rules.length?data.company.rules.map(rule=><RuleCard id={rule.id} key={rule.id}><h3>{rule.text}</h3><p>{rule.timesSeen} observations · {rule.supportEventIds.length} evidence records</p><p>Source plants: {[...new Set(data.plant.history.filter(e=>rule.supportEventIds.includes(e.id)).map(e=>e.plantId))].join(", ")||"not included in this response"}</p><button onClick={()=>setEvidence(rule.id)}>Inspect evidence ↗</button></RuleCard>):<div className="empty">No shared rules yet. Evidence-backed rules appear after repeated observations.</div>}</section><section className="shared-card"><div className="section-title">CROSS-PLANT PROPOSALS</div>{crossFeedView}</section></section>:<><section className="process-column"><div className="page-heading"><div><div className="eyebrow">{plantId.toUpperCase()} / PROCESS OVERVIEW</div><h1>Heated hold tank</h1><p>Live process state. Collective decisions.</p></div><span className="diagram-label">TK-101 UNIT</span></div><div className="process-diagram"><div className="diagram-toolbar"><span><i className="dot"/> Process schematic</span><span>75 °C TARGET / 6 BARG STEAM</span></div><DiagramWithArtifact components={components} selected={selected} proposal={proposal} select={setSelected}/><div className="diagram-legend"><span>━━ Process flow</span><span className="steam-text">━━ Steam supply</span><span>Click equipment to inspect</span></div></div><div className="operator-bar"><div className="eyebrow">OPERATOR ACTIONS</div><div className="operator-buttons"><button className="primary" disabled={preview||offline||busy||data.plant.id!==plantId} onClick={()=>propose(85)}>↗ Increase throughput</button><button disabled={preview||offline||busy||data.plant.id!==plantId} title="Goes through normal review; never bypasses votes or limits" onClick={()=>propose(85)}>Force P-100 → 85%</button><button disabled={preview||offline||busy||data.plant.id!==plantId} title="Mock mode has no automatic counterproposal; sent for normal review" onClick={()=>propose(65)}>Propose 65%</button><button disabled={preview||offline||busy||data.plant.id!==plantId} onClick={()=>command("/reset",{})}>Reset demo</button></div></div>{notice&&<div className="notice" role="status">{notice}</div>}<section className="other-plant"><div><div className="eyebrow">OTHER PLANT</div><button className="other-plant-head" onClick={()=>setView(otherId)}><h2>{plantLabel(otherId)} ↗</h2><Pill value={plantStatus(otherId)}/></button><p className="muted">{reporting(otherId)}/5 components reporting · {fmt(data.components.find(c=>c.id===`${otherId}/TV-101`)?.metrics.headerBarg??NaN)} barg shared steam</p>{otherVoter&&<div className="voter-title"><span>Shared steam vote: {otherVoter}</span><Pill value={proposal?.votes.find(v=>v.componentId===otherVoter)?.vote||"waiting"}/></div>}</div><div><div className="eyebrow">CROSS-PLANT PROPOSALS · ALL PLANTS</div>{crossFeedView}</div></section></section><aside className="inspector"><section className="equipment-panel"><div className="section-title">EQUIPMENT DETAILS <span>↗</span></div><div className="equipment-heading"><div><h2>{component?.tag||selected}</h2><p>{component?.name||"Waiting for data"}</p></div><Pill value={component?.status||"offline"}/></div><div className="role-line">{component?.role.replaceAll("_"," ")}<span>{component?.marginPct||10}% safety margin</span></div>{Object.entries(component?.metrics||{}).map(([m,n])=><div className="metric" key={m}><div><span>{label(m)}</span><strong>{fmt(n)} <small>{units[m]||""}</small></strong></div><div className="metric-track"><i style={{width:`${Math.max(0,Math.min(100,n/(component?.limits[m]?.critical||n*1.6)*100))}%`}}/></div>{component?.limits[m]&&<div className="metric-bounds"><span>MAX {component.limits[m].max}</span><span>CRITICAL {component.limits[m].critical}</span></div>}</div>)}<div className="calibration"><div className="eyebrow">PREDICTION CALIBRATION</div>{component?.calibration?.length?component.calibration.slice(-5).map((e,i)=><p key={i}>{e.metric}: {fmt(e.predicted)} predicted / {fmt(e.observed)} observed</p>):<p className="muted">Awaiting observed execution results.</p>}</div></section><section className="proposal-panel"><div className="section-title">DECISION WORKSPACE <span>{proposals.length.toString().padStart(2,"0")}</span></div>{rootProposal?proposalCard(rootProposal):<div className="empty"><span className="empty-symbol">◇</span><h3>Ready for a proposal</h3><p>Increase throughput to ask connected equipment to review the change.</p><small>No votes are generated by this dashboard.</small></div>}</section></aside></>}
-</div><div className="bottom-workspace"><section className="trend-panel"><div className="section-title"><span>{plantId} / {component?.tag||selected} / {label(metric).toUpperCase()}</span><span>LAST 120 SECONDS</span></div><div className="trend-head"><strong>{fmt(value)} <small>{units[metric]||""}</small></strong><span>{offline?"Static preview":data.mode==="mock"?"Mock measurements":"Observed measurements"}</span></div><Trend now={now} points={points} limit={component?.limits[metric]?.max} critical={component?.limits[metric]?.critical}/></section><section className="audit-panel"><div className="section-title"><span>OPERATIONS TIMELINE</span><span>{offline?"NO LIVE CONNECTION":data.mode==="mock"?"MOCK EVENT STREAM":"LIVE EVENT STREAM"}</span></div>{auditFeed.length?<div className="audit-list">{auditFeed.slice(0,30).map((e,i)=><div className="audit-event" key={i}><span className="mono">{new Date(e.at).toLocaleTimeString([],{hour12:false})}</span><span className={`audit-kind ${e.kind}`}>{e.kind.replaceAll("_"," ")}</span><p>{e.summary}</p><span className="plant-badge">{e.plantId}</span></div>)}</div>:<div className="audit-empty"><i className="dot"/> No operations recorded. Proposals, reviews, and observed outcomes appear here.</div>}</section></div><footer><span>ACTORRELAY / SIMULATED OPERATIONS</span><span>Negotiate. Remember. Refuse.</span></footer>{evidence&&<div className="modal-backdrop" onClick={()=>setEvidence(null)}><section className="evidence-modal" onClick={e=>e.stopPropagation()}><div className="section-title">EVIDENCE RECORD<button onClick={()=>setEvidence(null)}>×</button></div><h2>{evidence}</h2><pre>{JSON.stringify(data.plant.history.find(e=>e.id===evidence)||[...data.plant.rules,...data.company.rules].find(r=>r.id===evidence)||{id:evidence,note:"Referenced record is not included in this state response. Retrieve it from the source service before relying on its contents."},null,2)}</pre></section></div>}</main>
-}
-function RuleCard({id,children}:{id:string;children:React.ReactNode}){const [fresh]=useState(()=>!seenRules.has(id));useEffect(()=>{seenRules.add(id)},[id]);return <div className={`rule ${fresh?"rule-new":""}`}>{children}</div>}
-function PlantDiagram({components,selected,proposal,select}:{components:ComponentState[];selected:string;proposal?:Proposal;select:(s:string)=>void}){
-const val=(tag:string,m:string)=>fmt(components.find(c=>c.tag===tag)?.metrics[m]||0);const color=(tag:string)=>{const c=components.find(c=>c.tag===tag),v=proposal?.votes.find(v=>v.componentId===c?.id);return v?.vote==="no"?"#f2767b":v?.vote==="yes"?"#70d9b0":proposal?.requiredVoters.some(id=>id.endsWith("/"+tag))?"#a0aab1":selected===tag?"#80cfec":"#738d9d"};
-const word=(tag:string)=>{const c=components.find(c=>c.tag===tag),v=proposal?.votes.find(v=>v.componentId===c?.id);return v?` · ${v.vote.toUpperCase()}`:proposal?.status==="voting"&&c&&proposal.requiredVoters.includes(c.id)?" · VOTING":""};
-const node=(tag:string,x:number,y:number,content:React.ReactNode)=><g role="button" tabIndex={0} aria-label={`Inspect ${tag}`} className={`svg-node ${proposal?.requiredVoters.some(id=>id.endsWith("/"+tag))&&["voting","veto_window","blocked"].includes(proposal.status)?"voter-node":""}`} style={{color:color(tag)}} onClick={()=>select(tag)} onKeyDown={e=>{if(e.key==="Enter")select(tag)}}><rect x={x-62} y={y-48} width="124" height="96" rx="12" fill="transparent" className="voter-outline" stroke={selected===tag||proposal?.requiredVoters.some(id=>id.endsWith("/"+tag))?color(tag):"transparent"} strokeDasharray="4 4"/>{content}<text x={x} y={y+69} textAnchor="middle" className="tag-text" fill={color(tag)}>{tag}{word(tag)}</text></g>;
-return <svg viewBox="0 0 950 530" className="plant-svg" aria-label="Interactive heated tank process schematic"><defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#263c49"/></pattern></defs><rect width="950" height="530" fill="url(#grid)"/><g stroke="#658e9f" strokeWidth="4" fill="none"><path d="M40 300H360M580 300H825V400H910"/><path d="M470 65V157M470 372V440H700V110H605" stroke="#a9a6d6" strokeWidth="3"/><path d="M130 300l-12-7m12 7l-12 7M320 300l-12-7m12 7l-12 7M810 300l-12-7m12 7l-12 7"/></g><text x="40" y="257" className="diagram-note">FEED IN</text><text x="780" y="447" className="diagram-note">PRODUCT OUT</text><text x="380" y="42" className="diagram-note steam-text">SHARED STEAM HEADER</text><rect x="359" y="157" width="222" height="215" rx="44" fill="#172f3e" stroke={color("TK-101")} strokeWidth="3"/><path d="M361 268H579V326Q579 370 535 370H405Q361 370 361 326Z" fill="#24536a" opacity=".7"/><path d="M362 267Q390 260 420 267T480 267T540 267T579 267" fill="none" stroke="#65b2ca" strokeWidth="2"/><path d="M395 205v120q0 15 20 15h15q20 0 20-15v-30q0-15 20-15h15q20 0 20 15v30q0 15 20 15h20" fill="none" stroke="#a9a6d6" strokeWidth="6"/>{node("P-100",200,300,<><circle cx="200" cy="300" r="32" fill="#132733" stroke="currentColor" strokeWidth="3"/><path d="M185 278L225 300L185 322Z" fill="currentColor" opacity=".7"/></>)}{node("LV-101",745,300,<><path d="M720 280L770 320V280L720 320Z" fill="#132733" stroke="currentColor" strokeWidth="3"/><path d="M745 300v-47m-22 0h44" stroke="currentColor" strokeWidth="3"/></>)}{node("TV-101",470,100,<path d="M449 80L491 120V80L449 120Z" fill="#132733" stroke="currentColor" strokeWidth="3"/>)}{node("TK-101",470,207,<text x="470" y="208" textAnchor="middle" fill="#e1eef4" fontSize="26" fontFamily="monospace">{val("TK-101","tempC")} °C</text>)}{node("E-101",470,325,<text x="470" y="326" textAnchor="middle" fill="#c9c7e8" fontSize="20" fontFamily="monospace">{val("E-101","dutyKw")} kW</text>)}<text x="200" y="414" className="live-value" textAnchor="middle">{val("P-100","speedPct")}% SPEED</text><text x="745" y="414" className="live-value" textAnchor="middle">{val("LV-101","positionPct")}% OPEN</text><text x="610" y="91" className="live-value steam-text">{val("TV-101","headerBarg")} barg</text><text x="610" y="121" className="diagram-note">{val("TV-101","steamKgH")} kg/h</text><text x="600" y="223" className="live-value">{val("TK-101","levelPct")}% LEVEL</text><text x="30" y="503" className="diagram-note">SCHEMATIC PREVIEW · SIMULATION ONLY</text></svg>}
-function Trend({points,limit,critical,now}:{now:number;points:{at:number;value:number}[];limit?:number;critical?:number}){const high=Math.max(critical||0,...points.map(p=>p.value),1)*1.15,y=(n:number)=>135-n/high*115;return <svg viewBox="0 0 800 170" className="trend-svg" aria-label="Observed metric trend"><g stroke="#263a45">{[25,65,105,145].map(v=><line key={v} x1="0" x2="800" y1={v} y2={v}/>)}</g>{limit&&<><line x1="0" x2="800" y1={y(limit)} y2={y(limit)} stroke="#b99b60" strokeDasharray="6 5"/><text x="620" y={y(limit)-6} textAnchor="end" fill="#b99b60" fontSize="18">MAX {limit}</text></>}{critical&&<><line x1="0" x2="800" y1={y(critical)} y2={y(critical)} stroke="#d57983" strokeDasharray="3 5"/><text x="790" y={y(critical)-6} textAnchor="end" fill="#d57983" fontSize="18">CRITICAL {critical}</text></>}{points.length>1?<polyline points={points.map((p,i)=>`${Math.max(0,Math.min(790,(p.at-(now-120000))/120000*790))},${y(p.value)}`).join(" ")} fill="none" stroke="#75c9e7" strokeWidth="2.5"/>:<text x="400" y="95" textAnchor="middle" fill="#748b99" fontSize="18">Waiting for measurements</text>}<text x="0" y="168" fill="#748b99" fontSize="18">−120s</text><text x="790" y="168" textAnchor="end" fill="#748b99" fontSize="18">NOW</text></svg>}
 
-function DiagramWithArtifact(props:Parameters<typeof PlantDiagram>[0]) {
- const [markup,setMarkup]=useState("");const container=useRef<HTMLDivElement>(null);
- useEffect(()=>{let active=true;fetch("/pid-tk-101.svg",{cache:"no-store"}).then(async response=>{if(!response.ok)return;const raw=await response.text();const document=new DOMParser().parseFromString(raw,"image/svg+xml");if(document.querySelector("parsererror")||document.documentElement.tagName!=="svg")return;
- document.querySelectorAll("script,foreignObject,iframe,object,embed,image,style,animate,animateMotion,animateTransform,set,use,feImage,audio,video").forEach(node=>node.remove());
- document.querySelectorAll("*").forEach(node=>{if(node.namespaceURI!=="http://www.w3.org/2000/svg"){node.remove();return}for(const attribute of [...node.attributes]){const name=attribute.name.toLowerCase(),value=attribute.value.trim();if(name.startsWith("on")||name==="style"||name==="src"||name==="xml:base"||((name==="href"||name.endsWith(":href"))&&!value.startsWith("#"))||/url\s*\(/i.test(value))node.removeAttribute(attribute.name)}});
- if(!tags.some(tag=>document.getElementById(tag)))return;if(active)setMarkup(new XMLSerializer().serializeToString(document.documentElement));
- }).catch(()=>{});return()=>{active=false}},[]);
- useEffect(()=>{if(!markup||!container.current)return;const cleanups:(()=>void)[]=[];for(const c of props.components){const group=container.current.querySelector<SVGGElement>(`[id="${c.tag}"]`);if(!group)continue;group.querySelectorAll(".actorrelay-overlay").forEach(node=>node.remove());const vote=props.proposal?.votes.find(v=>v.componentId===c.id),required=props.proposal?.requiredVoters.includes(c.id),color=vote?.vote==="no"?"#f2767b":vote?.vote==="yes"?"#70d9b0":required?"#a0aab1":props.selected===c.tag?"#80cfec":"#738d9d";
- group.setAttribute("role","button");group.setAttribute("tabindex","0");group.setAttribute("aria-label",`Inspect ${c.tag}, ${vote?.vote||c.status}`);group.style.cursor="pointer";
- const click=()=>props.select(c.tag);const key=(e:KeyboardEvent)=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();click()}};group.addEventListener("click",click);group.addEventListener("keydown",key);cleanups.push(()=>{group.removeEventListener("click",click);group.removeEventListener("keydown",key)});
- try{const box=group.getBBox();const outline=document.createElementNS("http://www.w3.org/2000/svg","rect");outline.classList.add("actorrelay-overlay","voter-outline");if(required&&props.proposal&&["voting","veto_window","blocked"].includes(props.proposal.status))outline.classList.add("artifact-pulse");for(const [key,val] of Object.entries({x:box.x-8,y:box.y-8,width:box.width+16,height:box.height+16,rx:8,fill:"none",stroke:color,"stroke-width":3}))outline.setAttribute(key,String(val));group.append(outline);
- const text=document.createElementNS("http://www.w3.org/2000/svg","text");text.classList.add("actorrelay-overlay");text.setAttribute("x",String(box.x));text.setAttribute("y",String(box.y-17));text.setAttribute("fill",color);text.setAttribute("font-size","22");text.setAttribute("font-family","Consolas, monospace");text.textContent=`${c.tag} · ${Object.entries(c.metrics).slice(0,2).map(([m,v])=>`${fmt(v)} ${units[m]||m}`).join(" / ")} · ${vote?.vote||c.status}`;group.append(text)}catch{}
- }return()=>cleanups.forEach(cleanup=>cleanup())},[markup,props.components,props.selected,props.proposal,props.select]);
- return markup?<div className="artifact-diagram"><div className="artifact-label">Plant process diagram · click equipment to inspect</div><div className="artifact-inline" ref={container} dangerouslySetInnerHTML={{__html:markup}}/><div className="artifact-equipment">{props.components.map(c=><button key={c.id} onClick={()=>props.select(c.tag)} className={props.selected===c.tag?"active":""}>{c.tag} · {Object.entries(c.metrics).map(([m,v])=>`${fmt(v)} ${units[m]||m}`).join(" / ")} <Pill value={props.proposal?.votes.find(v=>v.componentId===c.id)?.vote||c.status}/></button>)}</div></div>:<PlantDiagram {...props}/>;
+import dynamic from "next/dynamic";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type CSSProperties } from "react";
+import { ArrowClockwise, ArrowRight, ArrowsIn, ArrowsInLineHorizontal, ArrowsOut, ArrowsOutSimple, CaretDown, CaretRight, Check, Command, Cube, Cylinder, Fan, FileText, FunnelSimple, Info, MagnifyingGlass, Moon, SidebarSimple, SlidersHorizontal, Sun, Triangle, Waves, X } from "@phosphor-icons/react";
+import AgentWorkspace from "../components/AgentWorkspace";
+import PlantSchematic from "../components/PlantSchematic";
+import PlantFloorPlan from "../components/PlantFloorPlan";
+import TrendChart from "../components/TrendChart";
+import CompanyOverview from "../components/CompanyOverview";
+import EquipmentInspector from "../components/EquipmentInspector";
+import EvidenceDialog from "../components/EvidenceDialog";
+import ProposalReview from "../components/ProposalReview";
+import ResizeHandle from "../components/ResizeHandle";
+import AgentContextBar from "../components/AgentContextBar";
+import AgentStateDialog from "../components/AgentStateDialog";
+import { usePanelLayout } from "../lib/use-panel-layout";
+import { COMPONENTS, createDemoState, DEMO_EPOCH, demoReducer, PLANTS } from "../lib/demo";
+import { demoAgentActivities } from "../lib/agent-activity";
+import { agentColor, agentColorStyle } from "../lib/agent-colors";
+import type { ComponentTag, PlantId, PlantScope, ViewMode } from "../lib/types";
+
+const PlantScene = dynamic(() => import("../components/PlantScene"), { ssr: false, loading: () => <div className="spatial-loading"><Cube size={32} weight="light" /><span>Loading spatial view…</span></div> });
+const time = (value: number) => new Date(value).toLocaleTimeString("en-GB", { timeZone: "America/Los_Angeles", hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+const plantName = (scope: PlantScope) => scope === "company" ? "Company" : scope === "plant-a" ? "Plant A" : "Plant B";
+const statusName = { voting: "VOTING", blocked: "BLOCKED", veto_window: "VETO WINDOW", vetoed: "VETOED", executed: "EXECUTED", expired: "EXPIRED" };
+
+function EquipmentIcon({ tag, size = 27 }: { tag: ComponentTag; size?: number }) {
+  const Icon = tag === "P-100" ? Fan : tag === "TK-101" ? Cylinder : tag === "LV-101" ? ArrowsInLineHorizontal : tag === "E-101" ? Waves : FunnelSimple;
+  return <Icon size={size} weight="light" aria-hidden="true" />;
+}
+
+function HelpDialog({ onClose }: { onClose: () => void }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => { const dialog = ref.current; const previous = document.activeElement as HTMLElement | null; dialog?.showModal(); return () => { dialog?.close(); previous?.focus(); }; }, []);
+  return <dialog ref={ref} className="workspace-help" aria-labelledby="help-title" onCancel={onClose} onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <header><div><Info size={22} /><h2 id="help-title">Your plant workspace</h2></div><button onClick={onClose} aria-label="Close workspace guide"><X size={20} /></button></header>
+    <p>Inspect connected equipment, review the evidence, and watch agents negotiate an operating change.</p>
+    <div className="help-mode"><span>INTERACTIVE DEMO</span><p>Plant measurements, equipment agents, history, votes, and calibration are sample data running in this browser. No physical equipment or backend is connected.</p></div>
+    <ol><li>Select equipment in the tree or either plant view.</li><li>Send <strong>“Propose 65%”</strong> in the Plant A conversation.</li><li>Review unanimous sample votes, then try the 10-second veto window.</li><li>Switch to Plant B or Company to explore shared knowledge.</li></ol>
+    <p className="help-relay">The <strong>Agent Relay</strong> panel shows each sample agent’s current task and state. Select an agent in chat, the harness, or either plant view to locate its equipment. Open Agent details to see its decision summary and evidence.</p>
+    <div className="help-shortcuts"><span><kbd>1</kbd> 2D view</span><span><kbd>2</kbd> 3D view</span><span><kbd>⌘ K</kbd> Equipment search</span><span><kbd>I</kbd> Inspect</span></div>
+    <button className="primary-button" onClick={onClose}>Explore the workspace <ArrowRight size={17} /></button>
+  </dialog>;
+}
+
+export default function Dashboard() {
+  const [state, dispatch] = useReducer(demoReducer, DEMO_EPOCH, createDemoState);
+  const [scope, setScope] = useState<PlantScope>("plant-a");
+  const [view, setView] = useState<ViewMode>("2d");
+  const [diagram, setDiagram] = useState(false);
+  const PlanView = diagram ? PlantSchematic : PlantFloorPlan;
+  const [selected, setSelected] = useState<ComponentTag>("LV-101");
+  const [channel, setChannel] = useState("plant-a");
+  const [expanded, setExpanded] = useState<Record<PlantId, boolean>>({ "plant-a": true, "plant-b": false });
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [evidenceId, setEvidenceId] = useState<string | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [auditOpen, setAuditOpen] = useState(false);
+  const [proposalOpen, setProposalOpen] = useState(false);
+  const [agentDetailsOpen, setAgentDetailsOpen] = useState(false);
+  const [toast, setToast] = useState("");
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [viewExpanded, setViewExpanded] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [layoutResetVersion, setLayoutResetVersion] = useState(0);
+  const [highlighted, setHighlighted] = useState<{ tag: ComponentTag; plantId: PlantId } | null>(null);
+  const layout = usePanelLayout();
+  const workspace = useRef<HTMLElement>(null);
+  const searchInput = useRef<HTMLInputElement>(null);
+  const plantId: PlantId = scope === "plant-b" ? "plant-b" : "plant-a";
+  const components = state.components.filter((component) => component.plantId === plantId);
+  const equipment = components.find((component) => component.tag === selected)!;
+  const proposal = state.proposals.findLast((item) => item.plantId === plantId) ?? null;
+  const activities = useMemo(() => demoAgentActivities(state), [state]);
+  const selectedActivity = activities.find((activity) => activity.plantId === plantId && activity.tag === selected)!;
+  const evidence = state.evidence.find((item) => item.id === evidenceId) ?? null;
+  const audit = state.audit.filter((event) => scope === "company" || event.plantId === scope || event.plantId === "company").toReversed();
+  const latestAudit = audit[0];
+  const latestDecision = state.proposals.findLast((p) => p.plantId === plantId && p.status === "blocked");
+
+  useEffect(() => { dispatch({ type: "reset", now: Date.now() }); const timer = setInterval(() => dispatch({ type: "tick", now: Date.now() }), 1000); return () => clearInterval(timer); }, []);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("actorrelay-theme-v1");
+      if (saved === "dark" || saved === "light") {
+        setTheme(saved);
+        document.documentElement.dataset.theme = saved;
+      }
+    } catch { /* The default light theme also works with storage disabled. */ }
+  }, []);
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
+  useEffect(() => {
+    const update = () => setIsFullscreen(document.fullscreenElement === workspace.current);
+    document.addEventListener("fullscreenchange", update);
+    return () => document.removeEventListener("fullscreenchange", update);
+  }, []);
+  useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(""), 4500); return () => clearTimeout(timer); }, [toast]);
+  useEffect(() => { if (searchOpen) searchInput.current?.focus(); }, [searchOpen]);
+  useEffect(() => {
+    const listener = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") { event.preventDefault(); setSearchOpen(true); setSidebarOpen(true); return; }
+      const tag = (event.target as HTMLElement)?.tagName;
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(tag) || document.querySelector("dialog[open]")) return;
+      if (event.key === "1") setView("2d");
+      if (event.key === "2") setView("3d");
+      if (event.key.toLowerCase() === "i") setInspectorOpen(true);
+      if (event.key === "Escape") { setSidebarOpen(false); setSearchOpen(false); setQuery(""); setViewExpanded(false); }
+    };
+    document.addEventListener("keydown", listener);
+    return () => document.removeEventListener("keydown", listener);
+  }, []);
+
+  const openScope = useCallback((next: PlantScope) => {
+    setScope(next); setSidebarOpen(false);
+    if (next !== "company") setExpanded((old) => ({ ...old, [next]: true }));
+    setChannel(next);
+  }, []);
+  const selectEquipment = useCallback((tag: ComponentTag, targetPlant?: PlantId) => {
+    setSelected(tag); setSidebarOpen(false);
+    if (targetPlant) { setScope(targetPlant); setChannel(targetPlant); setExpanded((old) => ({ ...old, [targetPlant]: true })); }
+  }, []);
+  const highlight = useCallback((tag: ComponentTag | null, targetPlant?: PlantId) => {
+    setHighlighted((current) => {
+      if (!tag) return current ? null : current;
+      const next = { tag, plantId: targetPlant ?? plantId };
+      return current?.tag === next.tag && current.plantId === next.plantId ? current : next;
+    });
+  }, [plantId]);
+  const highlightedTag = highlighted?.plantId === plantId ? highlighted.tag : null;
+  const openAgentDetails = (tag: ComponentTag, targetPlant?: PlantId) => { selectEquipment(tag, targetPlant); setAgentDetailsOpen(true); };
+  const changeChannel = (next: string) => {
+    setChannel(next);
+    if (next === "plant-a" || next === "plant-b") { setScope(next); setExpanded((old) => ({ ...old, [next]: true })); }
+    if (next === "company") setScope("company");
+  };
+  const send = async (text: string, destination: string) => {
+    dispatch({ type: "send", text, channel: destination, now: Date.now() });
+  };
+  const propose = (to: number) => { dispatch({ type: "propose", plantId, to, now: Date.now() }); setChannel(plantId); };
+  const reset = () => { dispatch({ type: "reset", now: Date.now() }); setAuditOpen(false); setToast("Demo reset. Both plants are back at their design point."); };
+  const toggleTheme = () => {
+    const next = theme === "light" ? "dark" : "light";
+    setTheme(next);
+    try { localStorage.setItem("actorrelay-theme-v1", next); } catch { /* Theme preference is optional. */ }
+  };
+  const fitWorkspace = async () => {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else if (workspace.current?.requestFullscreen) await workspace.current.requestFullscreen();
+      else { setViewExpanded(true); setToast("Plant view expanded. Press Escape to restore the workspace."); }
+    } catch { setViewExpanded(true); setToast("Plant view expanded. Press Escape to restore the workspace."); }
+  };
+  const panelStyle = { "--sidebar-width": `${layout.sidebarWidth}px`, "--chat-width": `${layout.chatWidth}px`, "--chart-height": `${layout.chartHeight}px` } as CSSProperties;
+  const resetPanelSizes = () => { layout.resetLayout(); setLayoutResetVersion((value) => value + 1); };
+
+  return <div className="actorrelay-app">
+    <a className="skip-link" href="#plant-workspace">Skip to plant workspace</a>
+    <header className="app-topbar">
+      <div className="app-brand"><button className="icon-button mobile-sidebar-toggle" aria-label="Toggle equipment navigator" onClick={() => setSidebarOpen(!sidebarOpen)}><SidebarSimple size={22} /></button><Triangle weight="light" size={27} className="brand-mark" /><span>ActorRelay</span></div>
+      <span className="simulation-label">Simulated plant</span>
+      <nav className="plant-tabs" aria-label="Plant views">{(["plant-a", "plant-b", "company"] as const).map((id) => <button key={id} className={scope === id ? "active" : ""} aria-current={scope === id ? "page" : undefined} onClick={() => openScope(id)}>{plantName(id)}</button>)}</nav>
+      <div className="topbar-end"><time className="app-clock" dateTime={new Date(state.now).toISOString()}><span>{new Date(state.now).toLocaleDateString("en-US", { timeZone: "America/Los_Angeles", month: "short", day: "numeric", year: "numeric" })}</span><span>{time(state.now)}</span></time><button className="icon-button theme-toggle" onClick={toggleTheme} aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`} title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}>{theme === "light" ? <Moon size={19} /> : <Sun size={19} />}</button><button className="demo-mode-button" onClick={() => setHelpOpen(true)}><span className="mode-dot" /><span className="desktop-mode-label">Demo data</span><span className="mobile-mode-label">Simulated plant</span><Info size={14} /></button></div>
+    </header>
+
+    <div className={`workspace-grid ${sidebarOpen ? "sidebar-is-open" : ""} ${viewExpanded ? "workspace-expanded" : ""} ${layout.isDragging ? "workspace-resizing" : ""}`} style={panelStyle}>
+      {sidebarOpen && <button className="sidebar-backdrop" aria-label="Close equipment navigator" onClick={() => setSidebarOpen(false)} />}
+      <aside className="equipment-sidebar" aria-label="Equipment navigator">
+        <div className="sidebar-heading"><h2>Equipment</h2><button className="icon-button" title="Search equipment (⌘K)" aria-label="Search equipment" onClick={() => { setSearchOpen(!searchOpen); setQuery(""); }}><MagnifyingGlass size={20} /></button></div>
+        {searchOpen && <div className="equipment-search"><MagnifyingGlass size={16} /><input ref={searchInput} aria-label="Filter equipment" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find equipment…" /><button onClick={() => { setQuery(""); setSearchOpen(false); }} aria-label="Clear equipment search"><X size={15} /></button></div>}
+        <nav className="equipment-tree" aria-label="Company equipment">
+          <button className={`company-tree-button ${scope === "company" ? "is-active" : ""}`} onClick={() => openScope("company")}><CaretRight size={15} /><span>Company</span><span className="tree-count">2</span></button>
+          {PLANTS.map((plant) => {
+            const matching = COMPONENTS.filter((component) => `${component.tag} ${component.name}`.toLowerCase().includes(query.toLowerCase()));
+            return <div className="plant-tree-group" key={plant.id}>
+              <div className="plant-tree-heading"><button className="tree-disclosure" aria-label={`${expanded[plant.id] ? "Collapse" : "Expand"} ${plant.name} equipment`} aria-expanded={expanded[plant.id]} onClick={() => setExpanded((old) => ({ ...old, [plant.id]: !old[plant.id] }))}>{expanded[plant.id] || query ? <CaretDown size={15} /> : <CaretRight size={15} />}</button><button className={scope === plant.id ? "selected-plant" : ""} onClick={() => openScope(plant.id)}>{plant.name}</button><span className="tree-plant-status" title="Sample data available" /></div>
+              {(expanded[plant.id] || query) ? <div className="plant-equipment-list">{matching.map((component) => <button key={component.tag} className={`equipment-row ${scope === plant.id && selected === component.tag ? "is-selected" : ""}`} aria-pressed={scope === plant.id && selected === component.tag} onClick={() => { selectEquipment(component.tag, plant.id); setChannel(plant.id); }} onDoubleClick={() => setInspectorOpen(true)} onMouseEnter={() => highlight(component.tag, plant.id)} onMouseLeave={() => highlight(null)} onFocus={() => highlight(component.tag, plant.id)} onBlur={() => highlight(null)} title={`${component.tag} · ${component.name} · agent color ${agentColor(plant.id, component.tag)?.name ?? ""}`.trim()}><i className="equipment-agent-dot" style={agentColorStyle(plant.id, component.tag)} aria-hidden="true" /><EquipmentIcon tag={component.tag} /><span><strong>{component.tag}</strong><span>{component.name}</span></span>{scope === plant.id && selected === component.tag && <span className="selection-indicator" />}</button>)}{!matching.length && <p className="tree-no-results">No matching equipment</p>}</div> : <span className="collapsed-plant-summary">5 components</span>}
+            </div>;
+          })}
+        </nav>
+        <div className="sidebar-bottom"><button className="selected-equipment-summary" onClick={() => setInspectorOpen(true)}><EquipmentIcon tag={selected} size={21} /><span><strong>{selected}</strong><small>Equipment details</small></span><ArrowRight size={15} /></button><footer><span>10 equipment agents</span><button className="icon-button" aria-label="Workspace guide" title="Workspace guide" onClick={() => setHelpOpen(true)}><Info size={17} /></button></footer></div>
+      </aside>
+
+      <ResizeHandle kind="sidebar" label="Resize equipment navigator" value={layout.sidebarWidth} {...layout.bounds.sidebar} onPointerDown={layout.startResize} onResizeBy={layout.resizeBy} onReset={resetPanelSizes} />
+
+      <main id="plant-workspace" className="plant-workspace" ref={workspace}>
+        <div className="workspace-heading"><h1>{plantName(scope)}<span className="heading-separator">/</span><span className="workspace-subtitle">{scope === "company" ? "Connected plants" : "Process plant"}</span></h1><div className="workspace-tools">{scope !== "company" && <div className="view-switch" role="group" aria-label="Plant rendering mode"><button className={view === "2d" && !diagram ? "is-active" : ""} aria-pressed={view === "2d" && !diagram} onClick={() => { setView("2d"); setDiagram(false); }}>2D Plan</button><button className={view === "2d" && diagram ? "is-active" : ""} aria-pressed={view === "2d" && diagram} onClick={() => { setView("2d"); setDiagram(true); }}>P&amp;ID</button><button className={view === "3d" ? "is-active" : ""} aria-pressed={view === "3d"} onClick={() => setView("3d")}>3D Plant</button></div>}<button className="icon-button inspect-button" onClick={() => setInspectorOpen(true)} title="Inspect selected equipment (I)" aria-label="Inspect selected equipment"><SlidersHorizontal size={18} /></button><button className="icon-button reset-layout-button" onClick={resetPanelSizes} title="Reset panel sizes" aria-label="Reset panel sizes"><ArrowClockwise size={17} /></button><button className="icon-button expand-view-button" onClick={() => setViewExpanded(!viewExpanded)} title={viewExpanded ? "Restore workspace (Escape)" : "Expand plant view"} aria-label={viewExpanded ? "Restore workspace" : "Expand plant view"} aria-pressed={viewExpanded}>{viewExpanded ? <ArrowsIn size={18} /> : <ArrowsOut size={18} />}</button><button className="icon-button fullscreen-button" onClick={fitWorkspace} title={isFullscreen ? "Exit fullscreen" : "Fullscreen plant view"} aria-label={isFullscreen ? "Exit fullscreen plant view" : "Fullscreen plant view"}><ArrowsOutSimple size={18} /></button></div></div>
+
+        {scope === "company" ? <CompanyOverview plants={PLANTS.map((plant) => ({ ...plant, components: state.components.filter((component) => component.plantId === plant.id) }))} onOpenPlant={openScope} rules={state.evidence.filter((item) => item.kind === "rule")} onRuleClick={setEvidenceId} /> : <>
+          <div className="proposal-bar" aria-live="polite"><div className="proposal-summary"><span className="mono">P-100</span>{proposal ? <><span className="proposal-change mono">{Math.round(proposal.from)} <ArrowRight size={15} /> {proposal.to}%</span><span className="proposal-dot">·</span><button className={`proposal-status proposal-status-${proposal.status}`} onClick={() => setProposalOpen(true)} title="Review proposal and equipment votes" aria-label={`Review ${proposal.status.replaceAll("_", " ")} proposal`}>{proposal.status === "voting" && <span className="small-spinner" />}{statusName[proposal.status]}</button>{proposal.status === "voting" && <span className="proposal-context">Reviewing evidence</span>}{proposal.status === "veto_window" && <span className="proposal-context">5 / 5 votes · veto available</span>}{proposal.status === "executed" && <span className="proposal-context">{state.observation ? "Observing response" : "Observation recorded"}</span>}</> : <span className="proposal-context">No active proposal</span>}</div><button className="subtle-button" onClick={() => { setSelected("P-100"); setInspectorOpen(true); }} title="Create a sample proposal"><span>New proposal</span><ArrowRight size={14} /></button></div>
+          <AgentContextBar activity={selectedActivity} onDetails={() => setAgentDetailsOpen(true)} />
+          <section className={`plant-viewport plant-viewport-${view}`} aria-label={`${plantName(plantId)} ${view === "2d" ? "process schematic" : "3D plant model"}`}>
+            {view === "2d" ? <PlanView activities={activities} theme={theme} components={components} selected={selected} onSelect={setSelected} highlighted={highlightedTag} forecast={proposal?.status === "blocked" ? { predicted: proposal.to + 4, threshold: 81 } : null} /> : <PlantScene activities={activities} theme={theme} components={components} selected={selected} onSelect={setSelected} highlighted={highlightedTag} forecast={proposal?.status === "blocked" ? { predicted: proposal.to + 4, threshold: 81 } : null} />}
+          </section>
+          <ResizeHandle kind="chart" label="Resize timing chart" value={layout.chartHeight} {...layout.bounds.chart} onPointerDown={layout.startResize} onResizeBy={layout.resizeBy} onReset={resetPanelSizes} />
+          <section className="trend-section" aria-label="Equipment timing chart"><TrendChart points={state.trends[plantId]} threshold={81} label="Outlet valve" unit="%" paused={state.paused} onTogglePause={() => dispatch({ type: "pause" })} eventLabel={latestDecision ? `${latestDecision.to}% proposal blocked` : undefined} eventAt={latestDecision?.createdAt} /></section>
+        </>}
+
+        <div className="audit-wrapper"><button className={`audit-latest ${auditOpen ? "audit-open" : ""}`} onClick={() => setAuditOpen(!auditOpen)} aria-expanded={auditOpen} aria-controls="audit-events"><FileText size={18} /><time>{latestAudit ? time(latestAudit.at) : "—"}</time><span>{latestAudit?.text ?? "No events in this plant yet"}</span>{audit.length > 1 && <span className="audit-count">{audit.length}</span>}<CaretRight size={17} /></button>{auditOpen && <section className="audit-events" id="audit-events" aria-label="Demo event history"><header><h2>Event history</h2><span>Sample audit trail</span><button className="icon-button" aria-label="Close event history" onClick={() => setAuditOpen(false)}><X size={17} /></button></header>{audit.map((event) => <div className="audit-event" key={event.id}><time>{time(event.at)}</time><span className="audit-plant">{plantName(event.plantId)}</span><p>{event.text}</p>{event.evidenceId && <button onClick={() => setEvidenceId(event.evidenceId!)} aria-label={`View evidence for ${event.text}`}><ArrowRight size={15} /></button>}</div>)}</section>}</div>
+        <footer className="workspace-footer"><span className="workspace-status"><span />{state.paused ? "Chart paused" : "Interactive demo"}<span className="footer-divider">/</span>All values illustrative</span><button onClick={reset} title="Reset demo data"><ArrowClockwise size={13} />Reset demo</button></footer>
+      </main>
+
+      <ResizeHandle kind="chat" label="Resize agent conversation" value={layout.chatWidth} {...layout.bounds.chat} onPointerDown={layout.startResize} onResizeBy={layout.resizeBy} onReset={resetPanelSizes} />
+
+      <AgentWorkspace activities={activities} onAgentDetails={openAgentDetails} layoutResetVersion={layoutResetVersion} channel={channel} onChannelChange={changeChannel} selected={selected} plantId={plantId} onSelect={selectEquipment} messages={state.messages} proposal={scope === "company" ? null : proposal} onSend={send} onVeto={() => { if (proposal) dispatch({ type: "veto", id: proposal.id, now: Date.now() }); }} onEvidence={setEvidenceId} onHighlight={highlight} />
+    </div>
+    {inspectorOpen && <EquipmentInspector key={equipment.id} equipment={equipment} onClose={() => setInspectorOpen(false)} onPropose={propose} />}
+    <EvidenceDialog item={evidence} onClose={() => setEvidenceId(null)} onNavigate={setEvidenceId} />
+    <AgentStateDialog activity={agentDetailsOpen ? selectedActivity : null} onClose={() => setAgentDetailsOpen(false)} onEvidence={(id) => { setAgentDetailsOpen(false); setEvidenceId(id); }} />
+    {proposalOpen && proposal && <ProposalReview proposal={proposal} onClose={() => setProposalOpen(false)} onVeto={() => dispatch({ type: "veto", id: proposal.id, now: Date.now() })} onEvidence={(id) => { setProposalOpen(false); setEvidenceId(id); }} onCounter={propose} />}
+    {helpOpen && <HelpDialog onClose={() => setHelpOpen(false)} />}
+    {toast && <div className="app-toast" role="status"><Check size={17} /><span>{toast}</span><button aria-label="Dismiss notification" onClick={() => setToast("")}><X size={15} /></button></div>}
+  </div>;
 }

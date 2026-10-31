@@ -1,0 +1,70 @@
+.proposal-review-dialog { padding:0; width:min(735px,calc(100vw - 38px)); max-height:calc(100dvh - 56px); overflow:auto; border:1px solid #424242; border-radius:8px; background:#141414; color:#e7e7e7; box-shadow:0 32px 140px #000b; font-family:var(--font-geist-sans),Geist,Arial,sans-serif; }
+.proposal-review-dialog::backdrop { background:#000b; backdrop-filter:blur(5px); }
+.proposal-review-dialog button { font:inherit; cursor:pointer; }
+.proposal-review-dialog button:focus-visible { outline:2px solid #fff; outline-offset:3px; }
+.proposal-review-header { display:flex; align-items:flex-start; gap:20px; padding:26px 28px 21px; border-bottom:1px solid #333; }
+.proposal-review-eyebrow { color:#a5a5a5; font:9px var(--font-geist-mono),monospace; letter-spacing:.1em; }
+.proposal-review-header h2 { font-size:21px; font-weight:500; letter-spacing:-.6px; margin:9px 0 0; }
+.proposal-review-close { margin-left:auto; display:grid; place-items:center; width:31px; height:31px; border:1px solid #484848; background:#222; color:#d5d5d5; border-radius:4px; flex-shrink:0; }
+.proposal-review-close:hover { background:#333; color:#fff; }
+.proposal-review-request { display:flex; align-items:center; justify-content:space-between; padding:21px 28px; border-bottom:1px solid #333; gap:20px; }
+.proposal-review-request>div { display:flex; flex-direction:column; gap:6px; }
+.proposal-review-request code { font:13px var(--font-geist-mono),monospace; }
+.proposal-review-request>div>span { font-size:10px; color:#a0a0a0; }
+.proposal-review-request>strong { display:flex; align-items:center; gap:9px; font:27px var(--font-geist-mono),monospace; letter-spacing:-.9px; white-space:nowrap; }
+.proposal-review-request>strong small { color:#aaa; font-size:14px; margin-left:-5px; }
+.proposal-review-request>strong>svg { color:#939393; margin:0 4px; }
+.proposal-review-status { display:flex; align-items:flex-start; gap:12px; margin:22px 28px; padding:15px 16px; border:1px solid #494949; border-radius:5px; background:#202020; }
+.proposal-review-status>svg { flex-shrink:0; color:#d2d2d2; margin-top:1px; }
+.proposal-review-status strong { font-size:12px; font-weight:500; }
+.proposal-review-status p { font-size:10px; line-height:1.7; color:#b0b0b0; margin:5px 0 0; }
+.proposal-review-status-blocked { border-left:3px solid #e1e1e1; padding-left:14px; }
+.proposal-review-timer { margin-left:auto; white-space:nowrap; font:26px var(--font-geist-mono),monospace; color:#efefef; align-self:center; }
+.proposal-review-timer small { font-size:12px; color:#b1b1b1; margin-left:3px; }
+.proposal-review-votes { padding:0 28px 22px; }
+.proposal-review-vote-heading { display:flex; align-items:center; gap:12px; padding:0 0 12px; }
+.proposal-review-vote-heading h3 { margin:0; font-size:12px; font-weight:500; }
+.proposal-review-vote-heading>span { margin-left:auto; display:flex; align-items:center; gap:6px; font:9px var(--font-geist-mono),monospace; color:#aaa; white-space:nowrap; }
+.proposal-review-vote-heading i { display:inline-block; width:3px; height:3px; border-radius:50%; background:#777; margin:0 3px; }
+.proposal-review-votes ol { margin:0; padding:0; display:flex; flex-direction:column; gap:9px; list-style:none; }
+.proposal-review-vote { border:1px solid #353535; background:#1b1b1b; border-radius:5px; padding:13px 15px; }
+.proposal-review-vote-no { border-color:#727272; background:#242424; }
+.proposal-review-vote-top { display:flex; align-items:center; gap:8px; }
+.proposal-review-vote-symbol { display:flex; color:#d1d1d1; }
+.proposal-review-vote-top>strong { font:12px var(--font-geist-mono),monospace; font-weight:500; }
+.proposal-review-vote-top>span:not(.proposal-review-vote-symbol):not(.proposal-review-crossplant) { color:#a3a3a3; font-size:9px; }
+.proposal-review-vote-top>b { margin-left:auto; font:10px var(--font-geist-mono),monospace; background:#383838; border:1px solid #505050; padding:3px 7px; border-radius:3px; }
+.proposal-review-vote-no .proposal-review-vote-top>b { background:#ebebeb; border-color:#ebebeb; color:#171717; }
+.proposal-review-crossplant { display:flex; align-items:center; gap:4px; font-size:8px; color:#c1c1c1; border:1px solid #4d4d4d; border-radius:3px; padding:2px 4px; margin-left:2px; }
+.proposal-review-vote-body { display:flex; align-items:center; gap:20px; padding-top:12px; }
+.proposal-review-prediction { width:142px; flex-shrink:0; border-right:1px solid #3a3a3a; padding-right:13px; }
+.proposal-review-prediction>span { display:block; color:#aaa; font-size:9px; margin-bottom:5px; }
+.proposal-review-prediction>strong { font:17px var(--font-geist-mono),monospace; color:#e6e6e6; }
+.proposal-review-prediction>strong small { font-size:10px; margin-left:4px; color:#acacac; }
+.proposal-review-vote-body>p { color:#c1c1c1; font-size:10px; line-height:1.7; margin:0; }
+.proposal-review-shared-note { font-size:9px; line-height:1.5; color:#a4a4a4; margin:10px 0 0; }
+.proposal-review-evidence { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+.proposal-review-evidence button { display:flex; align-items:center; gap:5px; border:1px solid #494949; border-radius:3px; background:#242424; color:#bdbdbd; padding:5px 7px; }
+.proposal-review-evidence button>span { font:8px var(--font-geist-mono),monospace; }
+.proposal-review-evidence button:hover { color:#fff; background:#363636; border-color:#929292; }
+.proposal-review-no-evidence { color:#999; font-size:9px; margin:10px 0 0; }
+.proposal-review-waiting { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:35px 20px; border:1px dashed #444; border-radius:5px; color:#aaa; }
+.proposal-review-waiting strong { font-size:12px; font-weight:400; color:#c2c2c2; margin-top:13px; }
+.proposal-review-waiting p { font-size:10px; margin:6px 0 0; }
+.proposal-review-action { display:flex; align-items:center; gap:20px; padding:20px 28px; border-top:1px solid #3b3b3b; background:#1d1d1d; }
+.proposal-review-action strong { font-size:11px; font-weight:500; }
+.proposal-review-action p { font-size:10px; line-height:1.6; color:#aaa; margin:5px 0 0; }
+.proposal-review-action button { display:flex; align-items:center; justify-content:center; gap:8px; margin-left:auto; height:37px; padding:0 13px; background:#efefef; color:#171717; border:1px solid #efefef; border-radius:4px; font-size:11px; white-space:nowrap; flex-shrink:0; }
+.proposal-review-action button:hover { background:#fff; }
+.proposal-review-action button:disabled { opacity:.4; cursor:default; }
+.proposal-review-action .proposal-review-veto { background:#272727; color:#eee; border-color:#898989; }
+.proposal-review-action .proposal-review-veto:hover:not(:disabled) { background:#404040; border-color:#eee; }
+.proposal-review-footer { padding:14px 28px; border-top:1px solid #333; color:#9b9b9b; font-size:9px; line-height:1.7; }
+@media(max-width:600px) { .proposal-review-dialog { width:calc(100vw - 18px); max-height:calc(100dvh - 20px); border-radius:6px; } .proposal-review-header { padding:21px 18px 18px; } .proposal-review-header h2 { font-size:19px; } .proposal-review-request { padding:18px; gap:12px; } .proposal-review-request>strong { font-size:23px; gap:6px; } .proposal-review-status { margin:18px; padding:13px; } .proposal-review-votes { padding:0 18px 18px; } .proposal-review-vote-heading { gap:8px; } .proposal-review-vote-heading h3 { font-size:11px; } .proposal-review-vote-heading>span { font-size:8px; gap:4px; } .proposal-review-vote { padding:12px; } .proposal-review-vote-top { gap:6px; flex-wrap:wrap; } .proposal-review-vote-top>strong { font-size:11px; } .proposal-review-crossplant { font-size:7px; margin-left:0; } .proposal-review-vote-body { gap:11px; } .proposal-review-prediction { width:115px; padding-right:10px; } .proposal-review-prediction>span { font-size:8px; } .proposal-review-prediction>strong { font-size:16px; } .proposal-review-action { padding:17px 18px; gap:12px; flex-wrap:wrap; } .proposal-review-action button { margin-left:0; } .proposal-review-footer { padding:13px 18px; } }
+
+/* Voter identity uses the agent's color; YES/NO chips keep their semantic styling. */
+.ar-agent-hue { --agent-text: var(--agent-color, currentColor); }
+html[data-theme="light"] .ar-agent-hue { --agent-text: var(--agent-ink, currentColor); }
+.proposal-review-vote.ar-agent-hue { box-shadow: inset 3px 0 0 var(--agent-color); }
+.proposal-review-vote-top > .proposal-review-agent-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--agent-color); flex-shrink: 0; }
+.proposal-review-vote-top > strong.proposal-review-agent-tag, html[data-theme="light"] .proposal-review-vote-top > strong.proposal-review-agent-tag { color: var(--agent-text); font-weight: 600; }

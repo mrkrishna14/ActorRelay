@@ -1,0 +1,28 @@
+/* Agent identity colors on the 3D labels (overrides plant-views.css). */
+.plant-scene .scene-label-layer .scene-agent-label { border-left: 3px solid var(--agent-color, #777); }
+[data-theme="light"] .plant-scene .scene-label-layer .scene-agent-label { border-left: 3px solid var(--agent-color, #777); }
+.plant-scene .scene-agent-label strong { color: var(--agent-color, inherit); }
+[data-theme="light"] .plant-scene .scene-agent-label strong { color: var(--agent-ink, inherit); }
+.plant-scene .scene-agent-label.is-selected { box-shadow: 0 0 0 1px var(--agent-color), 0 4px 14px #0003; }
+[data-theme="light"] .plant-scene .scene-label-layer .scene-agent-label.is-selected { border-color: var(--agent-color); border-left-width: 3px; }
+.plant-scene .scene-agent-label.agent-blocked { box-shadow: 0 0 0 2px var(--agent-color); }
+.plant-scene .scene-agent-label.is-highlighted { animation: scene-agent-pulse 1.1s ease-in-out infinite; }
+@keyframes scene-agent-pulse { 0%, 100% { box-shadow: 0 0 0 1px var(--agent-color); } 50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--agent-color) 45%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .plant-scene .scene-agent-label.is-highlighted { animation: none; box-shadow: 0 0 0 3px var(--agent-color); } }
+
+/* Small equipment tags keep the hall visible; full agent context lives above the view. */
+.plant-scene .scene-label-layer .scene-agent-label,
+[data-theme="light"] .plant-scene .scene-label-layer .scene-agent-label { width:auto; min-width:62px; padding:3px 6px; border:1px solid color-mix(in srgb,var(--agent-color) 65%,transparent); border-left:3px solid var(--agent-color); border-radius:3px; background:#172333e8; color:#fff; box-shadow:0 2px 5px #0002; text-shadow:none; }
+.plant-scene .scene-label-layer .scene-agent-label strong,
+[data-theme="light"] .plant-scene .scene-label-layer .scene-agent-label strong { display:flex; align-items:center; gap:5px; color:#fff; font-size:10px; font-weight:500; }
+.plant-scene .scene-agent-label.is-selected { outline:2px solid var(--agent-color); outline-offset:2px; }
+.plant-scene .scene-agent-state { color:var(--agent-color); }
+.plant-scene .scene-agent-state:before { margin-right:0; }
+.plant-scene .scene-orientation { width:auto; height:auto; padding:6px 9px; transform:none; background:#152338cf; box-shadow:none; border:0; border-radius:3px; color:#e8eef4; }
+.plant-scene .scene-orientation span { transform:none; }
+.plant-scene .scene-campus-caption { color:#253747; text-shadow:0 1px 2px #ffffff90; }
+.plant-scene .scene-campus-caption small { color:#4d5e6e; }
+.plant-scene .scene-help { color:#546678; }
+.plant-scene .scene-forecast { top:12px; right:100px; bottom:auto; left:auto; max-width:none; padding:4px 8px; background:#ffffffd9; color:#354352; border:1px solid #9aabba; font-size:9px; line-height:1.4; }
+.plant-scene .scene-forecast span { display:none; }
+.plant-scene .scene-forecast br { display:none; }
