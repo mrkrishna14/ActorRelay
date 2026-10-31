@@ -122,14 +122,22 @@ function postToGlue(path: string, body: unknown, headers: Record<string, string>
 // would let one cold or slow Company hold up every tick and every proposal in the plant.
 async function pushToCompany(plantId: PlantId, models: string[] | null, rules: LearnedRule[]): Promise<void> {
     const company = Company.get(COMPANY_ACTOR_ID)
-    if (models !== null) await company.registerPlant(plantId, models)
     const delivered: { id: string; timesSeen: number }[] = []
-    for (const rule of rules) {
-        if (rule.model === null || !(await company.modelExistsElsewhere(plantId, rule.model))) continue
-        await company.promoteRule(toCompanyRule(rule, plantId))
-        delivered.push({ id: rule.id, timesSeen: rule.timesSeen })
+    let registered = false
+    try {
+        if (models !== null) {
+            await withTimeout(company.registerPlant(plantId, models), "Company.registerPlant")
+            registered = true
+        }
+        for (const rule of rules) {
+            if (rule.model === null || !(await withTimeout(company.modelExistsElsewhere(plantId, rule.model), "Company.modelExistsElsewhere"))) continue
+            await withTimeout(company.promoteRule(toCompanyRule(rule, plantId)), "Company.promoteRule")
+            delivered.push({ id: rule.id, timesSeen: rule.timesSeen })
+        }
+    } finally {
+        // Partial progress still counts, or a later retry would bump timesSeen on rules Company already has.
+        if (registered || delivered.length > 0) await withTimeout(Plant.get(plantId).ackCompanySync(registered, delivered), "Plant.ackCompanySync")
     }
-    await Plant.get(plantId).ackCompanySync(models !== null, delivered)
 }
 
 function assertMatchesRun(entry: CalibrationEntry, run: RunFacts): void {
@@ -592,6 +600,8 @@ export class Plant extends Actor {
         if (!Object.hasOwn(this.executions, proposalId)) fail("not_accepted", `${proposalId} has not been accepted`)
         const execution = this.executions[proposalId]
         if (execution.state === "applied" || execution.state === "observed") fail("already_applied", proposalId)
+        // A replayed report must not rewind a setpoint that a newer proposal has since moved.
+        if (execution.state === "failed") return execution
         return this.#failExecution(execution, isNonEmptyString(reason) ? reason : "dispatch failed")
     }
 
