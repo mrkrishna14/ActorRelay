@@ -44,7 +44,7 @@ function expand(e: HistoryEvent, voter: ComponentState) {
     plant: e.plantId,
     at: e.at,
     changed: `${e.componentId} ${e.metric} ${e.before}->${e.after}`,
-    effects: ownRows(e, voter).map((f) => `${f.counterpart ? "shared-header twin " : ""}${f.metric} ${f.before}->${f.after}`),
+    effects: ownRows(e, voter).map((f) => `${f.counterpart ? "shared-header twin " : ""}${f.metric} ${f.before}->${f.after} in ${f.ticksToSettle} ticks`),
     incident: e.incident,
     executedByThisSystem: !!e.proposalId,
   };

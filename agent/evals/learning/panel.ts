@@ -4,7 +4,7 @@
 // A panel verdict file is a JSON array of {key, safe_run_as_proof, rests_only_on_safe_run, logically_sound, unsupported_claims, why}.
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { RUBRIC, type Verdict } from "./judge.ts";
+import { canaries, RUBRIC, type Verdict } from "./judge.ts";
 
 type Packet = { key: string; step: string; voter: string; vote: string; reason: string };
 type PanelVerdict = Verdict & { key: string };
@@ -15,8 +15,21 @@ const packets: Packet[] = JSON.parse(readFileSync(packetsPath, "utf8"));
 if (mode === "split") {
   mkdirSync(dir, { recursive: true });
   const batches = Number(extra ?? 3);
-  writeFileSync(join(dir, "RUBRIC.txt"), RUBRIC);
-  for (let b = 0; b < batches; b++) writeFileSync(join(dir, `batch-${b}.json`), JSON.stringify(packets.filter((_, i) => i % batches === b), null, 1));
+  const [{ physics, votingContract }] = packets as (Packet & { physics: string; votingContract: string })[];
+  writeFileSync(join(dir, "RUBRIC.txt"), `${RUBRIC}\n\nVoting contract, same for every packet: ${votingContract}\n\nPhysics summary, same for every packet: ${physics}\n`);
+  const slim = packets.map(({ physics: _p, votingContract: _c, ...rest }: any) => rest);
+  // Hand-labelled canaries sit at random positions in every batch, under neutral keys, so a weak judge shows up.
+  const labelled = canaries().map(({ name, pkt }: any) => {
+    const { physics: _p, votingContract: _c, ...rest } = pkt;
+    return { name, rest };
+  });
+  for (let b = 0; b < batches; b++) {
+    const batch = slim.filter((_, i) => i % batches === b);
+    labelled.forEach(({ name, rest }, n) => {
+      batch.splice(Math.floor(Math.random() * (batch.length + 1)), 0, { key: `c${b}${n}-${name}`, step: "x", ...rest });
+    });
+    writeFileSync(join(dir, `batch-${b}.json`), JSON.stringify(batch, null, 1));
+  }
   console.log(`${packets.length} packets in ${batches} batches under ${dir}`);
 }
 
@@ -25,6 +38,17 @@ if (mode === "merge") {
     .filter((f) => /^verdicts-.*\.json$/.test(f))
     .flatMap((f) => JSON.parse(readFileSync(join(dir, f), "utf8")));
   const byKey = new Map(verdicts.map((v) => [v.key, v]));
+  const expected = new Map(canaries().map((c: any) => [c.name, c.expected]));
+  const results = verdicts.filter((v) => /^c\d+-/.test(v.key)).map((v) => {
+    const e: any = expected.get(v.key.replace(/^c\d+-/, ""));
+    const pass = (e.safe_run_as_proof === undefined || v.safe_run_as_proof === e.safe_run_as_proof) &&
+      (e.rests_only_on_safe_run === undefined || v.rests_only_on_safe_run === e.rests_only_on_safe_run) &&
+      (e.logically_sound === undefined || v.logically_sound === e.logically_sound) &&
+      (e.unsupported === undefined || v.unsupported_claims.length > 0 === e.unsupported);
+    return { key: v.key, pass, v };
+  });
+  console.log(`panel canaries passed ${results.filter((r) => r.pass).length}/${results.length}`);
+  for (const r of results.filter((x) => !x.pass)) console.log(`  MISS ${r.key}: ${r.v.why}`);
   const scored = packets.filter((p) => byKey.has(p.key));
   console.log(`panel scored ${scored.length} of ${packets.length} reasons`);
   const rows: [string, (p: Packet) => boolean][] = [
