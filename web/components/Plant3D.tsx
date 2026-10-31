@@ -315,10 +315,10 @@ function buildUnit(scene: THREE.Scene, origin: THREE.Vector3): Unit {
 
   const anchors: Record<string, THREE.Vector3> = {
     "P-100": new THREE.Vector3(pumpAt.x - 0.4, 2.2, pumpAt.z).add(origin),
-    "TK-101": new THREE.Vector3(0, TANK_BASE + TANK_HEIGHT + 2.5, 0).add(origin),
+    "TK-101": new THREE.Vector3(-1.6, TANK_BASE + TANK_HEIGHT + 2.5, 0).add(origin),
     "E-101": new THREE.Vector3(-TANK_RADIUS * 0.3, TANK_BASE + 1.5, TANK_RADIUS).add(origin),
     "LV-101": lvAt.clone().add(new THREE.Vector3(0, 2.1, 0)).add(origin),
-    "TV-101": tvAt.clone().add(new THREE.Vector3(1.4, 2.0, 0)).add(origin),
+    "TV-101": tvAt.clone().add(new THREE.Vector3(4.2, 2.6, 0)).add(origin),
   };
 
   const rings: Record<string, THREE.Mesh> = {};
