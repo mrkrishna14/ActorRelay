@@ -1,0 +1,36 @@
+{
+  "id": "c0c-silent-after-host-kill",
+  "title": "kill plant-a's host and stay silent for two minutes: how long can ticks stop, and do they come back",
+  "target": "real Terse dev server, real actors, fake glue and simulator",
+  "startedAt": "2026-10-31T22:35:48.695Z",
+  "durationMs": 142736,
+  "status": "pass",
+  "checks": [
+    {
+      "name": "found the Plant host",
+      "pass": true,
+      "detail": "100324"
+    },
+    {
+      "name": "ticks come back by themselves after any gap",
+      "pass": true,
+      "detail": "[10,10,10,10,10,10,10,10,8,10,10,10,10,10,10,10,10,10,10,10,9,10,9,10]"
+    },
+    {
+      "name": "no tick gap reaches 15s",
+      "pass": true,
+      "detail": "{\"startedAfterKillMs\":34843,\"ms\":1080}"
+    }
+  ],
+  "restarts": [],
+  "metrics": {
+    "firstStartMs": 9073.7,
+    "seedMs": 3624,
+    "hostkill.widestTickGapMs": 1080,
+    "hostkill.widestTickGapStartedAfterKillMs": 34843
+  },
+  "notes": [
+    "/tick arrivals per 5s before [9,10], after killing plant-a's host [10,10,10,10,10,10,10,10,8,10,10,10,10,10,10,10,10,10,10,10,9,10,9,10]",
+    "widest gap 1080ms, starting 34843ms after the kill"
+  ]
+}

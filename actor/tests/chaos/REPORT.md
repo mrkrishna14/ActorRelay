@@ -1,15 +1,15 @@
 # Crash test report
 
-Final matrix, 15:35 Pacific, on real Terse 0.14.9 with real `kill -9`, against the real actors at commit 9b943c3. `actor/src` is unchanged at the later HEAD 5db59a2.
+Final matrix, 15:40 Pacific, on real Terse 0.14.9 with real `kill -9`, against the real actors at commit 9b943c3. `actor/src` is unchanged at the later HEAD 5db59a2.
 
 ## Verdict
 
-Durable memory held. Across 36 server kills, no acknowledged write was lost and no proposal ever sent a second simulation command.
+Durable memory held. Across 37 server kills, no acknowledged write was lost and no proposal ever sent a second simulation command.
 
-All four failures found in the first pass are fixed or reduced, and the fixes are proven on the real runtime. 31 of 33 scenarios pass. The two that do not:
+The first-pass failures are fixed or reduced, and the fixes are proven on the real runtime. 32 of 33 scenarios pass on their latest run.
 
-- `c0`: every recovery check passes. The tick runs about 1.9 times a second, not once. Low severity, because timeouts use wall clock.
-- `c0c`: after killing one host, ticks from both Plants paused once. See Open items.
+- The one failure is `c0`: every recovery check passes, but the tick ran about 1.9 times a second, not once. Low severity, because timeouts use wall clock.
+- `c0c` passes now, but it failed once earlier. An intermittent tick pause after a host kill is unexplained. See Open items.
 
 | Claim tested | Result on the real runtime |
 |---|---|
@@ -39,7 +39,7 @@ Stretched scenarios use a copy of the same commit with only the timeout constant
 | h1 kill one Plant host | PASS | 18/18 | State intact, one read restarts it, one simulation command |
 | c0 alarm re-arm | FAIL, tick rate only | 28/29 | No tick in 5s of silence, then one read restarts both Plants. Mailbox 92ms |
 | c0b silence, no crash | PASS | 1/1 | Ticks never stop in 80s with no callers, twice |
-| c0c silence after a host kill | FAIL once, PASS once | see below | Both Plants' ticks paused at about 60s |
+| c0c silence after a host kill | PASS, failed once earlier | 3/3 | Widest gap 1.1s over 2 minutes, twice. One earlier run paused, see Open items |
 | c1 voting | PASS | 19/19 | Votes intact, replay refused, voting finishes, one command. Also passes stretched |
 | c1b down past vote expiry | PASS | 3/3 | Expires 0.7s after restart, late vote refused |
 | c2a restart inside the window | PASS, stretched | 18/18 | Deadline unchanged, fires once, not early |
@@ -70,7 +70,7 @@ Stretched scenarios use a copy of the same commit with only the timeout constant
 | d9 kill with glue hung | PASS | 5/5 | Nothing wedged after restart |
 | d10 Company frozen | PASS | 5/5 | Propose fails closed in 8.0s, mailbox held 7.5s, 24ms once thawed |
 
-Evidence is in `results/`. `head-a` to `head-e` are real timeouts, and `stretched-1` and `stretched-2` are stretched. `real-3` and `real-4` are the first pass at 3746bdd.
+Evidence is in `results/`. `head-a` to `head-g` are real timeouts, and `stretched-1` and `stretched-2` are stretched. `real-3` and `real-4` are the first pass at 3746bdd.
 
 A first stretched run failed `c2a` and `c6`. Both were my test setup: `c2a` counted audit lines the actors now write twice by design, and my stretch missed the 60s waiting timeout. Both pass with those corrected.
 
@@ -86,8 +86,8 @@ A first stretched run failed `c2a` and `c6`. Both were my test setup: `c2a` coun
 
 ## Open items
 
-1. **Tick rate, low.** About 1.8 to 1.9 per plant per second, measured three times. Terse alarms can fire early, and the Plant only ignores ticks closer than 500ms. Decisions use wall clock, so nothing here depends on it. Raising the guard in `onAlarm` to about 900ms should give 1 per second.
-2. **Tick pause after a host kill, unexplained.** Ticks from both Plants stopped for at least 5s at about 40-60s after a host kill, in 2 of 5 runs. It never happened in the 2 no-kill silence runs. In `h1` they were back within 5s of the next read. It needs a killed actor host, not a server kill. Length is being measured.
+1. **Tick rate, low.** It varies between 1 and 1.9 per plant per second: `c0` measured 1.8 and 1.9, and `c0c` measured 1. Terse alarms can fire early, and the Plant only ignores ticks closer than 500ms. Decisions use wall clock, so nothing here depends on it. Raising the guard in `onAlarm` to about 900ms should hold it at 1 per second, but that is untested.
+2. **Intermittent tick pause after a host kill, unexplained.** Ticks from both Plants stopped for at least 5s, about 40-60s after a host kill, in 2 of 6 runs that covered that time. It did not happen in the 2 no-kill silence runs. The two longest samples, 2 minutes each, had a widest gap of 1.1s. In `h1` ticks were back within 5s of the next read. In `c0c` that run ended during the pause, so recovery there was not observed. The cause and the full length are unknown.
 3. **Retry windows, low.** `glue/dispatch.ts` gives up on `setMetric` after about 1s, and `bridge/live_sim.ts` stops retrying `/observed` after about 19s. State stays correct, because the setpoint is kept and the mirror corrects the Component. An observation due during a restart can be lost, so that run would not teach anything. Read from the code, not run.
 4. **Not crash tested:** real glue, including its wake loop, the real bridge, Relay and agents.
 
@@ -96,7 +96,7 @@ A first stretched run failed `c2a` and `c6`. Both were my test setup: `c2a` coun
 - A server kill loses every alarm, and nothing ticks until a method is called on each Plant.
 - After a whole-group kill, an actor answers 503 until its old lease drains. That is why the first Plant read takes about 30s, 10s or more after the server is healthy.
 - After killing one Plant host, the first successful read took 0.3s, 0.6s and 35.4s in three runs. So killing a host is not a reliably quick stage crash.
-- In `h1`, the alarm did not bring a killed host's Plant back within 45s of silence, in both runs. A read did.
+- A killed host's Plant does not reliably come back on its own. In `h1` it stayed down through 45s of silence in both runs, and in one `c0c` run through 2 minutes, while the other Plant kept ticking. A read brought it back. Other `c0c` runs held the full tick rate, so this varies.
 - Every start rebuilds the bundle. The tick counter is a heartbeat, so it falls back to its last checkpoint after a crash, by design.
 
 ## Recovery times
@@ -105,7 +105,7 @@ Measured at load 2 to 3 with the demo stack up and two servers running, excludin
 
 | Measurement | Minimum | Median | Maximum | n |
 |---|---|---|---|---|
-| Server kill to `/healthz` ok | 6.8s | 19.0s | 24.5s | 26 |
+| Server kill to `/healthz` ok | 6.8s | 18.8s | 24.5s | 27 |
 | Server kill to first Plant read | 7.0s | 19.7s | 24.9s | 24 |
 | Whole-group kill to `/healthz` ok | 9.6s | 16.9s | 23.6s | 10 |
 | Whole-group kill to first Plant read | 24.9s | 30.2s | 32.3s | 9 |
