@@ -204,7 +204,15 @@ describe("decision path", () => {
         const p = await plantA().propose({ proposerComponentId: "plant-a/P-100", metric: "speedPct", to: 85, rationale: "x" })
         await expect(plantA().vote(vote(p.id, "plant-b/LV-101", true))).rejects.toThrow(/not a required voter/)
         await plantA().vote(vote(p.id, "plant-a/LV-101", false, { predicted: { positionPct: 89 } }))
-        await expect(plantA().vote(vote(p.id, "plant-a/TK-101", true))).rejects.toThrow(/not voting/)
+        // Late votes on a blocked proposal are recorded; the status stays blocked.
+        const late = await plantA().vote(vote(p.id, "plant-a/TK-101", true))
+        expect(late.status).toBe("blocked")
+        expect(late.votes.length).toBe(2)
+        await plantA().veto(p.id, "operator").catch(() => {})
+        const vetoable = await plantA().propose({ proposerComponentId: "plant-a/P-100", metric: "speedPct", to: 62, rationale: "x" })
+        for (const id of ALL_VOTERS) await plantA().vote(vote(vetoable.id, id, true))
+        await plantA().veto(vetoable.id, "operator")
+        await expect(plantA().vote(vote(vetoable.id, "plant-a/TK-101", true))).rejects.toThrow(/not voting/)
     })
 })
 

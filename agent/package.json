@@ -1,0 +1,21 @@
+{
+    "name": "actorrelay-agents",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "start": "bun src/spawn.ts",
+        "generate": "terse actor generate --language typescript --non-interactive",
+        "check": "tsc --noEmit",
+        "test": "bun test tests"
+    },
+    "dependencies": {
+        "@agent-relay/sdk": "15.0.1",
+        "@anthropic-ai/sdk": "latest",
+        "terse-sdk": "0.14.9",
+        "zod": "^4.3.6"
+    },
+    "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "~5.9.3"
+    }
+}

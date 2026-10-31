@@ -293,7 +293,8 @@ export class Plant extends Actor<null, Ping, PlantOutgoing> {
         const v = parse(VoteSchema, input, "vote")
         const p = this.proposals.find(x => x.id === v.proposalId)
         if (!p) throw new Error(`unknown proposal ${v.proposalId}`)
-        if (p.status !== "voting") throw new Error(`proposal ${p.id} is ${p.status}, not voting`)
+        // A blocked proposal still records late votes (every voter's evidence shows); its status stays blocked.
+        if (p.status !== "voting" && p.status !== "blocked") throw new Error(`proposal ${p.id} is ${p.status}, not voting`)
         if (!p.requiredVoters.includes(v.componentId)) throw new Error(`${v.componentId} is not a required voter on ${p.id}`)
         if (p.votes.some(x => x.componentId === v.componentId)) throw new Error(`duplicate vote from ${v.componentId} on ${p.id}`)
         if (v.vote !== "yes" && v.vote !== "no") throw new Error("vote must be yes or no")
@@ -323,7 +324,7 @@ export class Plant extends Actor<null, Ping, PlantOutgoing> {
         const recorded: Vote = { ...v, vote, marginPct: voter.marginPct, reason: notes.length ? `[enforced] ${notes.join("; ")}. ${v.reason}` : v.reason }
         let updated: Proposal = { ...p, votes: [...p.votes, recorded] }
         this.audit = addAudit(this.audit, this.id as PlantId, "vote", p.id, `${tagOf(v.componentId)} (${v.componentId}) votes ${vote}: ${recorded.reason}`, v.agentId)
-        const evaluated = evaluateProposal(updated, this.proposals, this.config.vetoWindowMs)
+        const evaluated = p.status === "blocked" ? { proposal: updated, note: null } : evaluateProposal(updated, this.proposals, this.config.vetoWindowMs)
         updated = evaluated.proposal
         if (evaluated.note) this.audit = addAudit(this.audit, this.id as PlantId, evaluated.note.kind, p.id, evaluated.note.summary, "plant")
         this.proposals = replaceProposal(this.proposals, updated)

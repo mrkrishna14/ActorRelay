@@ -1,6 +1,6 @@
 // Test fixtures: the real plant definition plus a small history shaped like Person 2's
 // shared/history.json requirements (TASK2). Replace with shared/history.json once it lands.
-import plantsJson from "../../shared/plants.json"
+import plantsJson from "../../shared/plants.json" with { type: "json" }
 import type { ComponentState, HistoryEvent, PlantId } from "../../shared/types.js"
 
 export const plants = plantsJson as unknown as {
