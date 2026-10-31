@@ -40,7 +40,7 @@ export function createLlm({ model, effort, concurrency, timeoutMs = 30_000 }: Ll
   const key = loadKey();
   let active = 0;
   const waiters: (() => void)[] = [];
-  const stats = { calls: 0, retries: 0, rateLimited: 0, failures: 0, policyFlagged: 0, tokens: 0, maxMs: 0, lastError: "" };
+  const stats = { calls: 0, retries: 0, rateLimited: 0, backupModel: 0, failures: 0, policyFlagged: 0, tokens: 0, maxMs: 0, lastError: "" };
   const flagged: { system: string; user: string }[] = [];
   meterTokens((tokens) => (stats.tokens += tokens));
 
@@ -95,36 +95,29 @@ export function createLlm({ model, effort, concurrency, timeoutMs = 30_000 }: Ll
     }
   }
 
-  // The shipped call path, exactly: agent/llm.ts callOpenAi with the caller's timeout. Only a 429 is retried here,
-  // because any other failure is something vote.ts and counter.ts have to survive for real.
+  // The shipped call path, exactly: agent/llm.ts callOpenAi with the caller's timeout, including its own rate-limit
+  // wait and backup model. Nothing is retried here, because every failure is something the agents have to survive.
   async function complete(request: LlmRequest, sink: LlmCall[]) {
     await acquire();
+    const started = performance.now();
     try {
-      for (let attempt = 0; ; attempt++) {
-        const started = performance.now();
-        try {
-          stats.calls++;
-          const reply = await callOpenAi(request, model, effort);
-          const ms = performance.now() - started;
-          stats.maxMs = Math.max(stats.maxMs, Math.round(ms));
-          sink.push({ ms, retries: attempt, text: reply.text, user: request.user });
-          return reply;
-        } catch (err: any) {
-          const message = String(err?.message ?? err);
-          if (message.includes(" 429:") && attempt < 4) {
-            stats.rateLimited++;
-            await Bun.sleep(Math.min(8_000, 500 * 2 ** attempt) + Math.random() * 400);
-            continue;
-          }
-          stats.failures++;
-          if (message.includes("usage policy")) {
-            stats.policyFlagged++;
-            flagged.push({ system: request.system, user: request.user });
-          }
-          if (!message.includes(" 401:")) stats.lastError = message.slice(0, 120);
-          throw err;
-        }
+      stats.calls++;
+      const reply = await callOpenAi(request, model, effort);
+      const ms = performance.now() - started;
+      stats.maxMs = Math.max(stats.maxMs, Math.round(ms));
+      if (reply.model !== model) stats.backupModel++;
+      sink.push({ ms, retries: 0, text: reply.text, user: request.user });
+      return reply;
+    } catch (err: any) {
+      const message = String(err?.message ?? err);
+      stats.failures++;
+      if (message.includes(" 429:")) stats.rateLimited++;
+      if (message.includes("usage policy")) {
+        stats.policyFlagged++;
+        flagged.push({ system: request.system, user: request.user });
       }
+      if (!message.includes(" 401:")) stats.lastError = message.slice(0, 120);
+      throw err;
     } finally {
       release();
     }

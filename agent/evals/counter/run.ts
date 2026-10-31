@@ -7,6 +7,8 @@ import { join } from "node:path";
 import type { Proposal, Vote } from "../../../shared/types";
 import { buildScenarios, buildView, clearsAll, faultVoterId, makeProposal, safeCeiling, thresholdOf, type Plantview, type Scenario } from "./fixture";
 import { loadImpl, type Impl } from "./impl";
+import { OPENAI_EFFORT, OPENAI_MODEL } from "../../llm";
+import { FAST_NO_MS } from "../../vote";
 import { createLlm, type LlmCall } from "./llm";
 
 function arg(name: string, fallback: string): string {
@@ -16,8 +18,8 @@ function arg(name: string, fallback: string): string {
 
 const opts = {
   impl: arg("impl", "real"),
-  model: arg("model", "gpt-6-luna"),
-  effort: arg("effort", "none"),
+  model: arg("model", OPENAI_MODEL),
+  effort: arg("effort", OPENAI_EFFORT),
   scale: Number(arg("scale", "1")),
   concurrency: Number(arg("concurrency", "8")),
   slots: Number(arg("slots", "1")),
@@ -34,7 +36,6 @@ export const MAX_COUNTERS = 2;
 // Late votes are recorded by the actor but the counter never sees them, so this replays that timing on real latencies.
 const SWEEP_MS = 2000;
 const POLL_MS = 800;
-const FAST_NO_MS = 2500;
 const POST_MS = 100; // vote to actor, over Relay and glue
 
 function voteVisibleAt(votes: Vote[], ms: number[], index: number): Vote[] {
