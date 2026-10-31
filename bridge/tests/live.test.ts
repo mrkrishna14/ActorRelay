@@ -170,6 +170,24 @@ test("/observed is retried after a glue 500", async () => {
   expect(glue.observed("test-retry").length).toBe(2);
 }, 15000);
 
+test("a glue that stops answering /mirror does not stall the plant", async () => {
+  const before = await bridge.health();
+  glue.mirrorDelayMs = 2000;
+  await Bun.sleep(4300);
+  const after = await bridge.health();
+  glue.mirrorDelayMs = 0;
+  await Bun.sleep(2200);
+  expect(after.tick - before.tick).toBeGreaterThanOrEqual(4);
+  expect(after.stats.droppedTicks).toBe(before.stats.droppedTicks);
+  const failed = after.stats.mirrorFailed - before.stats.mirrorFailed;
+  const skipped = after.stats.mirrorSkippedBusy - before.stats.mirrorSkippedBusy;
+  measured.slowGlue = { ticks: after.tick - before.tick, failed, skippedBatches: skipped };
+  expect(failed + 10 * skipped).toBeGreaterThanOrEqual(30);
+  const recovered = (await bridge.health()).stats.mirrorPushed;
+  await Bun.sleep(1500);
+  expect((await bridge.health()).stats.mirrorPushed).toBeGreaterThan(recovered);
+}, 15000);
+
 test("bad writes are refused", async () => {
   const raw = (body: string, headers: Record<string, string>) => fetch(`${bridge.url}/setpoint`, { method: "POST", headers, body });
   const json = { "content-type": "application/json" };

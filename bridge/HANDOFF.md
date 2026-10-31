@@ -26,6 +26,8 @@ Ready line: `live sim on http://127.0.0.1:7300, 1 tick = 1000 ms = 18 scans = 18
 curl -s http://127.0.0.1:7300/health
 ```
 
+Nothing is persisted. A restart comes back at the design point, so if it dies mid-demo, restart it and then reset through glue so the actors match.
+
 Tests and history, from the repo root:
 
 ```bash
@@ -125,7 +127,7 @@ Two lines do not hold as written, and `live.test.ts` asserts the measured behavi
 - **Temperature.** Recovery speed is set by the stated TIC-101 tuning (`ti` 900 s). The dip itself matches CLAUDE.MD, so there is nothing to retune without moving it. If the 1 °C line has to hold at tick 5 the tick would need to be longer. At 18 scans it does not.
 - **Level at 100.** CLAUDE.MD's own numbers rule it out. LV-101 at 99.9 % passes 30 m³/h at 2.0 m, so with the valve at 100 % and the level above 2.0 m, outflow beats the feed and the level falls. It only climbs with the valve pinned when feed exceeds that capacity, which is the 33 m³/h case, and P-100 cannot reach that.
 
-Beyond the list: `live.test.ts` also passes on reset, duplicate writes, a retry after a glue 500, and bad writes refused. The real glue client (`glue/bridge.ts`) and glue's body schemas were run once against a real `live_sim.ts`: snapshot, setpoint, reset, `/mirror` and `/observed` all fit, on a fake glue server.
+Beyond the list: `live.test.ts` also passes on reset, duplicate writes, a retry after a glue 500, bad writes refused, and a glue that stops answering `/mirror` (ticks keep running, pushes fail or skip, and recover when it answers again). The real glue client (`glue/bridge.ts`) and glue's body schemas were run once against a real `live_sim.ts`: snapshot, setpoint, reset, `/mirror` and `/observed` all fit, on a fake glue server.
 
 ## For `agent/physics.md`
 
@@ -178,5 +180,4 @@ Invented, and fictional by design: operators, approvers, dates, and the incident
 
 ## Not verified
 
-- Against real glue's server, real actors or agents. Glue in `live.test.ts` is a fake.
-- Any run with a load on `/mirror` from a slow glue. The skip path exists but no test drives it.
+Nothing here has run against glue's real server, the actors or the agents. Glue in `live.test.ts` is a fake.

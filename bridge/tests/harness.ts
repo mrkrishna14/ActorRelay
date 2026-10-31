@@ -13,6 +13,7 @@ export type Recorded = { at: number; path: string; body: any };
 export class FakeGlue {
   received: Recorded[] = [];
   observedStatus: number[] = [];
+  mirrorDelayMs = 0;
   private server: ReturnType<typeof Bun.serve>;
 
   constructor(port: number) {
@@ -23,6 +24,7 @@ export class FakeGlue {
         const path = new URL(request.url).pathname;
         const body = await request.json().catch(() => null);
         this.received.push({ at: performance.now(), path, body });
+        if (path === "/mirror" && this.mirrorDelayMs) await Bun.sleep(this.mirrorDelayMs);
         const status = path === "/observed" ? (this.observedStatus.shift() ?? 200) : 200;
         return new Response("{}", { status, headers: { "content-type": "application/json" } });
       },
