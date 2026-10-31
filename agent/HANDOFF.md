@@ -15,7 +15,7 @@ cd agent && bun install && bun run generate && bun src/spawn.ts
 |---|---|
 | `RELAY_WORKSPACE_KEY` | Agent Relay workspace (created for this project; ask Person 1 for the value) |
 | `ANTHROPIC_API_KEY` | Claude agents (TK-101, E-101, TV-101) use `claude-opus-5-5` via the Anthropic SDK (structured output + server fallback) |
-| `OPENAI_API_KEY` | Codex agents (P-100, LV-101) use the OpenAI Responses API (`CODEX_MODEL`, default `gpt-6.1-sol`) |
+| `OPENAI_API_KEY` | OpenAI Responses API (`CODEX_MODEL`, default `gpt-6.1-sol`). **With only this key set, all 10 agents run on OpenAI** (vote label `[openai:…]`); `AGENT_LLM=openai` forces that even if an Anthropic key exists |
 | `GLUE_URL` | If set, agents use glue routes (`/component/:id`, `/state`, `/similar`, `/rules`, `/vote`, `/counter`, `/calibration`) instead of the actors, and votes go Relay → glue |
 | `AGENT_SUBMIT` | `actors` (default without glue: post vote on Relay **and** submit to Plant) or `relay` (post only; glue forwards) |
 | `AGENT_COMPONENTS` | Comma list to run a subset; default all 10 |

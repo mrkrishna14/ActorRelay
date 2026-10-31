@@ -42,7 +42,7 @@ export class ClaudeLlm implements Llm {
 
 /** Codex/OpenAI via the Responses API (same call shape as scripts/gpt.mjs); JSON parsed from the text. */
 export class CodexLlm implements Llm {
-    readonly label = `codex:${CODEX_MODEL}`
+    readonly label = `openai:${CODEX_MODEL}`
     constructor(private key: string) {}
     async draft(system: string, user: string): Promise<unknown> {
         const res = await fetch("https://api.openai.com/v1/responses", {
@@ -61,10 +61,13 @@ export class CodexLlm implements Llm {
 
 /** The configured model for a vendor, or null → the labelled baseline (no LLM key on this machine). */
 export function llmFor(vendor: Vendor): Llm | null {
-    const mode = process.env.AGENT_LLM ?? "auto" // auto | off
+    const mode = process.env.AGENT_LLM ?? "auto" // auto | openai | off
     if (mode === "off") return null
-    if (vendor === "claude" && (process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN || process.env.ANTHROPIC_PROFILE)) return new ClaudeLlm()
-    if (vendor === "codex" && process.env.OPENAI_API_KEY) return new CodexLlm(process.env.OPENAI_API_KEY)
+    const openai = process.env.OPENAI_API_KEY
+    const claude = mode !== "openai" && Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN || process.env.ANTHROPIC_PROFILE)
+    if (vendor === "claude" && claude) return new ClaudeLlm()
+    // OpenAI-only setup: every agent (including the Claude-assigned roles) runs on OpenAI; the vote label says so.
+    if (openai) return new CodexLlm(openai)
     return null
 }
 
