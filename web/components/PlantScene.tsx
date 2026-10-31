@@ -9,7 +9,7 @@ import type { OrbitControls as OrbitControlsType } from "three-stdlib";
 import type { ComponentTag, PlantViewProps } from "../lib/types";
 import { agentColor, agentColorStyle } from "../lib/agent-colors";
 import { FINISH } from "./scene/parts";
-import { FlowParticles, SteamPlume, TankBubbles } from "./scene/FlowParticles";
+import { FlowParticles, TankBubbles } from "./scene/FlowParticles";
 import FactoryHall, { HALL } from "./scene/FactoryHall";
 import ProcessUnits from "./scene/ProcessUnits";
 import { EQUIPMENT_CENTERS, FEED_PATH, OUTLET_PATH, STEAM_PATH, SUCTION_PATH, PRODUCT_PATH, RACK_STEAM_PATH, CONDENSATE_PATH } from "../lib/plant-layout";
@@ -285,8 +285,6 @@ function ProcessFlows({ components, light }: { components: PlantViewProps["compo
     <FlowParticles points={PRODUCT_PATH} count={6} speed={out} color={water} radius={.115} />
     <FlowParticles points={RACK_STEAM_PATH} count={34} speed={steamRate} color={steamColor} radius={.088} />
     <FlowParticles points={CONDENSATE_PATH} count={14} speed={.6 * steam / 1980} color="#ffb877" radius={.06} />
-    <SteamPlume origin={[-.52, 4.75, -.19]} rate={Math.max(0, (temp - 55) / 20)} fadeTo={light ? "#d4dae0" : "#1a2028"} />
-    <SteamPlume origin={[-7.7, 6.9, -5.7]} count={20} rise={2.2} size={.16} rate={steam / 1980} fadeTo={light ? "#d4dae0" : "#1a2028"} />
   </>;
 }
 
