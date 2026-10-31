@@ -119,11 +119,12 @@ async function postRule(deps: LearnDeps, rule: LearnedRule) {
  * rule for any of the owned components the event pushed over a limit.
  */
 export async function learnFromExecution(deps: LearnDeps, event: HistoryEvent, owned: Set<ComponentId>): Promise<CalibrationEntry[]> {
-  deps.cache.addEvent(event);
   const plant = await deps.glue.plant(event.plantId);
-  deps.cache.addEvents(plant.history);
   const proposal = plant.proposals.find((p) => p.id === event.proposalId);
-  const votes = (proposal?.votes ?? []).filter((v) => owned.has(v.componentId));
+  if (proposal?.status !== "executed") return [];
+  deps.cache.addEvent(event);
+  deps.cache.addEvents(plant.history);
+  const votes = proposal.votes.filter((v) => owned.has(v.componentId));
   const results = await Promise.all(votes.map((vote) => calibrate(deps, vote, event)));
 
   const changed = { componentId: event.componentId, metric: event.metric };

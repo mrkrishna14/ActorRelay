@@ -77,6 +77,17 @@ describe("learnFromExecution", () => {
   });
 });
 
+test("an executed message for a proposal that did not execute teaches nothing", async () => {
+  const glue = new FakeGlue();
+  const proposal = makeProposal({ id: "p-blocked", to: 85, status: "blocked" });
+  proposal.votes = [voteFor("plant-a/LV-101", { positionPct: 89 }, "p-blocked")];
+  glue.addProposal(proposal);
+  const cache = new RetrievalCache();
+  const entries = await learnFromExecution({ glue, cache, log: () => undefined }, safeExecution("p-blocked"), new Set(["plant-a/LV-101"]));
+  expect(entries).toEqual([]);
+  expect(cache.allEvents()).toEqual([]);
+});
+
 describe("rule promotion from evidence", () => {
   const block = (glue: FakeGlue) => {
     const proposal = makeProposal({ to: 85 });

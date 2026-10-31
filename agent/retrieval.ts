@@ -4,6 +4,9 @@ import type { ComponentId, ComponentState, HistoryEvent, LearnedRule, Limit, Pro
 /** Below this many similar events a component cannot claim history. */
 export const MIN_SIMILAR = 3;
 
+/** For a change near critical, a run only speaks for the target if it got within this fraction of the range of it. */
+export const CLOSE_RUN_FRACTION = 0.05;
+
 /** similar() is k-nearest with no cutoff, so an event only counts within this fraction of the metric's operating range. */
 export const RELEVANCE_BAND_FRACTION = 0.15;
 
@@ -45,6 +48,16 @@ export function evidenceEstimates(events: HistoryEvent[], own: ComponentState, t
     }
   }
   return Object.fromEntries(Object.entries(totals).map(([metric, t]) => [metric, Math.round((t.sum / t.weight) * 100) / 100]));
+}
+
+/** Highest value each metric reached in runs that went no further than the target. A smaller change already got there. */
+export function evidencePeaks(events: HistoryEvent[], own: ComponentState, to: number): Record<string, number> {
+  const peaks: Record<string, number> = {};
+  for (const event of events) {
+    if (event.after > to) continue;
+    for (const row of ownRows(event, own)) peaks[row.metric] = Math.max(peaks[row.metric] ?? -Infinity, row.after);
+  }
+  return peaks;
 }
 
 export const newestFirst = (a: HistoryEvent, b: HistoryEvent) => Date.parse(b.at) - Date.parse(a.at);

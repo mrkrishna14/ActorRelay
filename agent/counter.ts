@@ -87,14 +87,15 @@ function counterPrompt(proposal: Proposal, blockers: Blocker[], candidates: Cand
   const blocking = blockers.map((b) => `${b.voter.id} ${b.metric}: predicted ${b.predicted}, must stay under ${Math.round(b.ceiling * 10) / 10}`);
   const rows = candidates.map((c) => `${c.value} | ${c.safeRuns} safe runs | expected peak ${JSON.stringify(c.peaks)}`);
   const reasons = proposal.votes.filter(isBlocking).map((v) => `${v.componentId}: ${v.reason}`);
-  return `<data>
-Blocked proposal: ${proposal.proposerComponentId} ${proposal.metric} ${proposal.from} -> ${proposal.to}
+  const data = `Blocked proposal: ${proposal.proposerComponentId} ${proposal.metric} ${proposal.from} -> ${proposal.to}
 Blocking predictions:
 ${blocking.join("\n")}
 Blocking reasons:
 ${reasons.join("\n")}
 Allowed candidates: value | support | expected peak
-${rows.join("\n")}
+${rows.join("\n")}`;
+  return `<data>
+${data.replace(/</g, "&lt;")}
 </data>
 Return the JSON object now.`;
 }
