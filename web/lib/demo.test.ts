@@ -35,7 +35,7 @@ describe("frontend sample proposal lifecycle", () => {
     expect(proposal.status).toBe("veto_window");
     expect(proposal.votes).toHaveLength(5);
     expect(proposal.votes.every((vote) => vote.vote === "yes")).toBe(true);
-    expect(proposal.vetoDeadline).toBe(DEMO_EPOCH + DEMO_REVIEW_MS + 10_000);
+    expect(proposal.vetoDeadline).toBe(DEMO_EPOCH + DEMO_REVIEW_MS + 5_000);
     const deadline = proposal.vetoDeadline!;
     const justBefore = tick(reviewed, deadline - 1);
     expect(latest(justBefore).status).toBe("veto_window");

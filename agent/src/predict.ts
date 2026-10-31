@@ -191,7 +191,10 @@ export function buildVote(
     const basisText = Object.entries(predicted).map(([m, v]) => `${m} ${v}`).join(", ")
     const why = draft?.reason ?? (vote === "no" ? enforced.reasons.join("; ") : `predicted ${basisText} stays under critical − margin`)
     const enforcedNote = enforced.vote === "no" && draft?.vote === "yes" ? ` [enforced: ${enforced.reasons.join("; ")}]` : ""
-    const reason = `${label}${why}${enforcedNote} (similar events: ${similarCount}${g.anchor ? `, newest run ${g.anchor.id}` : ""}${g.rules.length ? `, rules: ${g.rules.map(r => r.id).join(", ")}` : ""})`
+    // Make cross-plant learning explicit: "Learned in Plant A: P-100 speedPct ≥ 80 → LV-101 positionPct ≥ 85 …".
+    const learned = g.rules.filter(r => r.scope === "company").map(r => r.text.replace(/plant-([ab])/g, (_m, x: string) => `Plant ${x.toUpperCase()}`).replace(/, seen \d+ times$/, "")).slice(0, 1)
+    const learnedNote = learned.length ? `${learned[0]}. ` : ""
+    const reason = `${label}${learnedNote}${why}${enforcedNote} (similar events: ${similarCount}${g.anchor ? `, newest run ${g.anchor.id}` : ""}${g.rules.length ? `, rules: ${g.rules.map(r => r.id).join(", ")}` : ""})`
     return {
         proposalId: proposal.id, componentId: self.id, agentId: `agent:${self.id}`, vote,
         reason: reason.slice(0, 3900), predicted, marginPct: self.marginPct,

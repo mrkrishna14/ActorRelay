@@ -196,7 +196,7 @@ export class Plant extends Actor<null, Ping, PlantOutgoing> {
     /** Stamp per reset so proposal ids never repeat across resets (glue journals commands by proposal id). */
     @Persisted private epoch = ""
     @Persisted private lastHeartbeat = 0
-    @Persisted private config: PlantConfig = { vetoWindowMs: 10_000, voteTimeoutMs: 30_000, clock: true }
+    @Persisted private config: PlantConfig = { vetoWindowMs: 5_000, voteTimeoutMs: 30_000, clock: true }
 
     async read(): Promise<PlantState> {
         return {
@@ -211,7 +211,7 @@ export class Plant extends Actor<null, Ping, PlantOutgoing> {
         const history = (seedHistory ?? []).map(e => parse(HistoryEventSchema, e, `history event ${e?.id}`))
         if (plant.id !== (this.id as PlantId)) throw new Error(`seed for ${plant.id} sent to plant ${(this.id as PlantId)}`)
         this.config = {
-            vetoWindowMs: options?.vetoWindowMs ?? 10_000,
+            vetoWindowMs: options?.vetoWindowMs ?? 5_000,
             voteTimeoutMs: options?.voteTimeoutMs ?? 30_000,
             clock: options?.clock ?? true,
             glueUrl: this.config.glueUrl ?? null, // integration settings survive a reset

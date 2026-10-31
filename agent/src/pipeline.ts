@@ -98,7 +98,8 @@ export async function counterFor(proposal: Proposal, plant: PlantState, deps: De
     const voters = await Promise.all(blockers.map(v => deps.backend.component(v.componentId)))
     const changes = plant.history.filter(e => e.componentId === proposal.proposerComponentId && e.metric === proposal.metric)
     const safeAt = (x: number) => {
-        const nearest = [...changes].sort((a, b) => Math.abs(a.after - x) - Math.abs(b.after - x)).slice(0, 3)
+        // Only runs this plant actually made near x count as evidence (no extrapolating from far-away runs).
+        const nearest = [...changes].filter(e => proposal.metric !== "speedPct" || Math.abs(e.after - x) <= 5).sort((a, b) => Math.abs(a.after - x) - Math.abs(b.after - x)).slice(0, 3)
         if (nearest.length < 3) return false
         return nearest.every(e => !e.incident && voters.every(c => Object.entries(ownPoints([e], c.id)).every(([m, pts]) => !c.limits[m] || pts.every(p => p.y < threshold(c.limits[m]!, c.marginPct)))))
     }

@@ -92,7 +92,7 @@ export default function EquipmentInspector({ equipment, components, initialMetri
         })}</div>
         <div className="support-safety-note"><ShieldCheck size={22} weight="light" /><div><strong>{equipment.marginPct}% safety margin</strong><p>Agents assess proposals below the critical limit, with this margin reserved. Predicted effects are checked against retrieved equipment history.</p></div></div>
         <form ref={formRef} className="support-proposal-form" onSubmit={propose}>
-          <div><h3>Propose an operating setpoint</h3><p>Connected equipment vote first. Unanimous agreement opens a 10-second human veto window.</p></div>
+          <div><h3>Propose an operating setpoint</h3><p>Connected equipment vote first. Unanimous agreement opens a 5-second human veto window.</p></div>
           <label htmlFor={controllerId}>Controller · {equipment.plantId === "plant-a" ? "Plant A" : "Plant B"}</label>
           <select id={controllerId} className="support-controller-select" value={metric} onChange={(event) => { setMetric(event.target.value as ControlMetric); setError(""); }}>{CONTROL_TARGETS.map((control) => <option key={control.metric} value={control.metric}>{control.loop} · {control.label} · {control.tag}</option>)}</select>
           <div className="support-control-readings"><span><small>Measured {selectedControl.label.toLowerCase()}</small><strong>{formatValue(measured, selectedControl.unit)}</strong></span><span><small>{selectedControl.setpointMetric ? "Current setpoint" : "Current pump command"}</small><strong>{formatValue(currentSetpoint, selectedControl.unit)}</strong></span></div>
