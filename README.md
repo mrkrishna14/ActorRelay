@@ -41,7 +41,7 @@ Full instructions are in [glue/DEMO.md](glue/DEMO.md) and [glue/HANDOFF.md](glue
 
 ## What has been shown
 - **Full stack, final code:** 26 of 26 end-to-end checks on real Terse, real Relay, real model calls, the simulator and glue, at 14:09 and 15:42 ([table](docs/submission/evidence/e2e-run-154135.md)). The test script drives the routes.
-- **Crash tests:** 31 of 33 scenarios passed on real Terse with `kill -9`, with glue and the simulator faked. No acknowledged write was lost and no proposal sent a second simulation command across 36 server kills. Limits and open items are in [the report](actor/tests/chaos/REPORT.md).
+- **Crash tests:** 32 of 33 scenarios passed on their latest run on real Terse with `kill -9`, with glue and the simulator faked. No acknowledged write was lost and no proposal sent a second simulation command across 37 server kills. Limits and open items are in [the report](actor/tests/chaos/REPORT.md).
 
 [What is real and what is a stand-in](docs/submission/real-vs-stand-in.md) lists every limit. The main ones: the plant and its history are simulated, actors run on a local dev server, and every vote so far ran on OpenAI models, with Claude roles on a labelled fallback.
 
