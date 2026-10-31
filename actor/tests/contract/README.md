@@ -27,6 +27,8 @@ bun node_modules/typescript/lib/tsc.js --noEmit -p tsconfig.json
 | `actor-runtime.contract.test.ts` | Input and output of every actor method, every state strictly parsed | Real classes on a **fake** Terse base |
 | `agent-glue.contract.test.ts` | `HttpGlue` over HTTP, `agent/schemas.ts` structure against the types | Real agent client, **fake** spec server |
 | `relay.contract.test.ts` | The five Relay messages, the `{type, payload}` envelope, the demo path, reset | Real `AgentRuntime` and actor classes; no Relay server, **scripted** LLM, **fake** Terse base |
+| `thresholds.contract.test.ts` | Agent and actor use one safety threshold at every margin | Real `thresholdFor` and `enforceVoteSafety` |
+| `glue-live.contract.test.ts` | Our own glue against `TASK3.MD` and `agent/glue.ts` over HTTP | A running glue; **skipped** unless `CONTRACT_GLUE_URL` is set |
 | `types/*.assert.ts` | Agent schemas and actor signatures against the types | `tsc` |
 
 ## What this does not prove
@@ -41,4 +43,4 @@ Each is pinned, so anything new fails.
 - `id` is not emittable, because the Terse base class owns it. `PlantState.tick` is emitted as `tickCount`. `getState()` returns the contract names.
 - `proposalSchema` reads votes with `.loose()`, so those three assertions use `Same` instead of `Equal`.
 
-`lib/glue-spec.ts` is the route contract, written from `TASK3.MD` and the frozen types. Whatever serves as our glue should be checked against it; nothing here tests a glue service. Doc contradictions are in the shared notes folder as `ar-contract-doc-contradictions.md`.
+`lib/glue-spec.ts` is the route contract, written from `TASK3.MD` and the frozen types. `glue-live.contract.test.ts` checks a running glue against it; everything else here runs without one. Doc contradictions are in the shared notes folder as `ar-contract-doc-contradictions.md`.

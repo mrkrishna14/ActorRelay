@@ -2,7 +2,7 @@
 // shared/types.ts. Static, so it runs without the Terse runtime. Nothing here depends on the fake.
 import { describe, expect, test } from "bun:test";
 import ts from "typescript";
-import { claudeMethods, readRepo, task1 } from "./lib/docs";
+import { claudeMethods, readRepo, task1, task3Routes } from "./lib/docs";
 
 const source = ts.createSourceFile("actor.ts", readRepo("actor/src/actor.ts"), ts.ScriptTarget.ESNext, true);
 const classes = new Map<string, ts.ClassDeclaration>();
@@ -91,5 +91,15 @@ describe("emitted fields are the contract and nothing else", () => {
         expect(`${name}.${m.name.getText()}: ${isPrivate(m)}`).toBe(`${name}.${m.name.getText()}: true`);
       }
     }
+  });
+});
+
+describe("the Plant's outbound calls", () => {
+  const outbound = [...new Set([...readRepo("actor/src/actor.ts").matchAll(/postToGlue\("(\/[\w-]+)"/g)].map((m) => m[1]!))].sort();
+
+  test("are the two routes TASK3 assigns to the Plant, and no others", () => {
+    const assigned = task3Routes().filter((r) => r.caller.startsWith("Plant")).map((r) => r.path).sort();
+    expect(outbound).toEqual(assigned);
+    expect(outbound).toEqual(["/execute-callback", "/tick"]);
   });
 });

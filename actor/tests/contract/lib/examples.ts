@@ -13,6 +13,7 @@ import plantsFile from "../../../../shared/plants.json";
 import { PlantsFileS, type EmittedComponent } from "./schemas";
 
 export const seed = PlantsFileS.parse(plantsFile);
+export const ALL_COMPONENT_IDS = seed.plants.flatMap((p) => p.components.map((c) => c.id));
 export const T0 = "2026-10-31T19:00:00.000Z";
 
 export const vote: Vote = {
