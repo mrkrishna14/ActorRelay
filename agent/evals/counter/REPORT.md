@@ -18,12 +18,12 @@ Scenarios: the demo step 40 times, varied targets, LV-101 margins 5 to 25, steam
 | Clears every threshold (physics) | 121/121 | 174/174 | 54/54 | 24/24 |
 | Unsafe counter voted through | 0 | 0 | 0 | 0 |
 | Re-proposed value, or no-op at `from` | 0 | 0 | 0 | 0 |
-| Third counter refused | all | all | all | none reached |
+| Third counter refused | none reached | 5/5 | none reached | none reached |
 | Demo landing | 65 x29, 60 x9 | 65 x25, 60 x15 | 65 x21, 60 x18 | **65 x24** |
 | Counter call p50 / p95 | 1.4 / 2.1 s | 1.5 / 2.2 s | 1.6 / 2.1 s | 1.4 / 1.7 s |
 | Block to pass p50 / p95 | 4.1 / 5.9 s | 4.2 / 9.5 s | 4.5 / 5.7 s | 3.8 / 4.9 s |
 
-`vote.ts` changed between columns, so read them as direction, not as a controlled trial. Counts of 144 and 51 include cases that should not pass (no history, infeasible). The rows are not all counted over the same set: "inside" and "clears" count every counter, including second ones. Latency was measured with the key under heavy load. Run commands that exercised a full demo at low load were not separately timed.
+`vote.ts` changed between columns, so read them as direction, not as a controlled trial. Counts of 144 and 51 include cases that should not pass (no history, infeasible). The rows are not all counted over the same set: "inside" and "clears" count every counter, including second ones. Latency was measured with the key under heavy load; no run measured it on a quiet key.
 
 ## Failure modes
 | # | What happens | Where | Measured | Status |
@@ -41,7 +41,7 @@ Looked for and not found: values too timid to matter, values back at the blocked
 
 A timing replay on real latencies (2 s sweep, 800 ms poll) shows the counter usually builds from partial votes, but LV-101's no was already in for 40/40 runs, so that needs no change. This ran on an earlier file.
 
-OpenAI's usage-policy filter rejected 1 of about 5,000 calls on shipped prompts, a TV-101 vote. It counts as a failed attempt.
+OpenAI's usage-policy filter rejected 1 of about 6,000 calls on shipped prompts, a TV-101 vote. It counts as a failed attempt.
 
 ## Does code enforce the bounds?
 Yes. `bounds.test.ts` runs real `agent/counter.ts` against a FAKE hostile model, 33/33 pass on `2923f8b687`: the blocked value, `from`, out-of-range, between-candidate, string, null, NaN, prose and thrown errors are all refused after one re-request, and a well-formed reply naming another candidate cannot move the target. It also covers downward proposals, the cap per root, a strictly safer second counter, duplicate delivery and status gating. Three tests pin open gaps, including 2 and 7, and will need updating when those close.
