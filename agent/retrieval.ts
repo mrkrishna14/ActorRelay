@@ -1,11 +1,14 @@
 // What counts as "similar", and the local cache of executions and rules that keeps prompts fast.
 import type { ComponentId, ComponentState, HistoryEvent, LearnedRule, Limit, Proposal } from "../shared/types";
 
-/** Below this many similar events a component cannot claim history. */
+/** Below this many runs that speak for a change, a component cannot claim history. */
 export const MIN_SIMILAR = 3;
 
 /** A run only speaks for a target if it got within this fraction of the metric's range of it. */
 export const CLOSE_RUN_FRACTION = 0.035;
+
+/** A run took a comparable step if it moved at least this share of the proposed one. Bigger steps overshoot further. */
+const COMPARABLE_STEP = 0.6;
 
 /** similar() is k-nearest with no cutoff, so an event only counts within this fraction of the metric's operating range. */
 export const RELEVANCE_BAND_FRACTION = 0.15;
@@ -41,6 +44,13 @@ export function ownRows(event: HistoryEvent, own: ComponentState): OwnRow[] {
 /** Runs that moved the way the proposal does. A step down heats the tank and a step up cools it, so peaks do not carry across. */
 export function sameDirection(events: HistoryEvent[], proposal: Pick<Proposal, "from" | "to">): HistoryEvent[] {
   return events.filter((e) => Math.sign(e.after - e.before) === Math.sign(proposal.to - proposal.from));
+}
+
+/** A run speaks for a change only if it moved the same way, took a comparable step and got to the target. */
+export function speaksFor(event: HistoryEvent, proposal: Pick<Proposal, "from" | "to">, closeBy: number): boolean {
+  if (!sameDirection([event], proposal).length) return false;
+  const reached = proposal.to >= proposal.from ? event.after >= proposal.to - closeBy : event.after <= proposal.to + closeBy;
+  return reached && Math.abs(event.after - event.before) >= COMPARABLE_STEP * Math.abs(proposal.to - proposal.from);
 }
 
 /** What one point of pump speed does to each metric, from the model's steady states. */
@@ -83,8 +93,8 @@ export function expectedHeader(events: HistoryEvent[], steam: ComponentState, to
 }
 
 /**
- * The highest and lowest each metric reached in runs no bigger than this change, give or take a close run. If a run
- * that size already crossed a limit, this change will too, whatever an average of the other runs says.
+ * The highest and lowest each metric reached in runs that stopped no further than the target, give or take a close
+ * run. If one of them crossed a limit, this change will too, whatever an average of the other runs says.
  */
 export function evidenceExtremes(events: HistoryEvent[], own: ComponentState, proposal: Pick<Proposal, "from" | "to">, closeBy: number) {
   const peaks: Record<string, number> = {};

@@ -2,7 +2,7 @@
 import { describe, expect, test } from "bun:test";
 import { AgentRuntime } from "../runtime";
 import type { WireMessage } from "../schemas";
-import { agentName, decodeEnvelope, encodeEnvelope } from "../wire";
+import { agentName, decodeEnvelope, encodeEnvelope, postKey } from "../wire";
 import { FakeGlue, makeProposal, safeExecution } from "./fake-glue";
 import { ScriptedLlm } from "./scripted-llm";
 
@@ -139,6 +139,27 @@ describe("waiting for late votes", () => {
 });
 
 describe("a failure leaves the work recoverable", () => {
+  test("a failed read while building the counter does not end the watch", async () => {
+    const glue = new FakeGlue();
+    const posted: WireMessage[] = [];
+    const llm = new ScriptedLlm(() => JSON.stringify({ value: 65, rationale: "safe history" }));
+    const runtime = new AgentRuntime({ glue, llm, owned: ["plant-a/P-100"], log: () => undefined, pollMs: 5, post: async (message) => void posted.push(message) });
+    const proposal = makeProposal({ to: 85, requiredVoters: ["plant-a/LV-101"] });
+    glue.addProposal(proposal);
+    const realComponent = glue.component.bind(glue);
+    let fails = 1;
+    glue.component = async (id) => {
+      if (fails-- > 0) throw new Error("glue blip");
+      return realComponent(id);
+    };
+    runtime.onMessage({ type: "proposal", proposal: structuredClone(proposal) });
+    proposal.votes = [{ proposalId: proposal.id, componentId: "plant-a/LV-101", agentId: "agent:plant-a/LV-101", vote: "no", reason: "too high", predicted: { positionPct: 89 }, marginPct: 10, evidenceEventIds: [], evidenceRuleIds: [], similarCount: 5 }];
+    proposal.status = "blocked";
+    await runtime.drain();
+    expect(posted.map((m) => m.type)).toEqual(["counter"]);
+  });
+
+
   test("a vote that could not be posted is cast again on redelivery", async () => {
     const glue = new FakeGlue();
     const llm = new ScriptedLlm(() => JSON.stringify({ vote: "yes", reason: "ok", predicted: { positionPct: 66 } }));
@@ -232,6 +253,13 @@ describe("relay envelope", () => {
     expect(decodeEnvelope(JSON.stringify({ type: "proposal", payload: proposal }))).toMatchObject({ type: "proposal", proposal: { id: proposal.id } });
     expect(decodeEnvelope(JSON.stringify({ type: "executed", payload: { proposalId: "p", event } }))).toMatchObject({ type: "executed", proposalId: "p" });
     expect(decodeEnvelope(JSON.stringify({ type: "executed", payload: event }))).toMatchObject({ type: "executed", proposalId: "p" });
+  });
+
+  test("a retried post keeps one key, so Relay keeps one message", () => {
+    const vote = { proposalId: "p", componentId: "plant-a/LV-101", agentId: agentName("plant-a/LV-101"), vote: "no" as const, reason: "r", predicted: {}, marginPct: 10, evidenceEventIds: [], evidenceRuleIds: [], similarCount: 0 };
+    expect(postKey({ type: "vote", vote })).toBe("vote:p:plant-a/LV-101");
+    const proposal = { plantId: "plant-a" as const, proposerComponentId: "plant-a/P-100", metric: "speedPct", to: 65, rationale: "r" };
+    expect(postKey({ type: "counter", parentProposalId: "p", proposal })).toBe("counter:p");
   });
 
   test("anything else decodes to nothing", () => {

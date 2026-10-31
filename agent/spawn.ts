@@ -8,7 +8,7 @@ import { GlueError, HttpGlue } from "./glue";
 import { RoutedLlm } from "./llm";
 import { AgentRuntime, type Post } from "./runtime";
 import type { WireMessage } from "./schemas";
-import { agentName, CHANNELS, decodeEnvelope, encodeEnvelope, SYSTEM_NAME } from "./wire";
+import { agentName, CHANNELS, decodeEnvelope, encodeEnvelope, postKey, SYSTEM_NAME } from "./wire";
 import { RELAY_URL, workspaceKey } from "./workspace";
 
 const TOKENS_FILE = process.env.RELAY_TOKENS_FILE ?? join(import.meta.dir, ".relay-tokens.json");
@@ -98,19 +98,21 @@ async function main() {
   for (const component of components) clients.set(component.id, await identity(relay, tokens, agentName(component.id)));
   for (const component of components) await joinChannels(clients.get(component.id) as Client, channelsFor(component));
 
-  /** If Relay refuses a post, the same message still reaches glue: Plant rejects a duplicate vote. */
-  const direct = (message: WireMessage) => {
+  /** If Relay fails, the same message still reaches glue. Plant rejects a duplicate vote; a counter has to be checked first. */
+  const direct = async (message: WireMessage) => {
     if (message.type === "vote") return glue.vote(message.vote);
-    if (message.type === "counter") return glue.counter(message.parentProposalId, message.proposal);
+    if (message.type !== "counter") return;
+    const plant = await glue.plant(message.proposal.plantId);
+    if (!plant.proposals.some((p) => p.parentProposalId === message.parentProposalId)) await glue.counter(message.parentProposalId, message.proposal);
   };
   const post: Post = async (message, channel, from) => {
     const client = clients.get(from);
     if (!client) throw new Error(`no relay identity for ${from}`);
     try {
-      await client.sendMessage({ to: `#${channel}`, text: encodeEnvelope(message) });
+      await client.sendMessage({ to: `#${channel}`, text: encodeEnvelope(message), idempotencyKey: postKey(message) });
     } catch (error) {
       console.warn(`relay post failed for ${from}, handing to glue directly: ${error}`);
-      await Promise.resolve(direct(message)).catch((failed) => {
+      await direct(message).catch((failed) => {
         if (!(failed instanceof GlueError) || failed.status >= 500) throw failed;
       });
     }

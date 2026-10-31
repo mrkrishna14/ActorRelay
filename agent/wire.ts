@@ -12,6 +12,13 @@ export function encodeEnvelope(message: WireMessage): string {
   return JSON.stringify({ type, payload });
 }
 
+/** With a key the SDK retries a failed post itself, and Relay keeps one message however many tries it took. */
+export function postKey(message: WireMessage): string | undefined {
+  if (message.type === "vote") return `vote:${message.vote.proposalId}:${message.vote.componentId}`;
+  if (message.type === "counter") return `counter:${message.parentProposalId}`;
+  return undefined;
+}
+
 /** Glue passes the actor's response through, which may wrap the object or be the object. */
 export function toWireMessage(type: "proposal" | "executed" | "rule", payload: unknown): WireMessage {
   const body = payload as Record<string, unknown> | null | undefined;

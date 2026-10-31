@@ -126,9 +126,12 @@ export class AgentRuntime {
       const allIn = current.votes.length >= current.requiredVoters.length;
       if (!allIn && Date.now() - blockedAt < COUNTER_SETTLE_MS) continue;
       // Actor state remembers a posted counter, so a retry here can never post a second one.
-      const counter = await buildCounter({ glue, llm, log: this.log }, current, plant.proposals);
-      if (!counter && allIn) return;
-      if (!counter) continue;
+      const counter = await buildCounter({ glue, llm, log: this.log }, current, plant.proposals).catch((error) => {
+        this.log(`counter for ${proposal.id} failed, watching again: ${error}`);
+        return undefined;
+      });
+      if (counter === undefined || (!counter && !allIn)) continue;
+      if (!counter) return;
       this.log(`${proposal.proposerComponentId} countered ${proposal.id} with ${counter.proposal.to} (target by code, explained by ${counter.explainedBy})`);
       await post({ type: "counter", parentProposalId: counter.parentProposalId, proposal: counter.proposal }, proposal.plantId, proposal.proposerComponentId);
       return;

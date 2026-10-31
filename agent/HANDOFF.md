@@ -101,7 +101,7 @@ Glue routes used: `GET /component/:id`, `GET /similar?componentId&metric&to&k&up
 
 ## Decisions a reader needs
 
-**similarCount.** `similar()` is k-nearest with no cutoff, so plant-b at 85 gets five events from 40 to 65. An event counts only if its `after` is within 15% of the changed metric's range of the proposed `to` (10.5 points for P-100) and it has rows for this voter. A cross-plant voter has no rows of its own, so its events count without them. `similarCount` is the length of that list, which is exactly what the model is shown.
+**similarCount.** `similar()` is k-nearest with no cutoff, so plant-b at 85 can get five events from 40 to 65. Voters ask for the nearest 20, keep those within 15% of the changed metric's range of `to` (10.5 points for P-100) that have rows for this voter, and judge evidence on all of them. A cross-plant voter has no rows of its own, so its events count without them. The model is shown five: runs that reached a limit first, then runs that speak for the change. `similarCount` is the length of that list.
 
 **Newest run.** `similar()` never returns a safe 65 run when asked about 85, so the newest execution is read from `plant.history` (`proposalId` not null). It is `evidenceEventIds[0]`, it is shown to the model as context, and it is not counted in `similarCount`, so `evidenceEventIds` can be one longer than `similarCount`. A `no` rests on the prediction and on runs that reached the limit; the reason says the newest run is not proof when it was safe.
 
@@ -111,16 +111,14 @@ Glue routes used: `GET /component/:id`, `GET /similar?componentId&metric&to&k&up
 
 **Force-no order.**
 1. A rule: a binding rule, whose consequence is at or past this voter's threshold, or any applicable rule behind a predicted breach. The reason cites the rule.
-2. Insufficient history: fewer than 3 similar events with a prediction or the change near critical; or an increase, or a change near critical, with fewer than 3 runs within 3.5% of the range below the target (about 2.5 speed points). Runs well short of the target say nothing about it.
+2. Insufficient history: fewer than 3 runs speak for the change. A run speaks for it if it moved the same way, took at least 60% of the proposed step, and got to within 3.5% of the range of the target (about 2.5 speed points). This holds at any target and in both directions, so it is stricter than the 15%-of-critical rule in `CLAUDE.MD` and covers it. On the real history, every demo path has at least 3 such runs at every header and feed value from 5.2 to 6.3 barg.
 3. A prediction at or past the threshold, or under the metric's `min`.
 
-History moves the prediction, so a model that lowballs cannot pass a change history already shows as unsafe. A value stands if the metric already reads there on an increase, if a run no bigger than this change (plus the same 3.5%) reached it, or if the nearest runs land there. Rows are shifted to the target by the model's slope before averaging, so runs on one side do not bias the estimate. The same check covers `min` on the low side. Evidence only comes from runs that moved the same way as the proposal.
-
-With a model that always says yes, the sweep in `tests/adversarial/compromised-sweep.test.ts` stops at 76 on plant-a and 75 on plant-b.
+History moves the prediction, so a model that lowballs cannot pass a change history already shows as unsafe. A value stands if the metric already reads there on an increase, if a run that stopped no further than the target (plus the same 3.5%) reached it, or if the nearest runs land there. Rows are shifted to the target by the model's slope before averaging, so runs on one side do not bias the estimate. The same check covers `min` on the low side. Evidence only comes from runs that moved the same way as the proposal.
 
 Code never turns a `no` into a `yes`. The model's `no` can be sent back once, if no prediction supports it, or if at least 3 runs that went as far as the target contradict it. A second answer stands, including a `yes`: TASK1 requires the re-request, and a compromised model gains nothing from it because it could say `yes` first.
 
-**Malformed.** Bad JSON, a missing limited metric, an implausible value, or a `no` with no prediction behind it gets one re-request. After that, a `no` that evidence already proves is posted with the evidence, labelled `malformed prediction from the model`. Otherwise it is `{vote:"no", reason:"malformed prediction", predicted:{}}`. A failed read of `/component`, `/similar` or `/rules` gives `reason:"retrieval failed"`.
+**Malformed.** Bad JSON, a missing limited metric, an implausible value, or a `no` with no prediction behind it gets one re-request. After that, a `no` that evidence already proves is posted with the evidence, labelled `malformed prediction from the model`. Otherwise it is `{vote:"no", reason:"malformed prediction", predicted:{}}`. A failed read of `/component`, `/similar`, `/rules` or `/state` gives `reason:"retrieval failed"`.
 
 **Slow models.** A `no` already proven by evidence or a rule is posted at 6 s on a first block and 1.5 s when a live execution exists, whether or not the model has answered. The reason then starts `[decided from retrieved evidence; the model did not answer in time]`. A `yes` always waits for the model.
 
@@ -128,13 +126,13 @@ Code never turns a `no` into a `yes`. The model's `no` can be sent back once, if
 
 **Rules.** After a `no` backed by at least 3 evidence ids, and after any execution that crosses a limit, an agent looks for at least 3 runs sharing the crossing, with no safe run in the same range, and posts a rule through `/rule`, with an id derived from its content. Rule ids and support ids come only from retrieved data.
 
-**Reset.** `plant.history` and `/rules` are the truth. The local cache only covers a failed history read, so a reset between demo takes needs no signal to agents.
+**Reset.** `plant.history` and `/rules` are the truth, so a reset between demo takes needs no signal to agents. `RetrievalCache` is kept for the interface but no vote reads it.
 
 **Rule scope.** A plant rule applies only to changes in that plant. A cross-plant voter relies on the company rule, because the proposing Plant refuses a rule id it does not hold.
 
 **Recovery.** A vote that could not be posted, or an `executed` that kept failing, can run again if the message is redelivered. A slow read is retried once. Writes are not. If a stored agent token is lost, the name is released and registered again.
 
-**Proposal copy.** When the actors hold the proposal, their copy is what gets voted on, not the Relay message.
+**Proposal copy.** The actors' copy is what gets voted on, not the Relay message. If they do not hold the proposal, or `/state` cannot be read, the vote is a safe no. Any failed read is tried once more first.
 
 ## Vendor truth
 
@@ -145,7 +143,7 @@ Code never turns a `no` into a `yes`. The model's `no` can be sent back once, if
 - `tests/*.test.ts` run on a fake glue built from `shared/plants.json`. History is `AGENT_TEST_HISTORY` if set, then `shared/history.json` if it exists, otherwise the labelled stand-in `actor/tests/fixtures-gen/history.json`. Suites were run on both the stand-in and Person 2's history from `origin/person2-simulation`.
 - `tests/vote.real.test.ts` makes real OpenAI calls. `tests/live-relay-proof.ts` adds a real Relay server and glue's real `RelayBridge`. Neither touches real actors, glue's HTTP server or the simulator.
 - `tests/scripted-llm.ts` is a test double and exists only under `tests/`. Production code has no stub flag.
-- Last Relay proof, on Person 2's history, with the machine under heavy load from other sessions: 85 blocked with LV-101's `no` at the bridge in 3.5 s; counter posted 2.4 s after the block and landed on 65; all 5 voters yes on 65 in 3.9 s; 5 voters calibrated; repeat 85 `no` at the bridge in 2.1 s with the newest run as `evidenceEventIds[0]`; plant-b blocked citing the company rule. With the 2 s sweep the repeat stays under 5 s. One Relay hop is about 120 ms. The bridge in that proof is the earlier teammate `relay.ts` from git history, kept as a reference; the replacement glue has not been run with these agents.
+- Last Relay proof at 69dfe6b, on Person 2's history, with the machine under load from other sessions: 85 blocked with LV-101's `no` at the bridge in 3.7 s; counter posted 2.7 s after the block and landed on 65; all 5 voters yes on 65 in 5.1 s; 5 voters calibrated; repeat 85 `no` at the bridge in 2.0 s with the newest run as `evidenceEventIds[0]`; plant-b blocked citing the company rule. With the 2 s sweep the repeat stays under 5 s, though that total was not measured end to end. The bridge in that proof is the earlier teammate `relay.ts` from git history, kept as a reference; our own glue has not been run with these agents.
 - Restart with stored tokens reconnects without `name_conflict`; that was run. Losing the tokens file while keeping the workspace does give `name_conflict`, because registration is create-only. Delete `~/.actorrelay/relay-workspace-key` to start a fresh workspace, then restart glue too.
 
 ## Known limits

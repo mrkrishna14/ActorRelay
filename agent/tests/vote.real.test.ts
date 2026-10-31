@@ -1,14 +1,20 @@
 // The listed vote cases, run against real model calls. Nothing here is scripted: a pass means the model plus the code
 // enforcement produced these votes. Claude roles run on the labelled GPT fallback while the Claude CLI is logged out.
 import { beforeAll, describe, expect, test } from "bun:test";
+import type { Proposal } from "../../shared/types";
 import { RoutedLlm } from "../llm";
 import { RetrievalCache } from "../retrieval";
 import { channelForVote } from "../runtime";
-import { castVote } from "../vote";
+import { castVote as castRealVote, type VoteDeps } from "../vote";
 import { companyRule, FakeGlue, makeProposal, usingStandInHistory } from "./fake-glue";
 
 const llm = new RoutedLlm();
 const deps = (glue: FakeGlue) => ({ glue, llm, cache: new RetrievalCache(), log: () => undefined });
+
+function castVote(d: VoteDeps, proposal: Proposal, componentId: string) {
+  (d.glue as FakeGlue).addProposal(proposal);
+  return castRealVote(d, proposal, componentId);
+}
 
 beforeAll(async () => {
   if (usingStandInHistory) console.warn("history: labelled stand-in, shared/history.json has not landed");

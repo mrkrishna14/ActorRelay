@@ -149,6 +149,7 @@ export function callClaudeCli(request: LlmRequest, model = CLAUDE_MODEL): Promis
 
 /** A failed CLI call costs seconds on the vote path, so it is tried rarely. */
 const CLAUDE_RETRY_AFTER_MS = 600_000;
+const MIN_FALLBACK_TIMEOUT_MS = 1000;
 
 /**
  * Routes each call by vendor. If the Claude CLI cannot answer, the call goes to OpenAI and the reply is marked as a
@@ -165,7 +166,8 @@ export class RoutedLlm implements Llm {
 
   async complete(request: LlmRequest): Promise<LlmReply> {
     if (request.vendor !== "claude") return this.openai(request);
-    if (Date.now() >= this.claudeDownUntil) {
+    const started = Date.now();
+    if (started >= this.claudeDownUntil) {
       try {
         return await this.claude(request);
       } catch (error) {
@@ -173,7 +175,9 @@ export class RoutedLlm implements Llm {
         this.log(`claude unavailable, using labelled fallback: ${error instanceof Error ? error.message : error}`);
       }
     }
-    return { ...(await this.openai(request)), fallback: true };
+    // The caller's budget covers both, so the stand-in gets what the CLI left.
+    const timeoutMs = Math.max(request.timeoutMs - (Date.now() - started), MIN_FALLBACK_TIMEOUT_MS);
+    return { ...(await this.openai({ ...request, timeoutMs })), fallback: true };
   }
 
   /** Startup check, so the first real vote does not pay for discovering that the CLI is down. */

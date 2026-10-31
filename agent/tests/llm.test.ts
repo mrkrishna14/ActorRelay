@@ -76,6 +76,24 @@ describe("RoutedLlm", () => {
     expect(await llm.complete({ ...request, vendor: "claude" })).toMatchObject({ provider: "openai", fallback: true });
   });
 
+  test("a fallback after a slow CLI failure only gets what is left of the budget", async () => {
+    let budget = 0;
+    const llm = new RoutedLlm(
+      async () => {
+        await Bun.sleep(300);
+        throw new Error("logged out");
+      },
+      async (request) => {
+        budget = request.timeoutMs;
+        return { text: "gpt", provider: "openai", model: "m", fallback: false };
+      },
+      () => undefined,
+    );
+    await llm.complete({ ...request, vendor: "claude" });
+    expect(budget).toBeLessThanOrEqual(1750);
+    expect(budget).toBeGreaterThanOrEqual(1000);
+  });
+
   test("once the CLI has failed it is not tried again on the vote path", async () => {
     let tries = 0;
     const llm = new RoutedLlm(

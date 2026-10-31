@@ -18,12 +18,13 @@ import {
   ruleApplies,
   RetrievalCache,
   sameDirection,
+  speaksFor,
   tagOf,
 } from "./retrieval";
 
+/** What a voter is shown. It is drawn from a wider pool, because k-nearest alone can leave out the runs that matter most. */
 export const SIMILAR_K = 5;
-/** Share of critical that counts as "within 15% of critical". */
-const NEAR_CRITICAL_FRACTION = 0.85;
+const SIMILAR_POOL = 20;
 /** A prediction outside this multiple of critical is noise, not a prediction. */
 const PLAUSIBLE_MULTIPLE = 3;
 const MAX_REASON_CHARS = 900;
@@ -42,7 +43,8 @@ const RETRY_BACKOFF_MS = 400;
 export const FIRST_NO_MS = 6000;
 export const FAST_NO_MS = 1500;
 
-export type VoteDeps = { glue: Glue; llm: Llm; cache: RetrievalCache; fastNoMs?: number; log?: (line: string) => void };
+/** `cache` is accepted but not read: every vote stands on what the actors say now. */
+export type VoteDeps = { glue: Glue; llm: Llm; cache?: RetrievalCache; fastNoMs?: number; log?: (line: string) => void };
 
 const roleDir = join(import.meta.dir, "roles");
 const readRole = (name: string) => readFileSync(join(roleDir, `${name}.md`), "utf8").trim();
@@ -61,19 +63,25 @@ export function thresholdFor(limit: Limit, marginPct: number): number {
   return round9(Math.max(limit.critical * (1 - marginPct / 100), limit.max));
 }
 
-const nearCriticalLine = (limit: Limit) => round9(limit.critical * NEAR_CRITICAL_FRACTION);
-
 /** Metrics this voter must predict. A valve on a shared header also predicts the header. */
 export function requiredMetrics(own: ComponentView): string[] {
   return [...Object.keys(own.limits), ...(own.sharedResources.length ? ["headerBarg"] : [])];
+}
+
+function reachesThreshold(event: HistoryEvent, own: ComponentView, thresholds: Record<string, number>): boolean {
+  return ownRows(event, own).some((row) => row.after >= (thresholds[row.metric] ?? Infinity));
 }
 
 export type VoteContext = {
   proposal: Proposal;
   own: ComponentView;
   proposerLimit: Limit;
-  /** The similar events after the relevance cut. This is what the voter was given, so similarCount is its length. */
+  /** Every similar event after the relevance cut. Evidence is judged on all of them. */
+  pool: HistoryEvent[];
+  /** The ones the voter is shown, most telling first, so similarCount is this length. */
   retrieved: HistoryEvent[];
+  /** How many runs in the pool speak for this change. */
+  speaking: number;
   newest: HistoryEvent | null;
   rules: LearnedRule[];
   applicable: LearnedRule[];
@@ -86,7 +94,7 @@ export type VoteContext = {
 };
 
 type SharedContext = {
-  /** The actors' copy when they have one: a Relay message is a notice, not the source of what is being voted on. */
+  /** The actors' copy. A Relay message is a notice, not the source of what is being voted on. */
   proposal: Proposal;
   proposer: ComponentView | null;
   steam: ComponentView | null;
@@ -108,9 +116,10 @@ function sharedContext(deps: VoteDeps, proposal: Proposal): Promise<SharedContex
 }
 
 async function loadSharedContext(deps: VoteDeps, notified: Proposal): Promise<SharedContext> {
-  const { glue, cache } = deps;
-  const plant = await glue.plant(notified.plantId).catch(() => null);
-  const proposal = plant?.proposals.find((p) => p.id === notified.id) ?? notified;
+  const { glue } = deps;
+  const plant = await glue.plant(notified.plantId);
+  const proposal = plant.proposals.find((p) => p.id === notified.id);
+  if (!proposal) throw new Error(`the actors hold no proposal ${notified.id}`);
   const [proposer, steam] = await Promise.all([
     glue.component(proposal.proposerComponentId).catch(() => null),
     glue.component(`${proposal.plantId}/TV-101`).catch(() => null),
@@ -125,11 +134,9 @@ async function loadSharedContext(deps: VoteDeps, notified: Proposal): Promise<Sh
     metric: proposal.metric,
     to: proposal.to,
     upstreamSnapshot,
-    k: SIMILAR_K,
+    k: SIMILAR_POOL,
   });
-  // Actor history is the truth, so a reset is honoured the moment it happens. The cache only covers a failed read.
-  if (plant) cache.addEvents(plant.history);
-  return { proposal, proposer, steam, similar, newest: newestExecution([...similar, ...(plant?.history ?? cache.allEvents())], proposal) };
+  return { proposal, proposer, steam, similar, newest: newestExecution([...similar, ...plant.history], proposal) };
 }
 
 /** Any read that could hide a limit is a retrieval failure, so the caller answers with a safe no instead of guessing. */
@@ -144,17 +151,23 @@ async function gatherContext(deps: VoteDeps, notified: Proposal, componentId: Co
   const fetched = (await Promise.all([glue.rules(componentId, own.model), glue.rules(proposer.id, proposer.model)])).flat();
   const rules = [...new Map(fetched.map((r) => [r.id, r])).values()];
   const crossPlant = own.plantId !== proposal.plantId;
-  const retrieved = relevantEvents(similar, proposal.to, proposerLimit).filter((e) => crossPlant || ownRows(e, own).length > 0);
+  const pool = relevantEvents(similar, proposal.to, proposerLimit).filter((e) => crossPlant || ownRows(e, own).length > 0);
   const thresholds = Object.fromEntries(
     Object.entries(own.limits).map(([metric, limit]) => [metric, thresholdFor(limit, own.marginPct)]),
   );
-  const moved = sameDirection(retrieved, proposal);
-  const { peaks, lows } = evidenceExtremes(moved, own, proposal, closeDistance(proposerLimit));
+  const closeBy = closeDistance(proposerLimit);
+  const moved = sameDirection(pool, proposal);
+  const { peaks, lows } = evidenceExtremes(moved, own, proposal, closeBy);
+  const speaking = pool.filter((e) => speaksFor(e, proposal, closeBy));
+  const reachedLimit = pool.filter((e) => reachesThreshold(e, own, thresholds));
+  const retrieved = [...new Set([...reachedLimit, ...speaking, ...pool])].slice(0, SIMILAR_K);
   return {
     proposal,
     own,
     proposerLimit,
+    pool,
     retrieved,
+    speaking: speaking.length,
     newest,
     rules,
     applicable: rules.filter((r) => ruleApplies(r, proposal, own)),
@@ -164,11 +177,6 @@ async function gatherContext(deps: VoteDeps, notified: Proposal, componentId: Co
     header: steam && own.sharedResources.length ? expectedHeader(moved, steam, proposal.to) : undefined,
     thresholds,
   };
-}
-
-/** A proposal that itself lands within 15% of the changed metric's critical limit. */
-function changeNearCritical(context: VoteContext): boolean {
-  return context.proposal.to >= nearCriticalLine(context.proposerLimit);
 }
 
 const isIncrease = (context: VoteContext) => context.proposal.to > context.proposal.from;
@@ -196,22 +204,8 @@ function evidenceLows(context: VoteContext): string[] {
   return Object.keys(context.own.limits).filter((metric) => context.lows[metric] < context.own.limits[metric].min);
 }
 
-function closeRuns(context: VoteContext): number {
-  const closest = context.proposal.to - closeDistance(context.proposerLimit);
-  return context.retrieved.filter((e) => e.after >= closest).length;
-}
-
-/** Runs well short of the target say nothing about it, so an increase or a change near critical needs close ones. */
-function insufficientHistory(context: VoteContext): boolean {
-  if (context.retrieved.length < MIN_SIMILAR) return true;
-  return (isIncrease(context) || changeNearCritical(context)) && closeRuns(context) < MIN_SIMILAR;
-}
-
-function nearCritical(context: VoteContext, predicted: Record<string, number>): boolean {
-  return Object.entries(context.own.limits).some(
-    ([metric, limit]) => predicted[metric] !== undefined && predicted[metric] >= nearCriticalLine(limit),
-  );
-}
+/** Fewer runs than this say nothing about the change, whatever the model predicts. */
+const insufficientHistory = (context: VoteContext) => context.speaking < MIN_SIMILAR;
 
 /** True when code alone already proves the vote is no, before the model answers. */
 function provenNo(context: VoteContext): boolean {
@@ -219,7 +213,7 @@ function provenNo(context: VoteContext): boolean {
     bindingRules(context).length > 0 ||
     evidenceBreaches(context).length > 0 ||
     evidenceLows(context).length > 0 ||
-    (insufficientHistory(context) && (isIncrease(context) || changeNearCritical(context) || nearCritical(context, context.estimates)))
+    insufficientHistory(context)
   );
 }
 
@@ -236,7 +230,7 @@ export function buildVotePrompt(context: VoteContext): string {
   const inert = (text: string) => text.replace(/</g, "&lt;");
   const limitLines = Object.entries(own.limits).map(
     ([metric, limit]) =>
-      `${metric}: now ${own.metrics[metric] ?? "unknown"}, max ${limit.max}, critical ${limit.critical}, threshold ${thresholds[metric]}, near-critical line ${nearCriticalLine(limit)}`,
+      `${metric}: now ${own.metrics[metric] ?? "unknown"}, min ${limit.min}, max ${limit.max}, critical ${limit.critical}, threshold ${thresholds[metric]}`,
   );
   const crossPlant = own.plantId !== proposal.plantId;
   const similarRows = retrieved.length ? retrieved.map((e) => eventRow(e, context)) : ["none"];
@@ -251,6 +245,7 @@ Limits:
 ${limitLines.join("\n")}
 Similar past events retrieved (${retrieved.length}): id | at | change | rows for your component | incident
 ${similarRows.join("\n")}
+Runs that speak for this change (same direction, comparable step, reached the target): ${context.speaking}
 Newest execution of this change path (latest observation, may be a different target and may be safe):
 ${newestRow}
 Learned rules:
@@ -298,7 +293,7 @@ export function parseAnswer(text: string, context: VoteContext): Parsed {
 function noIsSupported(context: VoteContext, predicted: Record<string, number>): boolean {
   if (provenNo(context)) return true;
   const past = Object.keys(context.thresholds).some((metric) => predicted[metric] >= context.thresholds[metric]);
-  return past || belowMinimum(context, predicted).length > 0 || (insufficientHistory(context) && nearCritical(context, predicted));
+  return past || belowMinimum(context, predicted).length > 0;
 }
 
 function belowMinimum(context: VoteContext, predicted: Record<string, number>): string[] {
@@ -309,10 +304,9 @@ type Answered = { answer: LlmVote; reply: LlmReply };
 
 /** A breach that every similar run contradicts is usually a misread table, so the model gets one chance to look again. */
 function contradicted(context: VoteContext, answer: LlmVote): string | null {
-  if (context.retrieved.length < MIN_SIMILAR) return null;
   for (const [metric, threshold] of Object.entries(context.thresholds)) {
     if (answer.predicted[metric] < threshold) continue;
-    const farEnough = sameDirection(context.retrieved, context.proposal).filter((e) => e.after >= context.proposal.to);
+    const farEnough = sameDirection(context.pool, context.proposal).filter((e) => e.after >= context.proposal.to);
     const rows = farEnough.flatMap((e) => ownRows(e, context.own)).filter((r) => r.metric === metric);
     if (rows.length < MIN_SIMILAR) continue;
     const peak = Math.max(...rows.map((r) => r.after));
@@ -362,11 +356,7 @@ function provenance(reply: LlmReply | null, missing: NoAnswer): { prefix: string
   return { prefix, suffix: ` [answered by ${reply.provider} ${reply.model}]` };
 }
 
-const isUnsafe = (event: HistoryEvent, context: VoteContext) =>
-  ownRows(event, context.own).some((row) => {
-    const threshold = context.thresholds[row.metric];
-    return threshold !== undefined && row.after >= threshold;
-  });
+const isUnsafe = (event: HistoryEvent, context: VoteContext) => reachesThreshold(event, context.own, context.thresholds);
 
 /** Newest observation first, then the events that actually reached a limit, then the rest. Ids only ever come from retrieval. */
 function orderEvidence(context: VoteContext, vote: "yes" | "no", cited: string[]): string[] {
@@ -420,8 +410,8 @@ function thresholdReason(context: VoteContext, predicted: Record<string, number>
   const parts = breaches.map((metric) => {
     const limit = context.own.limits[metric];
     const claim = `predicted ${metric} ${show(predicted[metric])} is at or past the ${show(context.thresholds[metric])} threshold (critical ${limit.critical} less ${context.own.marginPct}% margin)`;
-    const reached = context.retrieved.filter((e) => ownRows(e, context.own).some((r) => r.metric === metric && r.after >= context.thresholds[metric]));
-    if (reached.length) return `${claim}; ${reached.length} of ${context.retrieved.length} similar runs reached it (${listIds(reached.map((e) => e.id))})`;
+    const reached = context.pool.filter((e) => ownRows(e, context.own).some((r) => r.metric === metric && r.after >= context.thresholds[metric]));
+    if (reached.length) return `${claim}; ${reached.length} of ${context.pool.length} similar runs reached it (${listIds(reached.map((e) => e.id))})`;
     const reading = context.own.metrics[metric];
     if (isIncrease(context) && reading >= context.thresholds[metric]) return `${claim}; it already reads ${show(reading)}`;
     return cited ? claim : `${claim}; no similar run reached it, so this rests on the prediction alone`;
@@ -460,13 +450,12 @@ function decide(context: VoteContext, answered: Answered | null, missing: NoAnsw
   const { prefix, suffix } = provenance(answered?.reply ?? null, missing);
   const note = answered ? `Agent said ${answered.answer.vote}: ${agentNote(answered.answer.reason)}` : null;
   const backing = backingRules(context, predicted);
-  const needsHistory = isIncrease(context) || nearCritical(context, predicted) || nearCritical(context, context.estimates) || changeNearCritical(context);
 
   let grounds: string | null = null;
   if (backing.length) {
     grounds = compose([`${ruleReason(backing)};`, thresholdReason(context, predicted, true)]);
-  } else if (insufficientHistory(context) && needsHistory) {
-    grounds = `insufficient history: ${closeRuns(context)} of ${context.retrieved.length} similar runs came close to this target, ${MIN_SIMILAR} needed`;
+  } else if (insufficientHistory(context)) {
+    grounds = `insufficient history: ${context.speaking} of ${context.pool.length} similar runs moved this way, this far and got to the target, ${MIN_SIMILAR} needed`;
   } else {
     grounds = thresholdReason(context, predicted);
     const low = belowMinimum(context, predicted);
@@ -495,16 +484,20 @@ function safeNo(proposal: Proposal, componentId: ComponentId, reason: string, ma
 }
 
 const DEFAULT_MARGIN_PCT = 10;
+/** One failed read should not cost a safe yes. */
+const RETRIEVAL_RETRY_MS = 500;
 
 /** Handles one required voter. Always returns a contract-valid vote; any failure on the way is a safe no. */
 export async function castVote(deps: VoteDeps, notified: Proposal, componentId: ComponentId): Promise<Vote> {
-  let context: VoteContext;
-  try {
-    context = await gatherContext(deps, notified, componentId);
-  } catch (error) {
-    deps.log?.(`${componentId} retrieval failed: ${error instanceof Error ? error.message : error}`);
-    return safeNo(notified, componentId, "retrieval failed", DEFAULT_MARGIN_PCT, 0);
-  }
+  const context = await gatherContext(deps, notified, componentId).catch(async (error) => {
+    deps.log?.(`${componentId} retrieval failed, trying once more: ${error instanceof Error ? error.message : error}`);
+    await Bun.sleep(RETRIEVAL_RETRY_MS);
+    return gatherContext(deps, notified, componentId).catch((second) => {
+      deps.log?.(`${componentId} retrieval failed: ${second instanceof Error ? second.message : second}`);
+      return null;
+    });
+  });
+  if (!context) return safeNo(notified, componentId, "retrieval failed", DEFAULT_MARGIN_PCT, 0);
   const { proposal } = context;
 
   const asking = askModel(deps, context);
