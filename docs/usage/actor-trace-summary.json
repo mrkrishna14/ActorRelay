@@ -1,0 +1,158 @@
+{
+ "runtime": "local durable actor runtime (terse actor dev), project 'local'",
+ "totalRequestsServed": 19906,
+ "retainedTraces": 10000,
+ "prunedByRuntime": 9906,
+ "windowStart": 1793480060542,
+ "windowEnd": 1793480264815,
+ "outcomes": {
+  "completed": 10000
+ },
+ "hostState": {
+  "warm": 9983,
+  "cold": 17
+ },
+ "distinctActorInstances": 13,
+ "byMethod": [
+  {
+   "actor": "Component",
+   "method": "read",
+   "calls": 5248,
+   "avgMs": 6.2,
+   "maxMs": 799.9
+  },
+  {
+   "actor": "Component",
+   "method": "mirror",
+   "calls": 2031,
+   "avgMs": 35.0,
+   "maxMs": 920.6
+  },
+  {
+   "actor": "Plant",
+   "method": "read",
+   "calls": 1623,
+   "avgMs": 43.3,
+   "maxMs": 1088.3
+  },
+  {
+   "actor": "Company",
+   "method": "read",
+   "calls": 547,
+   "avgMs": 5.5,
+   "maxMs": 215.8
+  },
+  {
+   "actor": "Plant",
+   "method": "onAlarm",
+   "calls": 366,
+   "avgMs": 58.4,
+   "maxMs": 1164.4
+  },
+  {
+   "actor": "Component",
+   "method": "loadSeed",
+   "calls": 40,
+   "avgMs": 25.4,
+   "maxMs": 76.2
+  },
+  {
+   "actor": "Component",
+   "method": "addCalibration",
+   "calls": 30,
+   "avgMs": 23.7,
+   "maxMs": 54.4
+  },
+  {
+   "actor": "Plant",
+   "method": "similar",
+   "calls": 30,
+   "avgMs": 37.8,
+   "maxMs": 71.9
+  },
+  {
+   "actor": "Plant",
+   "method": "vote",
+   "calls": 30,
+   "avgMs": 82.4,
+   "maxMs": 438.3
+  },
+  {
+   "actor": "Company",
+   "method": "promoteRule",
+   "calls": 18,
+   "avgMs": 11.1,
+   "maxMs": 14.0
+  },
+  {
+   "actor": "Company",
+   "method": "requiredCrossPlantVoters",
+   "calls": 6,
+   "avgMs": 12.4,
+   "maxMs": 13.9
+  },
+  {
+   "actor": "Company",
+   "method": "recordAudit",
+   "calls": 6,
+   "avgMs": 12.3,
+   "maxMs": 15.4
+  },
+  {
+   "actor": "Plant",
+   "method": "propose",
+   "calls": 6,
+   "avgMs": 78.1,
+   "maxMs": 113.9
+  },
+  {
+   "actor": "Company",
+   "method": "registerPlant",
+   "calls": 4,
+   "avgMs": 147.6,
+   "maxMs": 301.1
+  },
+  {
+   "actor": "Plant",
+   "method": "loadSeed",
+   "calls": 4,
+   "avgMs": 373.6,
+   "maxMs": 479.0
+  },
+  {
+   "actor": "Plant",
+   "method": "recordEvent",
+   "calls": 3,
+   "avgMs": 89.1,
+   "maxMs": 111.9
+  },
+  {
+   "actor": "Company",
+   "method": "loadSeed",
+   "calls": 2,
+   "avgMs": 260.9,
+   "maxMs": 444.5
+  },
+  {
+   "actor": "Plant",
+   "method": "claimDispatch",
+   "calls": 2,
+   "avgMs": 104.2,
+   "maxMs": 141.9
+  },
+  {
+   "actor": "Component",
+   "method": "setMetric",
+   "calls": 2,
+   "avgMs": 53.6,
+   "maxMs": 83.8
+  },
+  {
+   "actor": "Plant",
+   "method": "configure",
+   "calls": 2,
+   "avgMs": 8.3,
+   "maxMs": 12.0
+  }
+ ]
+}

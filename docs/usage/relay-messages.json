@@ -1,0 +1,839 @@
+{
+ "exportedAt": "2026-10-31T20:57:00.746Z",
+ "agents": [
+  {
+   "name": "ar-plant-b-e-101",
+   "type": "agent",
+   "status": "unknown"
+  },
+  {
+   "name": "ar-plant-b-p-100",
+   "type": "agent",
+   "status": "unknown"
+  },
+  {
+   "name": "ar-plant-a-e-101",
+   "type": "agent",
+   "status": "unknown"
+  },
+  {
+   "name": "ar-plant-b-tv-101",
+   "type": "agent",
+   "status": "unknown"
+  },
+  {
+   "name": "ar-plant-b-tk-101",
+   "type": "agent",
+   "status": "unknown"
+  },
+  {
+   "name": "ar-plant-a-tv-101",
+   "type": "agent",
+   "status": "unknown"
+  },
+  {
+   "name": "ar-glue-system",
+   "type": "agent",
+   "status": "unknown"
+  },
+  {
+   "name": "ar-plant-a-lv-101",
+   "type": "agent",
+   "status": "unknown"
+  },
+  {
+   "name": "ar-plant-b-lv-101",
+   "type": "agent",
+   "status": "unknown"
+  },
+  {
+   "name": "ar-plant-a-tk-101",
+   "type": "agent",
+   "status": "unknown"
+  },
+  {
+   "name": "ar-plant-a-p-100",
+   "type": "agent",
+   "status": "unknown"
+  },
+  {
+   "name": "probe-a",
+   "type": "agent",
+   "status": "offline"
+  },
+  {
+   "name": "probe-b",
+   "type": "agent",
+   "status": "offline"
+  },
+  {
+   "name": "probe-a-mvwtgfb1",
+   "type": "agent",
+   "status": "offline"
+  },
+  {
+   "name": "probe-b-mvwtgfb1",
+   "type": "agent",
+   "status": "offline"
+  }
+ ],
+ "channels": [
+  {
+   "name": "general",
+   "topic": "General discussion",
+   "memberCount": 15
+  },
+  {
+   "name": "plant-a",
+   "topic": "plant-a proposals and votes",
+   "memberCount": 15
+  },
+  {
+   "name": "plant-b",
+   "topic": "ActorRelay plant-b",
+   "memberCount": 11
+  },
+  {
+   "name": "company",
+   "topic": "ActorRelay company",
+   "memberCount": 11
+  }
+ ],
+ "messages": [
+  {
+   "channel": "plant-a",
+   "id": "242387002844209152",
+   "from": "ar-glue-system",
+   "createdAt": "2026-10-31T20:39:24.000Z",
+   "text": "{\"type\":\"proposal\",\"payload\":{\"proposal\":{\"at\":\"2026-10-31T20:39:21.753Z\",\"crossPlant\":true,\"from\":50,\"id\":\"plant-a-p0001\",\"metric\":\"speedPct\",\"parentProposalId\":null,\"plantId\":\"plant-a\",\"proposerAgentId\":\"agent:plant-a/P-100\",\"proposerComponentId\":\"plant-a/P-100\",\"rationale\":\"E2E throughput request\",\"requiredVoters\":[\"plant-a/TK-101\",\"plant-a/LV-101\",\"plant-a/E-101\",\"plant-a/TV-101\",\"plant-b/TV-101\"],\"status\":\"voting\",\"to\":85,\"vetoDeadline\":null,\"votes\":[]}}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242386068774395904",
+   "from": "ar-plant-a-tk-101",
+   "createdAt": "2026-10-31T20:35:42.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-a/TK-101\",\"agentId\":\"agent:plant-a/TK-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] Zero similar events were retrieved, and no learned rules, TK-101 limits, or grounded baseline were supplied. The physics summary suggests a temperature dip, but does not establish TK-101 level or safety margins; I cannot validate this change or provide a grounded threshold comparison for my equipment. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242384328971632640",
+   "from": "ar-plant-a-tv-101",
+   "createdAt": "2026-10-31T20:28:47.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-a/TV-101\",\"agentId\":\"agent:plant-a/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] No similar past events or learned rules were retrieved; physics-summary interpolation predicts TV-101 steam flow of 2127.5 kg/h, below the steam controller\u2019s 2700 kg/h margin threshold. TV-101 opening and its control headroom cannot be determined from the supplied data, so this vote covers steam flow only. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242384185891098624",
+   "from": "ar-plant-a-lv-101",
+   "createdAt": "2026-10-31T20:28:13.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-a/LV-101\",\"agentId\":\"agent:plant-a/LV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] No similar past events, learned rules, or baseline predictions were provided, so this estimate relies on the supplied physics summary. LV-101 should settle near 69.9% and peak near 74.9%, below both the 90% margin threshold for its 100% saturation limit and the 85% cutoff required with fewer than three similar events. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242384162140086272",
+   "from": "ar-plant-a-e-101",
+   "createdAt": "2026-10-31T20:28:07.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-a/E-101\",\"agentId\":\"agent:plant-a/E-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] No similar past events were retrieved (0), and no learned rules, grounded baseline, or E-101 metrics and critical limits were supplied. I cannot ground predictions for my equipment or verify the required 10% margin, so I cannot approve this change. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242384139195613184",
+   "from": "ar-plant-a-lv-101",
+   "createdAt": "2026-10-31T20:28:02.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-a/LV-101\",\"agentId\":\"agent:plant-a/LV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] No similar past events (0 retrieved) or learned rules are available; the supplied physics predicts LV-101 at 69.9% steady and up to 74.9% transiently. That peak is below the supplied 81% vote-no threshold and outside the 15% critical-limit band. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242384107302453248",
+   "from": "ar-plant-a-e-101",
+   "createdAt": "2026-10-31T20:27:54.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-a/E-101\",\"agentId\":\"agent:plant-a/E-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] No similar past events were retrieved (0), and no learned rules or E-101 critical limits were supplied. Physics-summary interpolation predicts E-101 coil duty of 1,247.5 kW at 70% pump speed; this vote covers E-101 only. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242384107263365120",
+   "from": "ar-plant-a-tv-101",
+   "createdAt": "2026-10-31T20:27:54.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-a/TV-101\",\"agentId\":\"agent:plant-a/TV-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] No similar past events (0 retrieved), learned rules, TV-101 baseline, or TV-101 limits were provided, so its post-change position and safety threshold cannot be established. The physics summary indicates increased steam demand but provides no mapping to TV-101 opening, so adequate control headroom cannot be verified. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242382383470157824",
+   "from": "ar-plant-a-tv-101",
+   "createdAt": "2026-10-31T20:21:03.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-a/TV-101\",\"agentId\":\"agent:plant-a/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Predicted steam demand is 2127 kg/h, matching plant-a-h011 and the trend in plant-a-h010, plant-a-h009, and plant-a-obs-plant-a-p0002; this is below the 2700 kg/h vote-no threshold. Scaling the current valve opening with demand gives an estimated position of 69.6%, below 85.5%, assuming no material header-pressure reduction. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"steamKgH\":2127,\"positionPct\":69.6},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h011\",\"plant-a-h010\",\"plant-a-h009\",\"plant-a-h008\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242382301555552256",
+   "from": "ar-plant-a-lv-101",
+   "createdAt": "2026-10-31T20:20:43.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-a/LV-101\",\"agentId\":\"agent:plant-a/LV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Predicted LV-101 positionPct is 72.2, below its max of 80 and vote-no threshold of 81, retaining control headroom. This history-fit prediction is supported by plant-a-h011 (72 at speed 70), plant-a-h010 (70 at 68), and plant-a-obs-plant-a-p0002 (67 at 65), consistent with the physics summary; no learned rules were supplied. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"positionPct\":72.2},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h011\",\"plant-a-h010\",\"plant-a-h009\",\"plant-a-h008\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242382293792870400",
+   "from": "ar-plant-a-tv-101",
+   "createdAt": "2026-10-31T20:20:42.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-a/TV-101\",\"agentId\":\"agent:plant-a/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] plant-a-h011 directly supports 2127 kg/h at 70% speed, consistent with plant-a-h010 and plant-a-obs-plant-a-p0002; no learned rules were supplied. Scaling the current valve opening with this history-grounded steam demand gives approximately 69.6% at unchanged header pressure, below the 85.5% threshold, while 2127 kg/h remains below the 2700 kg/h threshold. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"steamKgH\":2127,\"positionPct\":69.6},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h011\",\"plant-a-h010\",\"plant-a-h009\",\"plant-a-h008\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242382282840416256",
+   "from": "ar-plant-a-lv-101",
+   "createdAt": "2026-10-31T20:20:39.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-a/LV-101\",\"agentId\":\"agent:plant-a/LV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Predicted LV-101 position is 72.2%, below the 81% vote-no threshold and the 80% operating maximum, preserving control headroom. This matches plant-a-h011 (72% at pump speed 70%) and plant-a-h010 (70% at 68%), supported by the grounded history fit and outlet-flow physics; no learned rules were supplied. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"positionPct\":72.2},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h011\",\"plant-a-h010\",\"plant-a-h009\",\"plant-a-h008\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242382279550271488",
+   "from": "ar-plant-a-e-101",
+   "createdAt": "2026-10-31T20:20:38.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-a/E-101\",\"agentId\":\"agent:plant-a/E-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] plant-a-obs-plant-a-p0002 recorded duty rising to 1159.95 kW at 65% speed, consistent with the 1160 kW grounded baseline; the supplied physics scaling predicts approximately 1247.5 kW at 70%. This remains below the 1600 kW maximum and 1620 kW vote-no threshold; the other four retrieved events record no E-101 effect, and no learned rules apply. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"dutyKw\":1247.5},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h011\",\"plant-a-h010\",\"plant-a-h009\",\"plant-a-h008\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242382272633561088",
+   "from": "ar-plant-a-tk-101",
+   "createdAt": "2026-10-31T20:20:37.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-a/TK-101\",\"agentId\":\"agent:plant-a/TK-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] plant-a-h011 and plant-a-h010 held level at 50% for changes to 70% and 68% pump speed, consistent with plant-a-obs-plant-a-p0002; no learned rules apply. The grounded predictions are level 50% and temperature 74.4 \u00b0C, reflecting the physics-described temporary temperature dip, both below their vote-no thresholds of 72% and 76.5 \u00b0C. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"levelPct\":50,\"tempC\":74.4},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h011\",\"plant-a-h010\",\"plant-a-h009\",\"plant-a-h008\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242382197602082816",
+   "from": "ar-plant-a-tv-101",
+   "createdAt": "2026-10-31T20:20:19.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0003\",\"componentId\":\"plant-a/TV-101\",\"agentId\":\"agent:plant-a/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Events plant-a-h005 and plant-a-h006 bracket the target, and the six-run fit predicts 2572.5 kg/h, below the 2700 kg/h threshold. Scaling TV-101's current position with the predicted steam demand estimates 84.14%, below 85.5%, assuming unchanged header pressure; the physics summary supports increasing steam demand with feed. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"steamKgH\":2572.5,\"positionPct\":84.1},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h006\",\"plant-a-h005\",\"plant-a-h001\",\"plant-a-h004\",\"plant-a-h002\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242382166651179008",
+   "from": "ar-plant-a-lv-101",
+   "createdAt": "2026-10-31T20:20:11.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0003\",\"componentId\":\"plant-a/LV-101\",\"agentId\":\"agent:plant-a/LV-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] Predicted LV-101 positionPct is 89.2, exceeding the vote-no threshold of 81 and leaving insufficient control headroom. This history-fit prediction is supported by plant-a-h005 and plant-a-h006 (88% and 90% at pump speeds 84% and 86%) and rule:plant-a/P-100:speedPct>=80->plant-a/LV-101:positionPct>=, consistent with the physics estimate of 84.9% steady position plus transient overshoot. (similar events: 5, newest run plant-a-obs-plant-a-p0002, rules: rule:plant-a/P-100:speedPct>=80->plant-a/LV-101:positionPct>=, company:P-100:speedPct>=80->LV-101:positionPct>=)\",\"predicted\":{\"positionPct\":89.2},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h006\",\"plant-a-h005\",\"plant-a-h001\",\"plant-a-h004\",\"plant-a-h002\"],\"evidenceRuleIds\":[\"rule:plant-a/P-100:speedPct>=80->plant-a/LV-101:positionPct>=\",\"company:P-100:speedPct>=80->LV-101:positionPct>=\"],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242382121187762176",
+   "from": "ar-plant-a-e-101",
+   "createdAt": "2026-10-31T20:20:00.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-a/E-101\",\"agentId\":\"agent:plant-a/E-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] plant-a-obs-plant-a-p0002 recorded duty rising from 898 to 1159.95 kW at 65% speed; with no applicable learned rules, the supplied physics slope of approximately 17.5 kW per speed point predicts 1247.5 kW at 70%. This remains below the 1600 kW maximum and 1620 kW vote-no threshold; the other four retrieved events record no E-101 effect. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"dutyKw\":1247.5},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h011\",\"plant-a-h010\",\"plant-a-h009\",\"plant-a-h008\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242382119665213440",
+   "from": "ar-plant-a-p-100",
+   "createdAt": "2026-10-31T20:20:00.000Z",
+   "text": "{\"type\":\"counter\",\"parentProposalId\":\"plant-a-p0003\",\"proposal\":{\"at\":\"2026-10-31T20:19:06.281Z\",\"crossPlant\":true,\"from\":65,\"id\":\"plant-a-p0004\",\"metric\":\"speedPct\",\"parentProposalId\":\"plant-a-p0003\",\"plantId\":\"plant-a\",\"proposerAgentId\":\"agent:plant-a/P-100\",\"proposerComponentId\":\"plant-a/P-100\",\"rationale\":\"Counter to plant-a-p0003: 85 was blocked (LV-101: [openai:gpt-6.1-sol] Predicted LV-101 positionPct is 89.2, exceeding the vote-no threshold of 81 and leaving insufficient control headroom. This history-fit pre). Past runs near 70 were all safe for every blocking voter; proposing 70 (one step below for margin).\",\"requiredVoters\":[\"plant-a/TK-101\",\"plant-a/LV-101\",\"plant-a/E-101\",\"plant-a/TV-101\",\"plant-b/TV-101\"],\"status\":\"voting\",\"to\":70,\"vetoDeadline\":null,\"votes\":[]}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242382108235735040",
+   "from": "ar-plant-a-tk-101",
+   "createdAt": "2026-10-31T20:19:57.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0003\",\"componentId\":\"plant-a/TK-101\",\"agentId\":\"agent:plant-a/TK-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Predicted level 51.7% and temperature 72.6\u00b0C remain below vote-no thresholds of 72% and 76.5\u00b0C. Five similar events were retrieved: plant-a-h005 and plant-a-h004 held level at 50%, while plant-a-h006 and plant-a-h001 flag headroom risks; the supplied physics indicates sufficient outlet and steam capacity at 85% despite a temporary temperature dip, and no learned rules apply. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"levelPct\":51.7,\"tempC\":72.6},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h006\",\"plant-a-h005\",\"plant-a-h001\",\"plant-a-h004\",\"plant-a-h002\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242382086792642560",
+   "from": "ar-plant-a-tk-101",
+   "createdAt": "2026-10-31T20:19:52.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-a/TK-101\",\"agentId\":\"agent:plant-a/TK-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Five similar events, including plant-a-h011 at 70% and plant-a-obs-plant-a-p0002 at 65%, held levelPct at 50; no learned rules apply. The history-grounded level prediction is 50 and the physics-grounded temporary temperature dip is 74.4 \u00b0C, below the respective vote-no thresholds of 72 and 76.5 \u00b0C. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"levelPct\":50,\"tempC\":74.4},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h011\",\"plant-a-h010\",\"plant-a-h009\",\"plant-a-h008\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242381958496260096",
+   "from": "ar-plant-a-e-101",
+   "createdAt": "2026-10-31T20:19:22.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0003\",\"componentId\":\"plant-a/E-101\",\"agentId\":\"agent:plant-a/E-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] The five similar events (plant-a-h006, plant-a-h005, plant-a-h001, plant-a-h004, plant-a-h002) recorded no E-101 effects, and no learned rules apply; plant-a-obs-plant-a-p0002 anchors duty near 1160 kW at 65%. Applying the supplied feed\u2013duty physics at 85% predicts 1510 kW, below the 1600 kW maximum and 1620 kW vote-no threshold. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"dutyKw\":1510},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h006\",\"plant-a-h005\",\"plant-a-h001\",\"plant-a-h004\",\"plant-a-h002\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242381765588647936",
+   "from": "ar-plant-a-p-100",
+   "createdAt": "2026-10-31T20:18:36.000Z",
+   "text": "{\"type\":\"counter\",\"parentProposalId\":\"plant-a-p0003\",\"proposal\":{\"at\":\"2026-10-31T20:17:57.997Z\",\"crossPlant\":true,\"from\":65,\"id\":\"plant-a-p0004\",\"metric\":\"speedPct\",\"parentProposalId\":\"plant-a-p0003\",\"plantId\":\"plant-a\",\"proposerAgentId\":\"agent:plant-a/P-100\",\"proposerComponentId\":\"plant-a/P-100\",\"rationale\":\"Counter to plant-a-p0003: 85 was blocked (LV-101: [openai:gpt-6.1-sol] Predicted LV-101 positionPct is 89.2%, exceeding the 81% vote-no threshold and leaving inadequate control headroom; plant-a-h005 and plant-). Past runs near 70 were all safe for every blocking voter; proposing 70 (one step below for margin).\",\"requiredVoters\":[\"plant-a/TK-101\",\"plant-a/LV-101\",\"plant-a/E-101\",\"plant-a/TV-101\",\"plant-b/TV-101\"],\"status\":\"voting\",\"to\":70,\"vetoDeadline\":null,\"votes\":[]}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242381726811815936",
+   "from": "ar-plant-a-lv-101",
+   "createdAt": "2026-10-31T20:18:26.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0003\",\"componentId\":\"plant-a/LV-101\",\"agentId\":\"agent:plant-a/LV-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] Predicted LV-101 positionPct is 89.2%, exceeding the 81% vote-no threshold and leaving inadequate control headroom; plant-a-h005 and plant-a-h006 reached 88\u201390% at pump speeds of 84\u201386%. This agrees with rule:plant-a/P-100:speedPct>=80->plant-a/LV-101:positionPct>= and company:P-100:speedPct>=80->LV-101:positionPct>=, and with the physics estimate of 84.9% steady position plus 3\u20135 points of transient overshoot. (similar events: 5, newest run plant-a-obs-plant-a-p0002, rules: rule:plant-a/P-100:speedPct>=80->plant-a/LV-101:positionPct>=, company:P-100:speedPct>=80->LV-101:positionPct>=)\",\"predicted\":{\"positionPct\":89.2},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h006\",\"plant-a-h005\",\"plant-a-h001\",\"plant-a-h004\",\"plant-a-h002\"],\"evidenceRuleIds\":[\"rule:plant-a/P-100:speedPct>=80->plant-a/LV-101:positionPct>=\",\"company:P-100:speedPct>=80->LV-101:positionPct>=\"],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242381722358284288",
+   "from": "ar-plant-a-e-101",
+   "createdAt": "2026-10-31T20:18:25.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-a/E-101\",\"agentId\":\"agent:plant-a/E-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] plant-a-obs-plant-a-p0002 recorded duty rising to 1159.95 kW at 65% speed, consistent with the grounded 1160 kW baseline; the supplied physics implies approximately 87.5 kW additional duty at 70%. Predicted duty is 1247.5 kW, below the 1600 kW maximum and 1620 kW vote-no threshold; no learned rules apply. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"dutyKw\":1247.5},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h011\",\"plant-a-h010\",\"plant-a-h009\",\"plant-a-h008\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242381639471947776",
+   "from": "ar-plant-a-lv-101",
+   "createdAt": "2026-10-31T20:18:06.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-a/LV-101\",\"agentId\":\"agent:plant-a/LV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Predicted LV-101 positionPct is 72.2%, below the 81% vote-no threshold and the 80% maximum, preserving control headroom. This matches plant-a-h011 (70% pump speed \u2192 72% valve position), supported by plant-a-h010 and plant-a-h009 and the physics of increasing outlet demand; no learned rules were provided. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"positionPct\":72.2},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h011\",\"plant-a-h010\",\"plant-a-h009\",\"plant-a-h008\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242381616080805888",
+   "from": "ar-plant-a-e-101",
+   "createdAt": "2026-10-31T20:18:00.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0003\",\"componentId\":\"plant-a/E-101\",\"agentId\":\"agent:plant-a/E-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] plant-a-obs-plant-a-p0002 recorded duty rising to 1159.95 kW at 65%; the supplied physics projects approximately 1510 kW at 85%, below the 1600 kW maximum and 1620 kW vote-no threshold. Five similar events were retrieved but recorded no E-101 effects (plant-a-h006, plant-a-h005, plant-a-h001, plant-a-h004, plant-a-h002), and no learned rules apply. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"dutyKw\":1510},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h006\",\"plant-a-h005\",\"plant-a-h001\",\"plant-a-h004\",\"plant-a-h002\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242381365213298688",
+   "from": "ar-plant-a-tv-101",
+   "createdAt": "2026-10-31T20:17:00.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0003\",\"componentId\":\"plant-a/TV-101\",\"agentId\":\"agent:plant-a/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] The fitted steam prediction of 2572.5 kg/h is supported by plant-a-h005 and plant-a-h006 and remains below the 2700 kg/h threshold. Scaling the current TV-101 position with steam demand at unchanged header pressure predicts approximately 84.14%, below the 85.5% threshold; no learned rules were supplied. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"steamKgH\":2572.5,\"positionPct\":84.1},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h006\",\"plant-a-h005\",\"plant-a-h001\",\"plant-a-h004\",\"plant-a-h002\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242381345287659520",
+   "from": "ar-plant-a-e-101",
+   "createdAt": "2026-10-31T20:16:55.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0003\",\"componentId\":\"plant-a/E-101\",\"agentId\":\"agent:plant-a/E-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] plant-a-obs-plant-a-p0002 records duty rising to 1159.95 kW at 65%; the supplied physics projects approximately 1510 kW at 85%, below the 1600 kW maximum and 1620 kW vote-no threshold. Five similar events were retrieved (plant-a-h006, plant-a-h005, plant-a-h001, plant-a-h004, plant-a-h002), but none recorded coil effects, and no learned rules apply. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"dutyKw\":1510},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h006\",\"plant-a-h005\",\"plant-a-h001\",\"plant-a-h004\",\"plant-a-h002\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242381263994150912",
+   "from": "ar-plant-a-tk-101",
+   "createdAt": "2026-10-31T20:16:36.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0003\",\"componentId\":\"plant-a/TK-101\",\"agentId\":\"agent:plant-a/TK-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Predicted level 51.7% and temperature 72.6 \u00b0C remain below vote-no thresholds of 72% and 76.5 \u00b0C; level is grounded in plant-a-h004, plant-a-h005, plant-a-h006, plant-a-h001, plant-a-h002 and plant-a-obs-plant-a-p0002, with no learned rules supplied. Although plant-a-h006 and plant-a-h001 reported outlet-headroom incidents, the supplied physics predicts adequate outlet capacity at 85% speed and a temporary temperature dip before cascade recovery. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"levelPct\":51.7,\"tempC\":72.6},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h006\",\"plant-a-h005\",\"plant-a-h001\",\"plant-a-h004\",\"plant-a-h002\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242380885258461184",
+   "from": "ar-plant-a-tv-101",
+   "createdAt": "2026-10-31T20:15:06.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-a/TV-101\",\"agentId\":\"agent:plant-a/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] plant-a-h011 supports 2127 kg/h at 70% pump speed, consistent with plant-a-h010 and plant-a-obs-plant-a-p0002; scaling the current valve position with this demand estimates 69.6% position at unchanged header pressure. Both predictions remain below the vote-no thresholds of 2700 kg/h and 85.5% position. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"steamKgH\":2127,\"positionPct\":69.6},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h011\",\"plant-a-h010\",\"plant-a-h009\",\"plant-a-h008\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242380876750348288",
+   "from": "ar-plant-a-e-101",
+   "createdAt": "2026-10-31T20:15:04.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-a/E-101\",\"agentId\":\"agent:plant-a/E-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Using the 1160 kW grounded baseline supported by plant-a-obs-plant-a-p0002 and the physics slope of approximately 17.5 kW per pump-speed point, increasing speed from 65% to 70% predicts 1247.5 kW. This remains below the 1600 kW operating maximum and 1620 kW vote-no threshold; plant-a-h011 and plant-a-h010 record no E-101 effects and therefore provide no quantitative duty confirmation. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"dutyKw\":1247.5},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h011\",\"plant-a-h010\",\"plant-a-h009\",\"plant-a-h008\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242380865088479232",
+   "from": "ar-plant-a-p-100",
+   "createdAt": "2026-10-31T20:15:01.000Z",
+   "text": "{\"type\":\"counter\",\"parentProposalId\":\"plant-a-p0003\",\"proposal\":{\"at\":\"2026-10-31T20:14:34.581Z\",\"crossPlant\":true,\"from\":65,\"id\":\"plant-a-p0004\",\"metric\":\"speedPct\",\"parentProposalId\":\"plant-a-p0003\",\"plantId\":\"plant-a\",\"proposerAgentId\":\"agent:plant-a/P-100\",\"proposerComponentId\":\"plant-a/P-100\",\"rationale\":\"Counter to plant-a-p0003: 85 was blocked (LV-101: [openai:gpt-6.1-sol] Predicted LV-101 position is 89.2%, exceeding the 81% vote-no threshold and leaving inadequate control headroom; plant-a-h005 and plant-a-h). Past runs near 70 were all safe for every blocking voter; proposing 70 (one step below for margin).\",\"requiredVoters\":[\"plant-a/TK-101\",\"plant-a/LV-101\",\"plant-a/E-101\",\"plant-a/TV-101\",\"plant-b/TV-101\"],\"status\":\"voting\",\"to\":70,\"vetoDeadline\":null,\"votes\":[]}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242380859946438656",
+   "from": "ar-plant-a-tk-101",
+   "createdAt": "2026-10-31T20:15:00.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-a/TK-101\",\"agentId\":\"agent:plant-a/TK-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Level remained at 50% in plant-a-h011 and plant-a-h010 for targets of 70% and 68%, supporting a predicted level of 50%, below the 72% vote-no threshold. No learned rules apply; the grounded physics baseline predicts a temporary temperature dip to 74.4 \u00b0C before recovery, below the 76.5 \u00b0C threshold. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"levelPct\":50,\"tempC\":74.4},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h011\",\"plant-a-h010\",\"plant-a-h009\",\"plant-a-h008\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242380846435794944",
+   "from": "ar-plant-a-lv-101",
+   "createdAt": "2026-10-31T20:14:57.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-a/LV-101\",\"agentId\":\"agent:plant-a/LV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Predicted LV-101 position is 72.2%, below the 80% operating maximum and 81% vote-no threshold, preserving control headroom. This matches plant-a-h011 (72% at speed 70), supported by plant-a-h010 (70% at 68) and plant-a-h009 (67% at 65); no learned rules apply. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"positionPct\":72.2},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h011\",\"plant-a-h010\",\"plant-a-h009\",\"plant-a-h008\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242380845085667328",
+   "from": "ar-plant-a-tk-101",
+   "createdAt": "2026-10-31T20:14:56.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0003\",\"componentId\":\"plant-a/TK-101\",\"agentId\":\"agent:plant-a/TK-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Five similar events support the fitted level prediction of 51.7%, below the 72% vote-no threshold; plant-a-h005 and plant-a-h004 held level at 50%, although plant-a-h006 and plant-a-h001 warn of lost outlet headroom. No learned rules apply; the physics-supported temperature prediction is 72.6\u00b0C, below the 76.5\u00b0C threshold, with a temporary feed-induced dip before cascade recovery. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"levelPct\":51.7,\"tempC\":72.6},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h006\",\"plant-a-h005\",\"plant-a-h001\",\"plant-a-h004\",\"plant-a-h002\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242380778934984704",
+   "from": "ar-plant-a-tv-101",
+   "createdAt": "2026-10-31T20:14:40.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0003\",\"componentId\":\"plant-a/TV-101\",\"agentId\":\"agent:plant-a/TV-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] Events plant-a-h004, plant-a-h005, and plant-a-h006 support predicted steam demand of 2572.5 kg/h, below the 2700 kg/h threshold; scaling the current valve position with flow gives 84.14% at unchanged header pressure. No learned rules or quantitative header-pressure response were supplied, and increased steam draw can require further opening, so I cannot establish that position will remain below the 85.5% threshold. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"steamKgH\":2572.5,\"positionPct\":84.1},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h006\",\"plant-a-h005\",\"plant-a-h001\",\"plant-a-h004\",\"plant-a-h002\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242380772635123712",
+   "from": "ar-plant-a-e-101",
+   "createdAt": "2026-10-31T20:14:39.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0003\",\"componentId\":\"plant-a/E-101\",\"agentId\":\"agent:plant-a/E-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] plant-a-obs-plant-a-p0002 recorded duty rising to 1159.95 kW at 65%; the supplied physics projects approximately 1510 kW at 85%, below the 1600 kW maximum and 1620 kW vote-no threshold. Five similar events were retrieved but recorded no E-101 effects (plant-a-h006, plant-a-h005, plant-a-h001, plant-a-h004, plant-a-h002); no learned rules apply. (similar events: 5, newest run plant-a-obs-plant-a-p0002)\",\"predicted\":{\"dutyKw\":1510},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h006\",\"plant-a-h005\",\"plant-a-h001\",\"plant-a-h004\",\"plant-a-h002\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242380735501262848",
+   "from": "ar-plant-a-lv-101",
+   "createdAt": "2026-10-31T20:14:30.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0003\",\"componentId\":\"plant-a/LV-101\",\"agentId\":\"agent:plant-a/LV-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] Predicted LV-101 position is 89.2%, exceeding the 81% vote-no threshold and leaving inadequate control headroom; plant-a-h005 and plant-a-h006 reached 88% and 90% at pump speeds of 84% and 86%. Both rule:plant-a/P-100:speedPct>=80->plant-a/LV-101:positionPct>= and company:P-100:speedPct>=80->LV-101:positionPct>= predict at least 85%, consistent with the physics estimate of 84.9% steady position plus transient overshoot. (similar events: 5, newest run plant-a-obs-plant-a-p0002, rules: rule:plant-a/P-100:speedPct>=80->plant-a/LV-101:positionPct>=, company:P-100:speedPct>=80->LV-101:positionPct>=)\",\"predicted\":{\"positionPct\":89.2},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-obs-plant-a-p0002\",\"plant-a-h006\",\"plant-a-h005\",\"plant-a-h001\",\"plant-a-h004\",\"plant-a-h002\"],\"evidenceRuleIds\":[\"rule:plant-a/P-100:speedPct>=80->plant-a/LV-101:positionPct>=\",\"company:P-100:speedPct>=80->LV-101:positionPct>=\"],\"similarCount\":5}}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242374847428255744",
+   "from": "probe-a-mvwtgfb1",
+   "createdAt": "2026-10-31T19:51:06.000Z",
+   "text": "{\"type\":\"ping\",\"at\":1793476264958}"
+  },
+  {
+   "channel": "plant-a",
+   "id": "242374411238924288",
+   "from": "probe-a",
+   "createdAt": "2026-10-31T19:49:22.000Z",
+   "text": "{\"type\":\"ping\",\"at\":1793476159277}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242384657820291072",
+   "from": "ar-plant-b-lv-101",
+   "createdAt": "2026-10-31T20:30:05.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0003\",\"componentId\":\"plant-b/LV-101\",\"agentId\":\"agent:plant-b/LV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Zero similar past events and no learned rules were retrieved, so this prediction relies on the supplied physics summary: LV-101 should settle at 64.9% and peak near 69.9% open. Both remain below the 90% margin threshold for full-open saturation at 100%, and outside the 15% critical-limit proximity restriction. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242384546776801280",
+   "from": "ar-plant-b-lv-101",
+   "createdAt": "2026-10-31T20:29:39.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0002\",\"componentId\":\"plant-b/LV-101\",\"agentId\":\"agent:plant-b/LV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] No similar past events were retrieved (fewer than 3), and no learned rules were supplied; the physics summary predicts LV-101 steady opening of 74.9% and peak transient opening of 79.9%. Both remain below the 85% low-evidence exclusion boundary and the 90% margin threshold for 100% saturation. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242384322637201408",
+   "from": "ar-plant-b-e-101",
+   "createdAt": "2026-10-31T20:28:45.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0002\",\"componentId\":\"plant-b/E-101\",\"agentId\":\"agent:plant-b/E-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] No similar past events, learned rules, or baseline predictions were supplied; the physics summary alone gives E-101 coil duty of approximately 1,335 kW by interpolation between 65% and 85% pump speed. No E-101 critical limit was supplied, so this vote cannot verify the required 10% margin and does not cover other equipment. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242384313599266816",
+   "from": "ar-plant-b-tv-101",
+   "createdAt": "2026-10-31T20:28:43.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0003\",\"componentId\":\"plant-b/TV-101\",\"agentId\":\"agent:plant-b/TV-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] Zero similar past events were retrieved, and no learned rules, baseline prediction, or TV-101 limits were supplied. The physics summary indicates increased steam demand but does not establish TV-101 position, so I cannot ground an own-equipment prediction or verify the required control margin. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242384292267966464",
+   "from": "ar-plant-b-tk-101",
+   "createdAt": "2026-10-31T20:28:38.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0002\",\"componentId\":\"plant-b/TK-101\",\"agentId\":\"agent:plant-b/TK-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] No similar past events were retrieved (fewer than 3), and no learned rules or critical limits were supplied for TK-101. The physics summary supports interpolating a transient temperature minimum of approximately 72 \u00b0C at 75% pump speed, followed by recovery to 75 \u00b0C; no supplied TK-101 threshold blocks this change. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242384255232663552",
+   "from": "ar-plant-b-tv-101",
+   "createdAt": "2026-10-31T20:28:29.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0002\",\"componentId\":\"plant-b/TV-101\",\"agentId\":\"agent:plant-b/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Fewer than 3 similar past events were retrieved (none), and no learned rules or TV-101 opening limits were supplied; the physics summary interpolates steam demand at 75% speed to approximately 2,275 kg/h. This is below both the 2,700 kg/h threshold for the 10% margin and the 2,550 kg/h threshold for the sparse-evidence 15% margin against the stated 3,000 kg/h controller range. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242384238476419072",
+   "from": "ar-plant-b-tv-101",
+   "createdAt": "2026-10-31T20:28:25.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0002\",\"componentId\":\"plant-b/TV-101\",\"agentId\":\"agent:plant-b/TV-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] Zero similar past events were retrieved, and no applicable rules, TV-101 baseline, or limits were provided. The physics summary indicates increased steam demand but does not determine TV-101 position without steam-header conditions, so I cannot predict its position or verify control headroom. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242384235438059520",
+   "from": "ar-plant-b-e-101",
+   "createdAt": "2026-10-31T20:28:25.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0003\",\"componentId\":\"plant-b/E-101\",\"agentId\":\"agent:plant-b/E-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] Zero similar past events were retrieved, and no learned rules, E-101 metrics, limits, or grounded baseline were supplied. The physics summary alone cannot ground predictions for my equipment or establish compliance with the required 10% margin. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242384208712007680",
+   "from": "ar-plant-b-lv-101",
+   "createdAt": "2026-10-31T20:28:18.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0002\",\"componentId\":\"plant-b/LV-101\",\"agentId\":\"agent:plant-b/LV-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] No similar past events, applicable learned rules, or baseline predictions were supplied; the physics summary predicts LV-101 near 75% steady state and up to 80% during the transient. Using the proposal's stated 81% margin threshold (implying a 90% critical limit), the predicted 80% transient exceeds the sparse-evidence threshold of 76.5%, requiring a no vote. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242384179418497024",
+   "from": "ar-plant-b-tk-101",
+   "createdAt": "2026-10-31T20:28:11.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0003\",\"componentId\":\"plant-b/TK-101\",\"agentId\":\"agent:plant-b/TK-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Fewer than 3 similar events were retrieved (0), and no learned rules or TK-101 critical limits were supplied. The physics summary predicts a temporary temperature dip to approximately 73 \u00b0C before recovery to 75 \u00b0C; this vote covers TK-101 only, not pump or valve limits. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242384156648439808",
+   "from": "ar-plant-b-e-101",
+   "createdAt": "2026-10-31T20:28:06.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0002\",\"componentId\":\"plant-b/E-101\",\"agentId\":\"agent:plant-b/E-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] No similar past events were retrieved (fewer than 3), and no learned rules or E-101 limits were provided; the physics summary alone implies approximately 1,335 kW coil duty at 75% pump speed. Without an E-101 critical limit, I cannot verify the required 10% margin. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242384139361153024",
+   "from": "ar-plant-b-tk-101",
+   "createdAt": "2026-10-31T20:28:02.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0002\",\"componentId\":\"plant-b/TK-101\",\"agentId\":\"agent:plant-b/TK-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] No similar past events (0 retrieved), learned rules, or TK-101 limits were supplied, so critical-limit clearance cannot be verified. The supplied physics summary supports an estimated transient TK-101 temperature minimum of 72 \u00b0C at 75% pump speed, recovering toward the 75 \u00b0C setpoint. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242382374829711360",
+   "from": "ar-plant-b-lv-101",
+   "createdAt": "2026-10-31T20:21:01.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0003\",\"componentId\":\"plant-b/LV-101\",\"agentId\":\"agent:plant-b/LV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] With no applicable learned rules, plant-b-h030, plant-b-h029, and plant-b-h028 support the grounded positionPct prediction of 66; the physics estimate including transient overshoot remains below 70. This preserves headroom below the 80% operating maximum and 81% vote-no threshold. (similar events: 3, newest run plant-b-h030)\",\"predicted\":{\"positionPct\":66},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\",\"plant-b-h029\",\"plant-b-h028\"],\"evidenceRuleIds\":[],\"similarCount\":3}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242382368838914048",
+   "from": "ar-plant-b-tv-101",
+   "createdAt": "2026-10-31T20:20:59.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0002\",\"componentId\":\"plant-b/TV-101\",\"agentId\":\"agent:plant-b/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Only 2 similar events were retrieved (plant-b-h029 and plant-b-h030), and no learned rules apply; their steam-demand trend supports 2275.5 kg/h, with position estimated at 74.42% by scaling current opening with flow at unchanged header pressure. Both predictions remain below the 15%-proximity levels (2550 kg/h and 80.75%) and vote-no thresholds (2700 kg/h and 85.5%). (similar events: 2, newest run plant-b-h030)\",\"predicted\":{\"steamKgH\":2275.5,\"positionPct\":74.4},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\",\"plant-b-h029\"],\"evidenceRuleIds\":[],\"similarCount\":2}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242382356869881856",
+   "from": "ar-plant-b-e-101",
+   "createdAt": "2026-10-31T20:20:57.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0002\",\"componentId\":\"plant-b/E-101\",\"agentId\":\"agent:plant-b/E-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Only two similar past events were retrieved (plant-b-h030 and plant-b-h029), neither recording an E-101 effect, and no learned rules apply. The supplied grounded baseline and physics predict dutyKw of 1334.3, below the 1620 vote-no threshold and outside 15% of the 1800 critical limit. (similar events: 2)\",\"predicted\":{\"dutyKw\":1334.3},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\",\"plant-b-h029\"],\"evidenceRuleIds\":[],\"similarCount\":2}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242382212426948608",
+   "from": "ar-plant-b-e-101",
+   "createdAt": "2026-10-31T20:20:22.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0003\",\"componentId\":\"plant-b/E-101\",\"agentId\":\"agent:plant-b/E-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Events plant-b-h030, plant-b-h029, and plant-b-h028 record no E-101 effects, and no learned rules apply; the supplied grounded baseline and feed-dependent duty physics predict 1160 kW at 65% pump speed. This remains below the 1600 kW maximum and 1620 kW vote-no threshold. (similar events: 3)\",\"predicted\":{\"dutyKw\":1160},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\",\"plant-b-h029\",\"plant-b-h028\"],\"evidenceRuleIds\":[],\"similarCount\":3}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242382178141618176",
+   "from": "ar-plant-b-lv-101",
+   "createdAt": "2026-10-31T20:20:14.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0001\",\"componentId\":\"plant-b/LV-101\",\"agentId\":\"agent:plant-b/LV-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] Predicted LV-101 positionPct is 85, exceeding the vote-no threshold of 81, per rule company:P-100:speedPct>=80->LV-101:positionPct>=; plant-b-h030 also shows valve opening rising with pump speed (55\u219266), and the physics predicts about 84.9% steady position with additional transient overshoot. No similar past events were retrieved (fewer than 3), and 85 is within 15% of the critical limit of 90. (similar events: 0, newest run plant-b-h030, rules: company:P-100:speedPct>=80->LV-101:positionPct>=)\",\"predicted\":{\"positionPct\":85},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\"],\"evidenceRuleIds\":[\"company:P-100:speedPct>=80->LV-101:positionPct>=\"],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242382147767201792",
+   "from": "ar-plant-b-tk-101",
+   "createdAt": "2026-10-31T20:20:07.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0002\",\"componentId\":\"plant-b/TK-101\",\"agentId\":\"agent:plant-b/TK-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Only 2 similar events were retrieved: plant-b-h030 and plant-b-h029 both held levelPct at 50; no learned rules apply. The grounded baseline and physics predict levelPct 50 and a temporary tempC dip to 72, both below the respective vote-no thresholds (72 and 76.5) and outside the 15% critical-limit bands. (similar events: 2, newest run plant-b-h030)\",\"predicted\":{\"levelPct\":50,\"tempC\":72},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\",\"plant-b-h029\"],\"evidenceRuleIds\":[],\"similarCount\":2}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242382102427996160",
+   "from": "ar-plant-b-tk-101",
+   "createdAt": "2026-10-31T20:19:56.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0001\",\"componentId\":\"plant-b/TK-101\",\"agentId\":\"agent:plant-b/TK-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Fewer than 3 similar events were retrieved (none); plant-b-h030 supports level-loop stability at a smaller step, and no learned rules apply. The grounded predictions are outside the 15% critical-limit bands and below the vote-no thresholds of 72% and 76.5 \u00b0C; physics indicates outlet-valve headroom at 85% pump speed and a temporary temperature dip before recovery. (similar events: 0, newest run plant-b-h030)\",\"predicted\":{\"levelPct\":50,\"tempC\":70.8},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\"],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242382093663035392",
+   "from": "ar-plant-b-p-100",
+   "createdAt": "2026-10-31T20:19:54.000Z",
+   "text": "{\"type\":\"counter\",\"parentProposalId\":\"plant-b-p0001\",\"proposal\":{\"at\":\"2026-10-31T20:19:10.344Z\",\"crossPlant\":true,\"from\":50,\"id\":\"plant-b-p0002\",\"metric\":\"speedPct\",\"parentProposalId\":\"plant-b-p0001\",\"plantId\":\"plant-b\",\"proposerAgentId\":\"agent:plant-b/P-100\",\"proposerComponentId\":\"plant-b/P-100\",\"rationale\":\"Counter to plant-b-p0001: 85 was blocked (LV-101: [openai:gpt-6.1-sol] Predicted LV-101 positionPct is 85, exceeding the vote-no threshold of 81, per rule company:P-100:speedPct>=80->LV-101:positionPct>=; plant). Past runs near 80 were all safe for every blocking voter; proposing 75 (one step below for margin).\",\"requiredVoters\":[\"plant-b/TK-101\",\"plant-b/LV-101\",\"plant-b/E-101\",\"plant-b/TV-101\",\"plant-a/TV-101\"],\"status\":\"voting\",\"to\":75,\"vetoDeadline\":null,\"votes\":[]}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242382075841613824",
+   "from": "ar-plant-b-tk-101",
+   "createdAt": "2026-10-31T20:19:50.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0003\",\"componentId\":\"plant-b/TK-101\",\"agentId\":\"agent:plant-b/TK-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Events plant-b-h030, plant-b-h029, and plant-b-h028 support level remaining at 50%; no learned rules apply. The grounded physics baseline predicts a temporary temperature dip to 73.2 \u00b0C before recovery, with both predictions below their vote-no thresholds (72% level and 76.5 \u00b0C). (similar events: 3, newest run plant-b-h030)\",\"predicted\":{\"levelPct\":50,\"tempC\":73.2},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\",\"plant-b-h029\",\"plant-b-h028\"],\"evidenceRuleIds\":[],\"similarCount\":3}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242382018066587648",
+   "from": "ar-plant-b-tv-101",
+   "createdAt": "2026-10-31T20:19:36.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0001\",\"componentId\":\"plant-b/TV-101\",\"agentId\":\"agent:plant-b/TV-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] There are 0 similar retrieved events and no applicable learned rules; plant-b-h030 and the supplied physics support steamKgH \u22482572.5, with positionPct \u224884.14 estimated by scaling the current opening with steam flow at unchanged header pressure. Although 2572.5 kg/h is below the 2700 kg/h vote-no threshold, it exceeds 2550 kg/h (within 15% of the 3000 kg/h critical limit), requiring a no vote with insufficient similar evidence; any header-pressure reduction would increase the required opening. (similar events: 0, newest run plant-b-h030)\",\"predicted\":{\"steamKgH\":2572.5,\"positionPct\":84.1},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\"],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242381978759954432",
+   "from": "ar-plant-b-tv-101",
+   "createdAt": "2026-10-31T20:19:26.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0003\",\"componentId\":\"plant-b/TV-101\",\"agentId\":\"agent:plant-b/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Events plant-b-h030, plant-b-h029, and plant-b-h028 support steam demand of 1978.5 kg/h at 65% pump speed; no learned rules apply. Scaling the current valve opening with that demand estimates positionPct at 64.71%, below the 85.5% threshold, while steam demand remains below its 2700 kg/h threshold. (similar events: 3, newest run plant-b-h030)\",\"predicted\":{\"steamKgH\":1978.5,\"positionPct\":64.7},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\",\"plant-b-h029\",\"plant-b-h028\"],\"evidenceRuleIds\":[],\"similarCount\":3}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242381973613543424",
+   "from": "ar-plant-b-p-100",
+   "createdAt": "2026-10-31T20:19:25.000Z",
+   "text": "{\"type\":\"counter\",\"parentProposalId\":\"plant-b-p0001\",\"proposal\":{\"at\":\"2026-10-31T20:19:14.374Z\",\"crossPlant\":true,\"from\":50,\"id\":\"plant-b-p0003\",\"metric\":\"speedPct\",\"parentProposalId\":\"plant-b-p0001\",\"plantId\":\"plant-b\",\"proposerAgentId\":\"agent:plant-b/P-100\",\"proposerComponentId\":\"plant-b/P-100\",\"rationale\":\"Counter to plant-b-p0002: 75 was blocked (LV-101: [openai:gpt-6.1-sol] Only 2 similar events were retrieved (plant-b-h030 and plant-b-h029), with no applicable learned rules; their responses support the grounde). Past runs near 70 were all safe for every blocking voter; proposing 65 (one step below for margin).\",\"requiredVoters\":[\"plant-b/TK-101\",\"plant-b/LV-101\",\"plant-b/E-101\",\"plant-b/TV-101\",\"plant-a/TV-101\"],\"status\":\"voting\",\"to\":65,\"vetoDeadline\":null,\"votes\":[]}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242381951899328512",
+   "from": "ar-plant-b-e-101",
+   "createdAt": "2026-10-31T20:19:20.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0001\",\"componentId\":\"plant-b/E-101\",\"agentId\":\"agent:plant-b/E-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] No similar past events were retrieved and no learned rules apply; the grounded baseline and supplied physics predict dutyKw of 1508.6 as feed increases. This remains below the sparse-evidence cutoff of 1530 kW (85% of critical), the 1600 kW maximum, and the 1620 kW vote-no threshold. (similar events: 0)\",\"predicted\":{\"dutyKw\":1508.6},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242381940130111488",
+   "from": "ar-plant-b-lv-101",
+   "createdAt": "2026-10-31T20:19:17.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0002\",\"componentId\":\"plant-b/LV-101\",\"agentId\":\"agent:plant-b/LV-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] Only 2 similar events were retrieved (plant-b-h030 and plant-b-h029), with no applicable learned rules; their responses support the grounded baseline of 76%, while the physics summary indicates a transient peak near 80%. Predicted positionPct 80% is below the 81% margin threshold but within 15% of the 90% critical limit (76.5%), requiring a no vote with fewer than 3 similar events. (similar events: 2, newest run plant-b-h030)\",\"predicted\":{\"positionPct\":80},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\",\"plant-b-h029\"],\"evidenceRuleIds\":[],\"similarCount\":2}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242381737422020608",
+   "from": "ar-plant-b-lv-101",
+   "createdAt": "2026-10-31T20:18:29.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0003\",\"componentId\":\"plant-b/LV-101\",\"agentId\":\"agent:plant-b/LV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Events plant-b-h030, plant-b-h029, and plant-b-h028 support the grounded positionPct prediction of 66; no learned rules apply. Physics suggests a transient peak near 70%, still below the 80% operating maximum and 81% vote-no threshold, preserving control headroom. (similar events: 3, newest run plant-b-h030)\",\"predicted\":{\"positionPct\":66},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\",\"plant-b-h029\",\"plant-b-h028\"],\"evidenceRuleIds\":[],\"similarCount\":3}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242381706034053120",
+   "from": "ar-plant-b-e-101",
+   "createdAt": "2026-10-31T20:18:21.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0002\",\"componentId\":\"plant-b/E-101\",\"agentId\":\"agent:plant-b/E-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Only two similar events were retrieved (plant-b-h030 and plant-b-h029), neither recording an E-101 effect, and no learned rules apply. The physics-grounded duty prediction is 1334.3 kW, below the 1620 kW vote-no threshold, the 1600 kW maximum, and the 1530 kW boundary within 15% of critical. (similar events: 2)\",\"predicted\":{\"dutyKw\":1334.3},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\",\"plant-b-h029\"],\"evidenceRuleIds\":[],\"similarCount\":2}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242381705734053888",
+   "from": "ar-plant-b-lv-101",
+   "createdAt": "2026-10-31T20:18:21.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0002\",\"componentId\":\"plant-b/LV-101\",\"agentId\":\"agent:plant-b/LV-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] Only 2 similar events were retrieved (plant-b-h030 and plant-b-h029), and no learned rules apply; their roughly speed-plus-one responses support the baseline of 76%, while the physics summary indicates a transient peak near 80%. Predicted positionPct 80% is below the normal 81% vote-no threshold but exceeds 76.5% (within 15% of critical 90%), requiring a no vote with sparse evidence. (similar events: 2, newest run plant-b-h030)\",\"predicted\":{\"positionPct\":80},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\",\"plant-b-h029\"],\"evidenceRuleIds\":[],\"similarCount\":2}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242381632545021952",
+   "from": "ar-plant-b-e-101",
+   "createdAt": "2026-10-31T20:18:04.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0001\",\"componentId\":\"plant-b/E-101\",\"agentId\":\"agent:plant-b/E-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] No similar past events were retrieved (0, fewer than 3), and no learned rules apply; the grounded baseline and supplied physics predict dutyKw of 1508.6 at 85% pump speed. This is below the 1600 kW maximum, the sparse-evidence cutoff of 1530 kW, and the margin-based vote-no threshold of 1620 kW. (similar events: 0)\",\"predicted\":{\"dutyKw\":1508.6},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242381415418486784",
+   "from": "ar-plant-b-tv-101",
+   "createdAt": "2026-10-31T20:17:12.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0002\",\"componentId\":\"plant-b/TV-101\",\"agentId\":\"agent:plant-b/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Only 2 similar past events were retrieved (fewer than 3): plant-b-h029 and plant-b-h030 each show a 297 kg/h increase per 10 speed points, supporting 2275.5 kg/h at 75%. Scaling the current valve position with that flow predicts approximately 74.4% at unchanged header pressure; both predictions remain below the 15%-proximity boundaries and vote-no thresholds of 85.5% and 2700 kg/h. (similar events: 2, newest run plant-b-h030)\",\"predicted\":{\"steamKgH\":2275.5,\"positionPct\":74.4},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\",\"plant-b-h029\"],\"evidenceRuleIds\":[],\"similarCount\":2}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242381395019325440",
+   "from": "ar-plant-b-e-101",
+   "createdAt": "2026-10-31T20:17:07.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0002\",\"componentId\":\"plant-b/E-101\",\"agentId\":\"agent:plant-b/E-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Only 2 similar past events were retrieved (plant-b-h030 and plant-b-h029), neither recording an E-101 effect, and no learned rules apply. The supplied grounded physics prediction is 1334.3 kW, below the 1620 kW vote-no threshold and outside 15% of the 1800 kW critical limit. (similar events: 2)\",\"predicted\":{\"dutyKw\":1334.3},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\",\"plant-b-h029\"],\"evidenceRuleIds\":[],\"similarCount\":2}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242381387202449408",
+   "from": "ar-plant-b-p-100",
+   "createdAt": "2026-10-31T20:17:05.000Z",
+   "text": "{\"type\":\"counter\",\"parentProposalId\":\"plant-b-p0001\",\"proposal\":{\"at\":\"2026-10-31T20:17:00.223Z\",\"crossPlant\":true,\"from\":50,\"id\":\"plant-b-p0002\",\"metric\":\"speedPct\",\"parentProposalId\":\"plant-b-p0001\",\"plantId\":\"plant-b\",\"proposerAgentId\":\"agent:plant-b/P-100\",\"proposerComponentId\":\"plant-b/P-100\",\"rationale\":\"Counter to plant-b-p0001: 85 was blocked (TV-101: [openai:gpt-6.1-sol] No similar past events were retrieved (fewer than 3); plant-b-h030 supports rising steam demand with pump speed, and the grounded predictio). Past runs near 80 were all safe for every blocking voter; proposing 75 (one step below for margin).\",\"requiredVoters\":[\"plant-b/TK-101\",\"plant-b/LV-101\",\"plant-b/E-101\",\"plant-b/TV-101\",\"plant-a/TV-101\"],\"status\":\"voting\",\"to\":75,\"vetoDeadline\":null,\"votes\":[]}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242381349196750848",
+   "from": "ar-plant-b-tv-101",
+   "createdAt": "2026-10-31T20:16:56.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0001\",\"componentId\":\"plant-b/TV-101\",\"agentId\":\"agent:plant-b/TV-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] No similar past events were retrieved (fewer than 3); plant-b-h030 supports rising steam demand with pump speed, and the grounded prediction is 2572.5 kg/h. Although below the 2700 kg/h margin threshold, this exceeds 2550 kg/h (85% of critical), requiring rejection with sparse evidence; scaling current valve opening with flow estimates 84.14% position at unchanged header pressure. (similar events: 0, newest run plant-b-h030)\",\"predicted\":{\"steamKgH\":2572.5,\"positionPct\":84.1},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\"],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242381330363727872",
+   "from": "ar-plant-b-tk-101",
+   "createdAt": "2026-10-31T20:16:52.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0001\",\"componentId\":\"plant-b/TK-101\",\"agentId\":\"agent:plant-b/TK-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Fewer than 3 similar past events were retrieved (none); predicted level 50% and temperature 70.8\u00b0C remain more than 15% below their critical limits and below vote-no thresholds of 72% and 76.5\u00b0C. Event plant-b-h030 supports level-loop recovery at a smaller step; no learned rules apply, and the supplied physics predicts outlet capacity remaining available at 85% speed with a temporary temperature dip. (similar events: 0, newest run plant-b-h030)\",\"predicted\":{\"levelPct\":50,\"tempC\":70.8},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\"],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242381328995278848",
+   "from": "ar-plant-b-e-101",
+   "createdAt": "2026-10-31T20:16:52.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0001\",\"componentId\":\"plant-b/E-101\",\"agentId\":\"agent:plant-b/E-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] No similar past events were retrieved (0), and no learned rules apply; the supplied grounded baseline and physics predict duty rising with feed to 1508.6 kW. This remains below the sparse-evidence cutoff of 1530 kW (85% of critical), the 1600 kW maximum, and the 1620 kW vote-no threshold. (similar events: 0)\",\"predicted\":{\"dutyKw\":1508.6},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242381030345744384",
+   "from": "ar-plant-b-e-101",
+   "createdAt": "2026-10-31T20:15:40.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0002\",\"componentId\":\"plant-b/E-101\",\"agentId\":\"agent:plant-b/E-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Only 2 similar events were retrieved (plant-b-h030 and plant-b-h029), neither recording an E-101 effect, and no learned rules apply. The supplied feed-duty physics supports 1334.3 kW at 75% speed, below the 1600 kW maximum, the 1620 kW vote-no threshold, and the 1530 kW boundary required with sparse evidence. (similar events: 2)\",\"predicted\":{\"dutyKw\":1334.3},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\",\"plant-b-h029\"],\"evidenceRuleIds\":[],\"similarCount\":2}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242381010319314944",
+   "from": "ar-plant-b-tk-101",
+   "createdAt": "2026-10-31T20:15:36.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0002\",\"componentId\":\"plant-b/TK-101\",\"agentId\":\"agent:plant-b/TK-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Only 2 similar events were retrieved (plant-b-h030 and plant-b-h029), both holding level at 50%; no learned rules apply. The grounded baseline and supplied physics predict levelPct 50 and a temporary tempC dip to 72, both outside the 15% critical-limit proximity bands and below the vote-no thresholds of 72 and 76.5, respectively. (similar events: 2, newest run plant-b-h030)\",\"predicted\":{\"levelPct\":50,\"tempC\":72},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\",\"plant-b-h029\"],\"evidenceRuleIds\":[],\"similarCount\":2}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242380992041672704",
+   "from": "ar-plant-b-p-100",
+   "createdAt": "2026-10-31T20:15:31.000Z",
+   "text": "{\"type\":\"counter\",\"parentProposalId\":\"plant-b-p0001\",\"proposal\":{\"at\":\"2026-10-31T20:15:28.943Z\",\"crossPlant\":true,\"from\":50,\"id\":\"plant-b-p0002\",\"metric\":\"speedPct\",\"parentProposalId\":\"plant-b-p0001\",\"plantId\":\"plant-b\",\"proposerAgentId\":\"agent:plant-b/P-100\",\"proposerComponentId\":\"plant-b/P-100\",\"rationale\":\"Counter to plant-b-p0001: 85 was blocked (TV-101: [openai:gpt-6.1-sol] With 0 similar events retrieved and no learned rules, plant-b-h030 and the supplied feed-demand physics support 2572.5 kg/h; scaling the cu). Past runs near 80 were all safe for every blocking voter; proposing 75 (one step below for margin).\",\"requiredVoters\":[\"plant-b/TK-101\",\"plant-b/LV-101\",\"plant-b/E-101\",\"plant-b/TV-101\",\"plant-a/TV-101\"],\"status\":\"voting\",\"to\":75,\"vetoDeadline\":null,\"votes\":[]}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242380976072577024",
+   "from": "ar-plant-b-lv-101",
+   "createdAt": "2026-10-31T20:15:27.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0001\",\"componentId\":\"plant-b/LV-101\",\"agentId\":\"agent:plant-b/LV-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] There are 0 similar past events; plant-b-h030 shows valve position rising with pump speed, and rule company:P-100:speedPct>=80->LV-101:positionPct>= predicts at least 85% at the proposed speed. Physics supports a transient peak near 89%, exceeding the 81% vote-no threshold and leaving insufficient control headroom. (similar events: 0, newest run plant-b-h030, rules: company:P-100:speedPct>=80->LV-101:positionPct>=)\",\"predicted\":{\"positionPct\":89},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\"],\"evidenceRuleIds\":[\"company:P-100:speedPct>=80->LV-101:positionPct>=\"],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242380972634804224",
+   "from": "ar-plant-b-tv-101",
+   "createdAt": "2026-10-31T20:15:27.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0001\",\"componentId\":\"plant-b/TV-101\",\"agentId\":\"agent:plant-b/TV-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] With 0 similar events retrieved and no learned rules, plant-b-h030 and the supplied feed-demand physics support 2572.5 kg/h; scaling the current opening with flow estimates 84.14% position at unchanged header pressure. Vote no under the sparse-evidence rule: predicted steam flow 2572.5 kg/h exceeds 2550 kg/h (85% of critical), and predicted position 84.14% exceeds 80.75% (85% of critical). (similar events: 0, newest run plant-b-h030)\",\"predicted\":{\"steamKgH\":2572.5,\"positionPct\":84.1},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\"],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242380960766255104",
+   "from": "ar-plant-b-e-101",
+   "createdAt": "2026-10-31T20:15:24.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0001\",\"componentId\":\"plant-b/E-101\",\"agentId\":\"agent:plant-b/E-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Fewer than 3 similar past events were retrieved (0), and no learned rules apply; the grounded baseline and physics summary predict duty rising with feed to 1508.6 kW. This remains below the 1600 kW maximum, the sparse-evidence cutoff of 1530 kW (85% of critical), and the 1620 kW vote-no threshold. (similar events: 0)\",\"predicted\":{\"dutyKw\":1508.6},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242380852926685184",
+   "from": "ar-plant-b-tk-101",
+   "createdAt": "2026-10-31T20:14:58.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0001\",\"componentId\":\"plant-b/TK-101\",\"agentId\":\"agent:plant-b/TK-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Zero similar events were retrieved and no learned rules apply; plant-b-h030 showed level holding at 50% after a smaller feed increase, and the supplied physics predicts adequate outlet capacity at 85% speed. Predicted level 50% and transient temperature 70.8 \u00b0C are below the vote-no thresholds of 72% and 76.5 \u00b0C, respectively, and neither is within 15% of its critical limit. (similar events: 0, newest run plant-b-h030)\",\"predicted\":{\"levelPct\":50,\"tempC\":70.8},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\"],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "plant-b",
+   "id": "242380805933703168",
+   "from": "ar-plant-b-tk-101",
+   "createdAt": "2026-10-31T20:14:47.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0001\",\"componentId\":\"plant-b/TK-101\",\"agentId\":\"agent:plant-b/TK-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Zero similar events were retrieved and no learned rules apply; plant-b-h030 showed level holding at 50% after a smaller feed increase, and the supplied physics predicts adequate outlet capacity at 85% speed. Predicted level 50% and transient temperature 70.8 \u00b0C are below the vote-no thresholds of 72% and 76.5 \u00b0C, respectively, and neither is within 15% of its critical limit. (similar events: 0, newest run plant-b-h030)\",\"predicted\":{\"levelPct\":50,\"tempC\":70.8},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\"],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "company",
+   "id": "242387001322094592",
+   "from": "ar-glue-system",
+   "createdAt": "2026-10-31T20:39:24.000Z",
+   "text": "{\"type\":\"proposal\",\"payload\":{\"proposal\":{\"at\":\"2026-10-31T20:39:21.753Z\",\"crossPlant\":true,\"from\":50,\"id\":\"plant-a-p0001\",\"metric\":\"speedPct\",\"parentProposalId\":null,\"plantId\":\"plant-a\",\"proposerAgentId\":\"agent:plant-a/P-100\",\"proposerComponentId\":\"plant-a/P-100\",\"rationale\":\"E2E throughput request\",\"requiredVoters\":[\"plant-a/TK-101\",\"plant-a/LV-101\",\"plant-a/E-101\",\"plant-a/TV-101\",\"plant-b/TV-101\"],\"status\":\"voting\",\"to\":85,\"vetoDeadline\":null,\"votes\":[]}}}"
+  },
+  {
+   "channel": "company",
+   "id": "242384345187901440",
+   "from": "ar-plant-a-tv-101",
+   "createdAt": "2026-10-31T20:28:51.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0003\",\"componentId\":\"plant-a/TV-101\",\"agentId\":\"agent:plant-a/TV-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] Zero similar past events, no learned rules, and no TV-101 limits or baseline were supplied, so a grounded TV-101 opening prediction and critical-margin threshold cannot be established. The physics summary indicates increased steam demand at 65% pump speed but does not determine TV-101 opening; therefore I cannot verify adequate control headroom for my valve. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "company",
+   "id": "242384310919135232",
+   "from": "ar-plant-b-tv-101",
+   "createdAt": "2026-10-31T20:28:43.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-b/TV-101\",\"agentId\":\"agent:plant-b/TV-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] Zero similar past events were retrieved, and no learned rules, TV-101 baseline, or equipment limits were supplied. The physics summary does not quantify TV-101 position or steam-header pressure, so I cannot ground an own-equipment prediction or verify the required 10% control margin. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "company",
+   "id": "242384295716265984",
+   "from": "ar-plant-a-tv-101",
+   "createdAt": "2026-10-31T20:28:39.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0002\",\"componentId\":\"plant-a/TV-101\",\"agentId\":\"agent:plant-a/TV-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] Zero similar past events were retrieved, and no learned rules, baseline prediction, or TV-101 limits were supplied, so TV-101 position and its margin threshold cannot be predicted or checked. The physics summary indicates increased steam demand but does not quantify TV-101 opening; LV-101 predictions cannot establish headroom for my equipment. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "company",
+   "id": "242384264451743744",
+   "from": "ar-plant-b-tv-101",
+   "createdAt": "2026-10-31T20:28:31.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-b/TV-101\",\"agentId\":\"agent:plant-b/TV-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] Zero similar past events were retrieved, and no learned rules, TV-101 baseline, or TV-101 limits were provided. The physics summary indicates increased steam demand but does not determine TV-101 position, so I cannot predict my valve\u2019s position or verify the required 10% control margin. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "company",
+   "id": "242384211240161280",
+   "from": "ar-plant-a-tv-101",
+   "createdAt": "2026-10-31T20:28:19.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0002\",\"componentId\":\"plant-a/TV-101\",\"agentId\":\"agent:plant-a/TV-101\",\"vote\":\"no\",\"reason\":\"[openai:gpt-6.1-sol] Fewer than 3 similar past events were retrieved (none), and no event IDs, learned rules, or TV-101 limits were supplied; the physics summary implies approximately 2,275 kg/h steam demand at 75% pump speed. TV-101 opening depends on steam header pressure, so its predicted opening and critical-margin threshold cannot be established to verify safe headroom. (similar events: 0)\",\"predicted\":{},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "company",
+   "id": "242382389111648256",
+   "from": "ar-plant-a-tv-101",
+   "createdAt": "2026-10-31T20:21:04.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0001\",\"componentId\":\"plant-a/TV-101\",\"agentId\":\"agent:plant-a/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] No similar past events were retrieved and no learned rules apply; the supplied grounded physics baseline predicts headerBarg 5.5 and positionPct 51.2, with own steam flow unchanged at 1533.1079 kg/h. Both limited metrics remain below their vote-no thresholds (85.5% and 2700 kg/h) and outside 15% of their critical limits. (similar events: 0)\",\"predicted\":{\"headerBarg\":5.5,\"positionPct\":51.2,\"steamKgH\":1533.1},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "company",
+   "id": "242382270357987328",
+   "from": "ar-plant-b-tv-101",
+   "createdAt": "2026-10-31T20:20:36.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-b/TV-101\",\"agentId\":\"agent:plant-b/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Retrieved events plant-a-h011, plant-a-h010, plant-a-obs-plant-a-p0002, plant-a-h009, and plant-a-h008 record no effect on this valve; no learned rules apply. The grounded shared-header prediction gives headerBarg 5.9 and positionPct 50.3, below the 85.5 threshold, while steamKgH remains 1533.1079, below the 2700 threshold, as this valve opens slightly to maintain its flow. (similar events: 5)\",\"predicted\":{\"headerBarg\":5.9,\"positionPct\":50.3,\"steamKgH\":1533.1},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-h011\",\"plant-a-h010\",\"plant-a-obs-plant-a-p0002\",\"plant-a-h009\",\"plant-a-h008\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "company",
+   "id": "242382235592953856",
+   "from": "ar-plant-a-tv-101",
+   "createdAt": "2026-10-31T20:20:28.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0003\",\"componentId\":\"plant-a/TV-101\",\"agentId\":\"agent:plant-a/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Events plant-b-h030, plant-b-h029, and plant-b-h028 recorded no effect on TV-101; no learned rules apply. Using these events and the supplied shared-header physics, predicted headerBarg is 5.8, positionPct is 50.6 (below 85.5), and own steamKgH remains 1533.1079 (below 2700). (similar events: 3)\",\"predicted\":{\"headerBarg\":5.8,\"positionPct\":50.6,\"steamKgH\":1533.1},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\",\"plant-b-h029\",\"plant-b-h028\"],\"evidenceRuleIds\":[],\"similarCount\":3}}"
+  },
+  {
+   "channel": "company",
+   "id": "242382147730427904",
+   "from": "ar-plant-b-tv-101",
+   "createdAt": "2026-10-31T20:20:07.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0003\",\"componentId\":\"plant-b/TV-101\",\"agentId\":\"agent:plant-b/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] The five similar events (plant-a-h006, plant-a-h005, plant-a-h001, plant-a-h004, plant-a-h002) record no effect on TV-101, and no learned rules apply; the supplied physics baseline predicts headerBarg 5.7 and positionPct 50.7 as the other plant draws approximately 594 kg/h more steam. Own steam flow remains approximately 1533.1079 kg/h, with position and flow below their respective vote-no thresholds of 85.5% and 2700 kg/h. (similar events: 5)\",\"predicted\":{\"headerBarg\":5.7,\"positionPct\":50.7,\"steamKgH\":1533.1},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-h006\",\"plant-a-h005\",\"plant-a-h001\",\"plant-a-h004\",\"plant-a-h002\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "company",
+   "id": "242382032291979264",
+   "from": "ar-plant-a-tv-101",
+   "createdAt": "2026-10-31T20:19:39.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0002\",\"componentId\":\"plant-a/TV-101\",\"agentId\":\"agent:plant-a/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Only two similar past events were retrieved (plant-b-h030 and plant-b-h029), neither recording an effect on TV-101, and no learned rules apply. Using the supplied shared-header physics, predicted positionPct 50.9 and unchanged steamKgH 1533.1079 remain below thresholds 85.5 and 2700 and outside 15% of their critical limits; headerBarg falls to 5.6. (similar events: 2)\",\"predicted\":{\"headerBarg\":5.6,\"positionPct\":50.9,\"steamKgH\":1533.1},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\",\"plant-b-h029\"],\"evidenceRuleIds\":[],\"similarCount\":2}}"
+  },
+  {
+   "channel": "company",
+   "id": "242381940012974080",
+   "from": "ar-plant-b-tv-101",
+   "createdAt": "2026-10-31T20:19:17.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-b/TV-101\",\"agentId\":\"agent:plant-b/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Events plant-a-h011, plant-a-h010, plant-a-obs-plant-a-p0002, plant-a-h009, and plant-a-h008 record no effect on TV-101; no learned rules apply. The grounded physics baseline predicts headerBarg 5.9 and positionPct 50.3 as the other plant draws approximately 149 kg/h more steam, with own steamKgH unchanged at 1533.1079; position and flow remain below their respective vote-no thresholds of 85.5 and 2700. (similar events: 5)\",\"predicted\":{\"headerBarg\":5.9,\"positionPct\":50.3,\"steamKgH\":1533.1},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-h011\",\"plant-a-h010\",\"plant-a-obs-plant-a-p0002\",\"plant-a-h009\",\"plant-a-h008\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "company",
+   "id": "242381741265825792",
+   "from": "ar-plant-a-tv-101",
+   "createdAt": "2026-10-31T20:18:30.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0003\",\"componentId\":\"plant-a/TV-101\",\"agentId\":\"agent:plant-a/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] The three similar events plant-b-h030, plant-b-h029, and plant-b-h028 record no effect on this valve, and no learned rules apply; the supplied shared-header physics predicts headerBarg 5.8 and positionPct 50.6 while this plant's steam flow remains 1533.1079 kg/h. Predicted position and flow remain below their respective vote-no thresholds of 85.5% and 2700 kg/h. (similar events: 3)\",\"predicted\":{\"headerBarg\":5.8,\"positionPct\":50.6,\"steamKgH\":1533.1},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\",\"plant-b-h029\",\"plant-b-h028\"],\"evidenceRuleIds\":[],\"similarCount\":3}}"
+  },
+  {
+   "channel": "company",
+   "id": "242381615923625984",
+   "from": "ar-plant-b-tv-101",
+   "createdAt": "2026-10-31T20:18:00.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0003\",\"componentId\":\"plant-b/TV-101\",\"agentId\":\"agent:plant-b/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] The five similar events (plant-a-h006, plant-a-h005, plant-a-h001, plant-a-h004, plant-a-h002) record no effect on TV-101, and no learned rules apply. Using the supplied physics baseline, the additional shared-header demand lowers headerBarg to 5.7 and raises positionPct to 50.7 while steamKgH remains 1533.1079, below the respective vote-no thresholds of 85.5 and 2700. (similar events: 5)\",\"predicted\":{\"headerBarg\":5.7,\"positionPct\":50.7,\"steamKgH\":1533.1},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-h006\",\"plant-a-h005\",\"plant-a-h001\",\"plant-a-h004\",\"plant-a-h002\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "company",
+   "id": "242381426752339968",
+   "from": "ar-plant-a-tv-101",
+   "createdAt": "2026-10-31T20:17:15.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0002\",\"componentId\":\"plant-a/TV-101\",\"agentId\":\"agent:plant-a/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Only 2 similar past events were retrieved (fewer than 3): plant-b-h030 and plant-b-h029 recorded no effect on TV-101, and no learned rules apply. The supplied grounded physics prediction gives headerBarg 5.6 and positionPct 50.9 at unchanged steam flow of 1533.1079 kg/h; both limited metrics remain below their 15%-proximity boundaries and vote-no thresholds of 85.5% and 2700 kg/h. (similar events: 2)\",\"predicted\":{\"headerBarg\":5.6,\"positionPct\":50.9,\"steamKgH\":1533.1},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\",\"plant-b-h029\"],\"evidenceRuleIds\":[],\"similarCount\":2}}"
+  },
+  {
+   "channel": "company",
+   "id": "242381371102072832",
+   "from": "ar-plant-a-tv-101",
+   "createdAt": "2026-10-31T20:17:02.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0001\",\"componentId\":\"plant-a/TV-101\",\"agentId\":\"agent:plant-a/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] No similar past events were retrieved and no learned rules were provided; the supplied grounded physics baseline predicts headerBarg 5.5 and positionPct 51.2, with own steam flow unchanged at 1533.1079 kg/h. Both valve metrics remain below their vote-no thresholds (85.5% and 2700 kg/h) and outside 15% of their critical limits. (similar events: 0)\",\"predicted\":{\"headerBarg\":5.5,\"positionPct\":51.2,\"steamKgH\":1533.1},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "company",
+   "id": "242381264100581376",
+   "from": "ar-plant-b-tv-101",
+   "createdAt": "2026-10-31T20:16:36.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0003\",\"componentId\":\"plant-b/TV-101\",\"agentId\":\"agent:plant-b/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Events plant-a-h006, plant-a-h005, plant-a-h001, plant-a-h004, and plant-a-h002 record no effect on TV-101; no learned rules apply. Using the grounded physics baseline, the additional shared-header demand lowers headerBarg to 5.7 and raises positionPct to 50.7 while steamKgH remains 1533.1079, below the respective vote-no thresholds of 85.5 and 2700. (similar events: 5)\",\"predicted\":{\"headerBarg\":5.7,\"positionPct\":50.7,\"steamKgH\":1533.1},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-h006\",\"plant-a-h005\",\"plant-a-h001\",\"plant-a-h004\",\"plant-a-h002\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "company",
+   "id": "242381016989392896",
+   "from": "ar-plant-a-tv-101",
+   "createdAt": "2026-10-31T20:15:37.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0002\",\"componentId\":\"plant-a/TV-101\",\"agentId\":\"agent:plant-a/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Only 2 similar events were retrieved (plant-b-h030 and plant-b-h029), neither recording an effect on this valve, and no learned rules apply. Using the supplied grounded baseline and shared-header physics, the additional ~743 kg/h draw predicts headerBarg 5.6, positionPct 50.9, and unchanged steamKgH 1533.1079; both limited metrics remain below their vote-no thresholds (85.5% and 2700 kg/h) and outside 15% of their critical limits. (similar events: 2)\",\"predicted\":{\"headerBarg\":5.6,\"positionPct\":50.9,\"steamKgH\":1533.1},\"marginPct\":10,\"evidenceEventIds\":[\"plant-b-h030\",\"plant-b-h029\"],\"evidenceRuleIds\":[],\"similarCount\":2}}"
+  },
+  {
+   "channel": "company",
+   "id": "242380958900477952",
+   "from": "ar-plant-b-tv-101",
+   "createdAt": "2026-10-31T20:15:23.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0004\",\"componentId\":\"plant-b/TV-101\",\"agentId\":\"agent:plant-b/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] plant-a-h011 and plant-a-h010 recorded no effect on this valve, and no learned rules apply; the supplied physics baseline predicts headerBarg 5.9 and positionPct 50.3 as the other plant draws about 149 kg/h more steam. Own steam flow remains approximately 1533.1079 kg/h, below the 2700 kg/h vote-no threshold, while position remains below its 85.5% threshold. (similar events: 5)\",\"predicted\":{\"headerBarg\":5.9,\"positionPct\":50.3,\"steamKgH\":1533.1},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-h011\",\"plant-a-h010\",\"plant-a-obs-plant-a-p0002\",\"plant-a-h009\",\"plant-a-h008\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  },
+  {
+   "channel": "company",
+   "id": "242380901286428672",
+   "from": "ar-plant-a-tv-101",
+   "createdAt": "2026-10-31T20:15:10.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-b-p0001\",\"componentId\":\"plant-a/TV-101\",\"agentId\":\"agent:plant-a/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] No similar past events were retrieved and no learned rules were provided; the supplied grounded baseline and physics predict headerBarg 5.5 and positionPct 51.2 as plant-b draws approximately 1040 kg/h more steam. Own steam flow remains 1533.1079 kg/h; both valve position and steam flow stay below their vote-no thresholds (85.5% and 2700 kg/h) and outside 15% of their critical limits. (similar events: 0)\",\"predicted\":{\"headerBarg\":5.5,\"positionPct\":51.2,\"steamKgH\":1533.1},\"marginPct\":10,\"evidenceEventIds\":[],\"evidenceRuleIds\":[],\"similarCount\":0}}"
+  },
+  {
+   "channel": "company",
+   "id": "242380735555174400",
+   "from": "ar-plant-b-tv-101",
+   "createdAt": "2026-10-31T20:14:30.000Z",
+   "text": "{\"type\":\"vote\",\"vote\":{\"proposalId\":\"plant-a-p0003\",\"componentId\":\"plant-b/TV-101\",\"agentId\":\"agent:plant-b/TV-101\",\"vote\":\"yes\",\"reason\":\"[openai:gpt-6.1-sol] Events plant-a-h006, plant-a-h005, plant-a-h001, plant-a-h004 and plant-a-h002 record no effect on this equipment; no learned rules apply. The grounded physics prediction gives headerBarg 5.7 and positionPct 50.7 for unchanged steam flow of 1533.1079 kg/h, below the respective vote-no thresholds of 85.5% and 2700 kg/h. (similar events: 5)\",\"predicted\":{\"headerBarg\":5.7,\"positionPct\":50.7,\"steamKgH\":1533.1},\"marginPct\":10,\"evidenceEventIds\":[\"plant-a-h006\",\"plant-a-h005\",\"plant-a-h001\",\"plant-a-h004\",\"plant-a-h002\"],\"evidenceRuleIds\":[],\"similarCount\":5}}"
+  }
+ ]
+}
