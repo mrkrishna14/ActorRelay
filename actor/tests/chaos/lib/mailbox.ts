@@ -3,7 +3,7 @@ import type { Ctx } from "./scenario";
 import { sleep } from "./server";
 
 export const MAILBOX_BOUND_MS = 2_000; // Glue fetches are fire-and-forget, so a healthy mailbox never waits on them.
-export const ACTOR_CALL_BOUND_MS = 4_000; // A Plant may hold its mailbox for one 3s actor call.
+export const ACTOR_CALL_BOUND_MS = 9_000; // A Plant may hold its mailbox for one 8s actor call (ACTOR_CALL_TIMEOUT_MS).
 
 /** Sample mailbox latency for `ms`, one read at a time, and fail on any read over the bound. */
 export async function probeMailbox(ctx: Ctx, label: string, ms: number, boundMs = MAILBOX_BOUND_MS, plantId = "plant-a"): Promise<void> {
