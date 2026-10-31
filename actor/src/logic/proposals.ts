@@ -1,5 +1,5 @@
-import type { AuditEntry, ComponentId, PlantId, Proposal, Vote } from "../../../shared/types.js"
-import { SETPOINT_TOLERANCE, VETO_WINDOW_MS, VOTE_TIMEOUT_MS } from "../config.js"
+import type { AuditEntry, ComponentId, LearnedRule, Limit, PlantId, Proposal, Vote } from "../../../shared/types.js"
+import { SETPOINT_TOLERANCE, VETO_LAPSE_MS, VETO_WINDOW_MS, VOTE_TIMEOUT_MS, WAITING_TIMEOUT_MS } from "../config.js"
 import { agentIdFor } from "../ids.js"
 import type { ComponentDef, Topology } from "./rules.js"
 import { fail, isFiniteNumber, isNonEmptyString, isRecord } from "./validate.js"
@@ -17,15 +17,30 @@ export type ProposalInput = {
 
 export type Setpoints = Record<ComponentId, Record<string, number>>
 
-export type SweepResult = { proposals: Proposal[]; audit: Omit<AuditEntry, "plantId">[]; toExecute: string[] }
+export type SweepResult = { proposals: Proposal[]; audit: Omit<AuditEntry, "plantId">[]; toExecute: string[]; needLease: string[] }
+
+export const MIN_SIMILAR = 3
+
+export type VoteContext = {
+    proposal: Pick<Proposal, "proposerComponentId" | "metric" | "to">
+    proposerLimit: Limit | undefined
+    // Counted by the actor over its own history, because a vote's similarCount is self-reported.
+    similarCount: number
+    // The higher of the vote's claim and the margin the component last reported.
+    marginPct: number
+    rules: LearnedRule[]
+}
 
 export function reachableVoters(proposer: ComponentId, topology: Topology, order: ComponentId[]): ComponentId[] {
     const seen = new Set<ComponentId>([proposer])
     const queue = [proposer]
     while (queue.length > 0) {
-        const def = topology[queue.shift()!]
+        const current = queue.shift()!
+        const def = topology[current]
         if (def === undefined) continue
-        for (const next of [...def.upstream, ...def.downstream]) {
+        // Links count from either end, so a link recorded on one side cannot drop a voter.
+        const linkedHere = Object.values(topology).filter(other => other.upstream.includes(current) || other.downstream.includes(current))
+        for (const next of [...def.upstream, ...def.downstream, ...linkedHere.map(other => other.id)]) {
             if (seen.has(next) || !Object.hasOwn(topology, next)) continue
             seen.add(next)
             queue.push(next)
@@ -80,19 +95,45 @@ function touched(proposal: Proposal): ComponentId[] {
     return [proposal.proposerComponentId, ...proposal.requiredVoters]
 }
 
-// Safety net behind the agents' own checks. The floor at limit.max stops a wide margin from turning
-// a healthy reading into a violation (85 °C critical at margin 15 would otherwise reject 75 °C).
-export function enforceVoteSafety(vote: Vote, def: ComponentDef | undefined): Vote {
+function satisfies(value: number, op: ">=" | "<=", target: number): boolean {
+    return op === ">=" ? value >= target : value <= target
+}
+
+// Safety net behind the agents' own checks, so a forged yes cannot open a veto window.
+// The floor at limit.max stops a wide margin from turning a healthy reading into a violation
+// (85 °C critical at margin 15 would otherwise reject 75 °C).
+export function enforceVoteSafety(vote: Vote, def: ComponentDef | undefined, context?: VoteContext): Vote {
     if (vote.vote !== "yes" || def === undefined) return vote
+    const marginPct = Math.max(vote.marginPct, context?.marginPct ?? 0)
+    const refused = (reason: string): Vote => ({ ...vote, vote: "no", reason: `${reason}. ${vote.reason}` })
+    if (context !== undefined) {
+        const { proposal, proposerLimit, similarCount, rules } = context
+        if (proposerLimit !== undefined && similarCount < MIN_SIMILAR && proposal.to >= proposerLimit.critical * 0.85) {
+            return refused(`insufficient history: ${similarCount} similar events for ${proposal.metric} ${proposal.to}, within 15% of critical`)
+        }
+        const binding = rules.find(rule => {
+            const limit = Object.hasOwn(def.limits, rule.consequence.metric) ? def.limits[rule.consequence.metric] : undefined
+            return (
+                limit !== undefined &&
+                rule.condition.componentId === proposal.proposerComponentId &&
+                rule.condition.metric === proposal.metric &&
+                satisfies(proposal.to, rule.condition.op, rule.condition.value) &&
+                rule.consequence.componentId === vote.componentId &&
+                rule.consequence.op === ">=" &&
+                rule.consequence.value >= Math.max(limit.critical * (1 - marginPct / 100), limit.max)
+            )
+        })
+        if (binding !== undefined) return refused(`learned rule ${binding.id} applies: ${binding.text}`)
+    }
     for (const [metric, limit] of Object.entries(def.limits)) {
         // Without this a yes with predicted {} would pass every threshold below.
         if (!Object.hasOwn(vote.predicted, metric)) fail("invalid_vote", `a yes from ${vote.componentId} must predict ${metric}`)
         const predicted = vote.predicted[metric]
-        if (predicted >= Math.max(limit.critical * (1 - vote.marginPct / 100), limit.max)) {
+        if (predicted >= Math.max(limit.critical * (1 - marginPct / 100), limit.max)) {
             fail("unsafe_yes", `${vote.componentId} predicts ${metric} ${predicted} past its limit`)
         }
-        if (vote.similarCount === 0 && predicted >= limit.critical * 0.85) {
-            return { ...vote, vote: "no", reason: `insufficient history: no similar events and ${metric} is within 15% of critical. ${vote.reason}` }
+        if ((context?.similarCount ?? vote.similarCount) === 0 && predicted >= limit.critical * 0.85) {
+            return refused(`insufficient history: no similar events and ${metric} is within 15% of critical`)
         }
     }
     return vote
@@ -120,15 +161,24 @@ export function assertExecutable(proposal: Proposal, topology: Topology, setpoin
     if (proposal.to < limit.min || proposal.to >= limit.critical) fail("out_of_limits", `${proposal.metric} ${proposal.to} is outside ${limit.min}..${limit.critical}`)
 }
 
-export function planSweep(proposals: Proposal[], setpoints: Setpoints, now: number): SweepResult {
+// `leases` holds proposals granted the shared resources they touch. Omitted, no lease is required.
+export function planSweep(proposals: Proposal[], setpoints: Setpoints, now: number, leases?: string[]): SweepResult {
     const at = new Date(now).toISOString()
     const audit: SweepResult["audit"] = []
     const toExecute: string[] = []
+    const needLease: string[] = []
     const occupied = new Set(proposals.filter(proposal => proposal.status === "veto_window").flatMap(touched))
 
     const next = proposals.map(proposal => {
         if (proposal.status === "veto_window") {
-            if (proposal.vetoDeadline !== null && now >= Date.parse(proposal.vetoDeadline)) toExecute.push(proposal.id)
+            if (proposal.vetoDeadline === null || now < Date.parse(proposal.vetoDeadline)) return proposal
+            // The deadline passing during an outage gave the operator no window, so they get a full one now.
+            if (now - Date.parse(proposal.vetoDeadline) > VETO_LAPSE_MS) {
+                const vetoDeadline = new Date(now + VETO_WINDOW_MS).toISOString()
+                audit.push({ at, kind: "incident", refId: proposal.id, summary: `Veto window lapsed unattended, reopened until ${vetoDeadline}`, by: "plant" })
+                return { ...proposal, vetoDeadline }
+            }
+            toExecute.push(proposal.id)
             return proposal
         }
         if (proposal.status !== "voting") return proposal
@@ -143,8 +193,18 @@ export function planSweep(proposals: Proposal[], setpoints: Setpoints, now: numb
             return { ...proposal, status: "expired" as const }
         }
         if (unanimousYes(proposal)) {
-            // Waits in voting while another proposal holds a touched component.
-            if (touched(proposal).some(component => occupied.has(component))) return proposal
+            // Waits in voting while another proposal holds a touched component or its shared resource,
+            // but not for ever: votes given against old conditions must not surface much later.
+            const blockedByOther = touched(proposal).some(component => occupied.has(component))
+            const leaseMissing = leases !== undefined && proposal.crossPlant && !leases.includes(proposal.id)
+            if (blockedByOther || leaseMissing) {
+                if (now - Date.parse(proposal.at) >= WAITING_TIMEOUT_MS) {
+                    audit.push({ at, kind: "incident", refId: proposal.id, summary: "Expired while waiting for a veto window", by: "plant" })
+                    return { ...proposal, status: "expired" as const }
+                }
+                if (leaseMissing && !blockedByOther) needLease.push(proposal.id)
+                return proposal
+            }
             touched(proposal).forEach(component => occupied.add(component))
             const vetoDeadline = new Date(now + VETO_WINDOW_MS).toISOString()
             audit.push({ at, kind: "proposal", refId: proposal.id, summary: `Unanimous yes, veto window until ${vetoDeadline}`, by: "plant" })
@@ -157,5 +217,5 @@ export function planSweep(proposals: Proposal[], setpoints: Setpoints, now: numb
         }
         return proposal
     })
-    return { proposals: next, audit, toExecute }
+    return { proposals: next, audit, toExecute, needLease }
 }

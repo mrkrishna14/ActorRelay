@@ -231,6 +231,66 @@ describe("sweep", () => {
     })
 })
 
+describe("small guards", () => {
+    test("k below 1 returns nothing", () => {
+        expect(rankSimilar({ history: events, componentId: "plant-a/P-100", metric: "speedPct", to: 85, upstreamSnapshot: {}, k: 0, liveEventIds: [] })).toEqual([])
+    })
+
+    test("a link recorded on one end still reaches its voter", () => {
+        const oneSided: Topology = { ...topologyA, "plant-a/TK-101": { ...topologyA["plant-a/TK-101"], upstream: ["plant-a/E-101"] } }
+        expect(reachableVoters("plant-a/P-100", oneSided, order)).toContain("plant-a/LV-101")
+    })
+})
+
+describe("cross-plant windows and outages", () => {
+    const unanimous = voters.map(voter => vote(voter))
+
+    test("a cross-plant proposal waits in voting until it holds the shared-resource lease", () => {
+        const waiting = proposal({ votes: unanimous })
+        const asked = planSweep([waiting], setpointsA, 1_000_500, [])
+        expect(asked.proposals[0].status).toBe("voting")
+        expect(asked.needLease).toEqual([waiting.id])
+        expect(planSweep([waiting], setpointsA, 1_000_500, [waiting.id]).proposals[0].status).toBe("veto_window")
+    })
+
+    test("a unanimous proposal cannot wait for ever on old votes", () => {
+        expect(planSweep([proposal({ votes: unanimous })], setpointsA, 1_060_000, []).proposals[0].status).toBe("expired")
+    })
+
+    test("a veto window lost to an outage reopens instead of executing unattended", () => {
+        const windowed = proposal({ status: "veto_window", vetoDeadline: new Date(1_010_000).toISOString(), votes: unanimous })
+        expect(planSweep([windowed], setpointsA, 1_012_000).toExecute).toEqual([windowed.id])
+        const lapsed = planSweep([windowed], setpointsA, 1_040_000)
+        expect(lapsed.toExecute).toEqual([])
+        expect(Date.parse(lapsed.proposals[0].vetoDeadline!)).toBe(1_050_000)
+        expect(lapsed.audit[0].kind).toBe("incident")
+    })
+})
+
+describe("server-side vote checks", () => {
+    const pump = plantA.components[0]
+    const context = { proposal: { proposerComponentId: "plant-a/P-100", metric: "speedPct", to: 85 }, proposerLimit: pump.limits.speedPct, similarCount: 5, marginPct: 10, rules: [] as LearnedRule[] }
+
+    test("too little real history near critical forces no, whatever similarCount the vote claims", () => {
+        const forced = enforceVoteSafety(vote("plant-a/LV-101", { predicted: { positionPct: 60 }, similarCount: 5 }), lv101, { ...context, similarCount: 2 })
+        expect(forced.vote).toBe("no")
+        expect(forced.reason).toContain("insufficient history")
+    })
+
+    test("a vote cannot lower its own margin", () => {
+        const claimed = vote("plant-a/LV-101", { predicted: { positionPct: 84 }, marginPct: 5 })
+        expect(() => enforceVoteSafety(claimed, lv101, context)).toThrow("unsafe_yes")
+    })
+
+    test("an applicable learned rule forces no, even with low predictions", () => {
+        const rows = [event("e1", 82, 86), event("e2", 84, 87), event("e3", 86, 89)]
+        const rules = deriveRules(rows, topologyA, "2026-10-31T00:00:00.000Z")
+        const forced = enforceVoteSafety(vote("plant-a/LV-101", { predicted: { positionPct: 60 } }), lv101, { ...context, rules })
+        expect(forced.vote).toBe("no")
+        expect(forced.reason).toContain("learned rule")
+    })
+})
+
 describe("execute", () => {
     const approved = proposal({ status: "veto_window", vetoDeadline: new Date(1_010_000).toISOString(), votes: voters.map(voter => vote(voter)) })
 
@@ -330,6 +390,15 @@ describe("rules", () => {
         expect(unsupportedEventId(rule, rows)).toBeNull()
         expect(unsupportedEventId({ ...rule, supportEventIds: ["e1", "e2", "safe"] }, [...rows, event("safe", 65, 66)])).toBe("safe")
         expect(unsupportedEventId({ ...rule, supportEventIds: ["e1", "e2", "invented"] }, rows)).toBe("invented")
+    })
+
+    test("a merge can only tighten a company rule", () => {
+        const rows = [event("e1", 82, 86), event("e2", 84, 87), event("e3", 86, 89)]
+        const company = toCompanyRule(deriveRules(rows, topologyA, now)[0], "plant-a")
+        const weaker = { ...company, condition: { ...company.condition, value: 99 }, consequence: { ...company.consequence, value: 70 } }
+        const merged = mergeCompanyRule([company], weaker, now).rule
+        expect(merged.condition.value).toBe(company.condition.value)
+        expect(merged.consequence.value).toBe(company.consequence.value)
     })
 
     test("a resubmitted rule merges by condition and consequence", () => {

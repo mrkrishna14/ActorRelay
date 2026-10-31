@@ -2,6 +2,9 @@ export const TICK_MS = 1_000
 export const VETO_WINDOW_MS = 10_000
 export const VOTE_TIMEOUT_MS = 30_000
 export const SWEEP_EVERY_TICKS = 2
+export const WAITING_TIMEOUT_MS = 60_000
+export const VETO_LAPSE_MS = 6_000
+export const LEASE_TTL_MS = 60_000
 
 export const AUDIT_CAP = 300
 export const PROPOSAL_CAP = 200

@@ -198,11 +198,15 @@ export function mergeCompanyRule(existing: LearnedRule[], incoming: LearnedRule,
     const index = existing.findIndex(rule => companyRuleKey(rule) === companyRuleKey(incoming))
     if (index === -1) return { rules: [...existing, incoming], rule: incoming }
     const current = existing[index]
+    // Plant-b relies on this rule before it has any history of its own, so a merge may only tighten it.
+    const tightest = (op: Op, a: number, b: number, widenLow: boolean) => (op === ">=" === widenLow ? Math.min(a, b) : Math.max(a, b))
+    const condition = { ...current.condition, value: tightest(current.condition.op, current.condition.value, incoming.condition.value, true) }
+    const consequence = { ...current.consequence, value: tightest(current.consequence.op, current.consequence.value, incoming.consequence.value, false) }
     const merged: LearnedRule = {
         ...current,
-        text: incoming.text,
-        condition: incoming.condition,
-        consequence: incoming.consequence,
+        text: condition.value === incoming.condition.value && consequence.value === incoming.consequence.value ? incoming.text : current.text,
+        condition,
+        consequence,
         supportEventIds: [...new Set([...current.supportEventIds, ...incoming.supportEventIds])],
         timesSeen: current.timesSeen + 1,
         lastSeenAt: now

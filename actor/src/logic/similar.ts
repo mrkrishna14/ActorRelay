@@ -33,7 +33,8 @@ export function rankSimilar(input: {
     liveEventIds: string[]
 }): HistoryEvent[] {
     const { componentId, metric, to, upstreamSnapshot, limit } = input
-    const k = Math.min(MAX_RESULTS, Math.max(1, Math.trunc(input.k)))
+    const k = Math.min(MAX_RESULTS, Math.trunc(input.k))
+    if (k < 1) return []
     const candidates = input.history.filter(event => event.componentId === componentId && event.metric === metric)
     if (candidates.length === 0) return []
 

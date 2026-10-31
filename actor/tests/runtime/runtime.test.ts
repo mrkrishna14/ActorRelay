@@ -74,7 +74,15 @@ function yes(proposalId: string, componentId: string): Vote {
 }
 
 async function allYes(proposalId: string): Promise<void> {
-    for (const voter of voters) await plant("vote", yes(proposalId, voter))
+    await Promise.all(voters.map(voter => plant("vote", yes(proposalId, voter))))
+}
+
+async function execute(to: number): Promise<string> {
+    const proposal = await propose(to)
+    await allYes(proposal.id)
+    await until(() => proposalOf(proposal.id), value => value.status === "executed", 30_000)
+    await until(() => plant<{ state: string }>("getExecution", proposal.id), value => value.state === "applied", 10_000)
+    return proposal.id
 }
 
 // Labelled fake: it stands in for glue and the simulator, and it is the executor that claims and applies.
@@ -96,7 +104,7 @@ const fakeGlue = Bun.serve({
     }
 })
 
-setDefaultTimeout(60_000)
+setDefaultTimeout(180_000)
 beforeAll(reset, 60_000)
 afterAll(() => fakeGlue.stop(true))
 
@@ -115,11 +123,11 @@ describe("TASK1 list (real terse actor dev)", () => {
         const second = await propose(70)
         await allYes(first.id)
         await allYes(second.id)
-        await until(() => proposalOf(first.id), value => value.status === "veto_window", 4_000)
+        await until(() => proposalOf(first.id), value => value.status === "veto_window", 8_000)
         await Bun.sleep(2_500)
         expect((await proposalOf(second.id)).status).toBe("voting")
         await plant("veto", first.id, "runtime test")
-        await until(() => proposalOf(second.id), value => value.status === "veto_window", 4_000)
+        await until(() => proposalOf(second.id), value => value.status === "veto_window", 8_000)
     })
 
     test("similar returns the seeded >=80% events with LV-101 >= 85", async () => {
@@ -143,17 +151,17 @@ describe("TASK1 list (real terse actor dev)", () => {
 
     test("five large calibration errors raise marginPct to 15", async () => {
         await reset()
-        for (let index = 0; index < 5; index++) {
-            await component("plant-a/LV-101", "addCalibration", { at: new Date().toISOString(), proposalId: `calibration-${index}`, metric: "positionPct", predicted: 60, observed: 80, absError: 20 })
+        for (let run = 0; run < 5; run++) {
+            const proposalId = await execute(run % 2 === 0 ? 65 : 70)
+            await plant("recordEvent", { proposalId, effects: [{ componentId: "plant-a/LV-101", metric: "positionPct", before: 50, after: 86, ticksToSettle: 3 }] })
+            await component("plant-a/LV-101", "addCalibration", { at: new Date().toISOString(), proposalId, metric: "positionPct", predicted: 66, observed: 86, absError: 20 })
         }
         expect((await component<ComponentState>("plant-a/LV-101", "getState")).marginPct).toBe(15)
     })
 
     test("rule promotion fires on the third matching event and dedupes on the fourth", async () => {
         const seed = plants.plants[0]
-        await call("Company", "company", "loadSeed", plants.company)
-        await plant("loadSeed", seed, [])
-        const event = (id: string, after: number, lvAfter: number): HistoryEvent => ({
+        const event = (id: string, after: number, level: number): HistoryEvent => ({
             id,
             at: new Date().toISOString(),
             plantId: "plant-a",
@@ -162,20 +170,24 @@ describe("TASK1 list (real terse actor dev)", () => {
             before: 50,
             after,
             upstreamSnapshot: {},
-            effects: [{ componentId: "plant-a/LV-101", metric: "positionPct", before: 50, after: lvAfter, ticksToSettle: 3 }],
+            effects: [{ componentId: "plant-a/TK-101", metric: "levelPct", before: 50, after: level, ticksToSettle: 3 }],
             incident: null,
             approvedBy: [],
             operator: null,
             proposalId: null
         })
-        await plant("recordEvent", event("rule-1", 82, 86))
-        await plant("recordEvent", event("rule-2", 84, 87))
+        // Consequence 70 stays under TK-101's threshold of 72, so the learned rule does not refuse the fourth run.
+        const seeded = [event("safe-1", 76, 60), event("safe-2", 77, 61), event("safe-3", 78, 62), event("rule-1", 82, 71), event("rule-2", 84, 71.5)]
+        await call("Company", "company", "loadSeed", plants.company)
+        await plant("loadSeed", seed, seeded)
         expect((await plant<PlantState>("getState")).rules).toEqual([])
-        await plant("recordEvent", event("rule-3", 86, 89))
+
+        const level = (after: number) => [{ componentId: "plant-a/TK-101", metric: "levelPct", before: 50, after, ticksToSettle: 3 }]
+        await plant("recordEvent", { proposalId: await execute(85), effects: level(72) })
         const third = (await plant<PlantState>("getState")).rules as LearnedRule[]
         expect(third.length).toBe(1)
         expect(third[0].timesSeen).toBe(3)
-        await plant("recordEvent", event("rule-4", 85, 88))
+        await plant("recordEvent", { proposalId: await execute(87), effects: level(72.5) })
         const fourth = (await plant<PlantState>("getState")).rules as LearnedRule[]
         expect(fourth.length).toBe(1)
         expect(fourth[0].timesSeen).toBe(4)
@@ -184,6 +196,21 @@ describe("TASK1 list (real terse actor dev)", () => {
 })
 
 describe("execution path (real terse actor dev, fake glue)", () => {
+    test("a no blocks at once; fabricated events and calibration for runs that never happened are refused", async () => {
+        await reset()
+        const proposal = await propose(65)
+        const blocked = await plant<Proposal>("vote", { ...yes(proposal.id, "plant-a/LV-101"), vote: "no", reason: "refused" })
+        expect(blocked.status).toBe("blocked")
+        const late = await plant<Proposal>("vote", yes(proposal.id, "plant-b/TV-101"))
+        expect(late.status).toBe("blocked")
+        expect(late.votes.length).toBe(2)
+        await expect(plant("recordEvent", { proposalId: null, effects: [] })).rejects.toThrow("invalid_event")
+        await expect(plant("recordEvent", { proposalId: proposal.id, effects: [] })).rejects.toThrow("not_executed")
+        await expect(
+            component("plant-a/LV-101", "addCalibration", { at: new Date().toISOString(), proposalId: proposal.id, metric: "positionPct", predicted: 66, observed: 66, absError: 0 })
+        ).rejects.toThrow("invalid_calibration")
+    })
+
     test("unapproved writes, early execute and token replay are rejected; acceptance and observation stay separate", async () => {
         await reset()
         dispatched.length = 0
@@ -191,7 +218,7 @@ describe("execution path (real terse actor dev, fake glue)", () => {
         const proposal = await propose(65)
         await expect(plant("execute", proposal.id)).rejects.toThrow("not_approved")
         await allYes(proposal.id)
-        const windowed = await until(() => proposalOf(proposal.id), value => value.status === "veto_window", 4_000)
+        const windowed = await until(() => proposalOf(proposal.id), value => value.status === "veto_window", 8_000)
         expect(windowed.vetoDeadline).not.toBeNull()
         await expect(plant("execute", proposal.id)).rejects.toThrow("veto_window_open")
 

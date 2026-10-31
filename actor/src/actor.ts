@@ -23,13 +23,14 @@ import {
     CALLBACK_RETRY_MS,
     CLAIM_TIMEOUT_MS,
     FETCH_TIMEOUT_MS,
+    LEASE_TTL_MS,
     PROPOSAL_CAP,
     SETPOINT_TOLERANCE,
     SWEEP_EVERY_TICKS,
     TICK_MS,
     glueUrl
 } from "./config.js"
-import { COMPANY_ACTOR_ID, agentIdFor, componentActorId, proposalIdFor } from "./ids.js"
+import { COMPANY_ACTOR_ID, agentIdFor, componentActorId, plantOfProposal, proposalIdFor } from "./ids.js"
 import { applyCalibration, clampMargin, computeStatus } from "./logic/component.js"
 import {
     assertCounterAllowed,
@@ -71,7 +72,8 @@ import {
 
 export type PlantSeed = { id: PlantId; name: string; components: ComponentState[] }
 export type CompanySeed = Partial<CompanyState> & Pick<CompanyState, "plants" | "sharedResources">
-export type ExecutionState = "accepted" | "claimed" | "applied" | "observed" | "failed"
+// `unknown`: a claimed dispatch never confirmed. The write may have landed, so nothing is reverted or re-sent.
+export type ExecutionState = "accepted" | "claimed" | "applied" | "observed" | "failed" | "unknown"
 export type Execution = {
     proposalId: string
     componentId: ComponentId
@@ -91,8 +93,9 @@ export type DispatchClaim =
     | { dispatch: true; proposalId: string; componentId: ComponentId; metric: string; value: number; token: string }
     | { dispatch: false; proposalId: string; state: ExecutionState }
 export type TokenRedemption = { proposalId: string; token: string; componentId: ComponentId; metric: string; value: number }
-export type EventInput = Partial<HistoryEvent> & { proposalId?: string | null; effects: HistoryEvent["effects"] }
+export type EventInput = Partial<HistoryEvent> & { proposalId: string; effects: HistoryEvent["effects"] }
 export type ComponentSnapshot = ComponentState & { calibration: CalibrationEntry[] }
+export type RunFacts = { proposalId: string; predicted: Record<string, number>; observed: Record<string, number> }
 
 function withTimeout<T>(pending: Promise<T>, label: string): Promise<T> {
     let timer: ReturnType<typeof setTimeout>
@@ -129,6 +132,15 @@ async function pushToCompany(plantId: PlantId, models: string[] | null, rules: L
     await Plant.get(plantId).ackCompanySync(models !== null, delivered)
 }
 
+function assertMatchesRun(entry: CalibrationEntry, run: RunFacts): void {
+    if (!Object.hasOwn(run.predicted, entry.metric) || run.predicted[entry.metric] !== entry.predicted) {
+        fail("invalid_calibration", `predicted ${entry.metric} does not match the vote`)
+    }
+    if (Object.hasOwn(run.observed, entry.metric) && Math.abs(run.observed[entry.metric] - entry.observed) > 1e-6) {
+        fail("invalid_calibration", `observed ${entry.metric} does not match the event`)
+    }
+}
+
 function hashToken(token: string): string {
     return createHash("sha256").update(token).digest("hex")
 }
@@ -159,6 +171,7 @@ function armAlarm(alarm: Actor["alarm"]): void {
 export class Component extends Actor {
     @Persisted private componentId = ""
     @Persisted private sinceAdjustment = 0
+    @Ephemeral private runFacts: RunFacts | null = null
 
     @Persisted @Emittable plantId: PlantId = "plant-a"
     @Persisted @Emittable tag = ""
@@ -253,6 +266,15 @@ export class Component extends Actor {
     async addCalibration(e: CalibrationEntry): Promise<ComponentSnapshot> {
         this.#requireSeed()
         const entry = normalizeCalibration(e)
+        if (this.calibration.some(item => item.proposalId === entry.proposalId && item.metric === entry.metric)) {
+            fail("duplicate_calibration", `${this.componentId} already calibrated ${entry.metric} on ${entry.proposalId}`)
+        }
+        // Calibration moves the safety margin, so an entry must match a run this component really voted on.
+        // One Plant call per run: a voter sends several entries at once, right when the next proposal needs Plant.
+        if (this.runFacts?.proposalId !== entry.proposalId) {
+            this.runFacts = await withTimeout(Plant.get(plantOfProposal(entry.proposalId)).acceptCalibration(this.componentId, entry), "Plant.acceptCalibration")
+        }
+        assertMatchesRun(entry, this.runFacts)
         const outcome = applyCalibration({
             calibration: this.calibration,
             entry,
@@ -265,10 +287,7 @@ export class Component extends Actor {
             this.marginPct = outcome.marginPct
             this.sinceAdjustment = outcome.sinceAdjustment
         })
-        const summary = `${this.tag} ${entry.metric} predicted ${entry.predicted}, observed ${entry.observed}, error ${entry.absError}`
-        void Plant.get(this.plantId)
-            .recordAudit({ at: entry.at, plantId: this.plantId, kind: "calibration", refId: entry.proposalId, summary, by: agentIdFor(this.componentId) })
-            .catch(() => undefined)
+        this.#reportMargin()
         return this.#publishState()
     }
 
@@ -276,7 +295,15 @@ export class Component extends Actor {
         this.#requireSeed()
         if (!isFiniteNumber(pct)) fail("invalid_margin", "margin must be finite")
         this.marginPct = clampMargin(pct)
+        this.#reportMargin()
         return this.#publishState()
+    }
+
+    // Plant compares votes against this rather than the margin a vote claims for itself.
+    #reportMargin(): void {
+        void Plant.get(this.plantId)
+            .noteMargin(this.componentId, this.marginPct)
+            .catch(() => undefined)
     }
 
     // Prototype methods are remotely invokable whatever their TypeScript visibility, so helpers use #.
@@ -301,6 +328,9 @@ export class Plant extends Actor {
     @Persisted private liveEventIds: string[] = []
     @Persisted private companyOutbox: LearnedRule[] = []
     @Persisted private registeredWithCompany = false
+    @Persisted private margins: Record<ComponentId, number> = {}
+    @Persisted private leases: string[] = []
+    @Ephemeral private alarmChecked = false
     @Ephemeral private companySyncing = false
     @Ephemeral private companyRuleIds: string[] = []
     @Ephemeral private lastTickAt = 0
@@ -315,7 +345,7 @@ export class Plant extends Actor {
     @Persisted @Emittable connected = false
 
     async getState(): Promise<PlantState> {
-        if (this.seeded) armAlarm(this.alarm)
+        if (this.seeded) this.#ensureAlarm()
         return {
             id: this.id as PlantId,
             name: this.name,
@@ -345,6 +375,7 @@ export class Plant extends Actor {
             topology[id] = { id, tag, model, limits, upstream, downstream, sharedResources }
             setpoints[id] = { ...metrics }
         }
+        const margins = Object.fromEntries(plant.components.map(component => [component.id, component.marginPct]))
         const rules = deriveRules(own, topology, nowIso())
 
         await this.db.transaction(async () => {
@@ -362,11 +393,14 @@ export class Plant extends Actor {
             this.companyOutbox = rules
             this.registeredWithCompany = false
             this.companyRuleIds = []
+            this.margins = margins
+            this.leases = []
             this.seq = 0
             this.tickCount = 0
             this.seeded = true
         })
-        armAlarm(this.alarm)
+        this.alarmChecked = false
+        this.#ensureAlarm()
         return { components: this.components.length, history: own.length, rules: rules.length }
     }
 
@@ -397,6 +431,8 @@ export class Plant extends Actor {
         const remote = await withTimeout(company.requiredCrossPlantVoters(draft), "Company.requiredCrossPlantVoters")
         const proposal: Proposal = { ...draft, requiredVoters: [...local, ...remote], crossPlant: remote.length > 0 }
         if (proposal.requiredVoters.length === 0) fail("invalid_proposal", `${p.proposerComponentId} has no connected voters`)
+        const onSharedResource = [p.proposerComponentId, ...local].some(id => this.topology[id].sharedResources.length > 0)
+        if (onSharedResource && remote.length === 0) fail("company_not_seeded", "shared resources exist but Company named no cross-plant voters")
 
         await this.db.transaction(async () => {
             this.seq = this.seq + 1
@@ -420,15 +456,35 @@ export class Plant extends Actor {
         await this.#assertRulesExist(incoming.evidenceRuleIds)
         // Both plants are copies, so a cross-plant voter is checked against the same-tag local limits.
         const def = this.topology[incoming.componentId] ?? this.topology[`${this.id}/${incoming.componentId.split("/")[1]}`]
-        const vote = enforceVoteSafety(incoming, def)
+        const proposerLimits = this.topology[proposal.proposerComponentId]?.limits
+        const proposerLimit = proposerLimits !== undefined && Object.hasOwn(proposerLimits, proposal.metric) ? proposerLimits[proposal.metric] : undefined
+        const similarCount = rankSimilar({
+            history: this.history,
+            componentId: proposal.proposerComponentId,
+            metric: proposal.metric,
+            to: proposal.to,
+            upstreamSnapshot: {},
+            k: 100,
+            limit: proposerLimit,
+            liveEventIds: []
+        }).length
+        const vote = enforceVoteSafety(incoming, def, {
+            proposal,
+            proposerLimit,
+            similarCount,
+            marginPct: this.margins[incoming.componentId] ?? 10,
+            rules: this.rules
+        })
 
         const withdrawn = proposal.status === "veto_window"
+        // A no closes the proposal at once; the sweep only backstops it. Slower voters are still recorded.
+        const refused = vote.vote === "no" && proposal.status === "voting"
         const updated: Proposal = withdrawn
             ? { ...proposal, votes: proposal.votes.map(item => (item.componentId === vote.componentId ? vote : item)), status: "blocked", vetoDeadline: null }
-            : { ...proposal, votes: [...proposal.votes, vote] }
+            : { ...proposal, votes: [...proposal.votes, vote], status: refused ? "blocked" : proposal.status }
         const at = nowIso()
         const entries: Omit<AuditEntry, "plantId">[] = [{ at, kind: "vote", refId: proposal.id, summary: `${vote.componentId} voted ${vote.vote}: ${vote.reason}`, by: vote.agentId }]
-        if (withdrawn) entries.push({ at, kind: "block", refId: proposal.id, summary: `Blocked in veto window by ${vote.componentId}: ${vote.reason}`, by: vote.agentId })
+        if (withdrawn || refused) entries.push({ at, kind: "block", refId: proposal.id, summary: `Blocked by ${vote.componentId}: ${vote.reason}`, by: vote.agentId })
         await this.db.transaction(async () => {
             this.proposals = this.proposals.map(item => (item.id === updated.id ? updated : item))
             this.audit = this.#withAudit(entries)
@@ -498,7 +554,9 @@ export class Plant extends Actor {
         if (measured !== undefined) {
             const proposal = this.#findProposal(proposalId)
             if (!isFiniteNumber(measured) || Math.abs(measured - proposal.from) > SETPOINT_TOLERANCE) {
-                const failed = await this.#failExecution(execution, `measured ${execution.metric} ${measured} no longer matches ${proposal.from}`)
+                // The measured value is the truth, so it replaces the setpoint and later proposals start from it.
+                const settled = isFiniteNumber(measured) ? measured : undefined
+                const failed = await this.#failExecution(execution, `measured ${execution.metric} ${measured} no longer matches ${proposal.from}`, settled)
                 return { dispatch: false, proposalId, state: failed.state }
             }
         }
@@ -520,7 +578,7 @@ export class Plant extends Actor {
         if (expected === undefined || typeof r.token !== "string" || !sameHash(expected, hashToken(r.token))) fail("invalid_token", "token does not match")
         if (execution.componentId !== r.componentId || execution.metric !== r.metric || execution.value !== r.value) fail("invalid_token", "token is bound to another write")
         if (execution.state === "applied" || execution.state === "observed") fail("token_already_used", r.proposalId)
-        if (execution.state !== "claimed") fail("invalid_token", `execution is ${execution.state}`)
+        if (execution.state !== "claimed" && execution.state !== "unknown") fail("invalid_token", `execution is ${execution.state}`)
         const at = nowIso()
         await this.db.transaction(async () => {
             this.executions = { ...this.executions, [r.proposalId]: { ...execution, state: "applied", appliedAt: at } }
@@ -537,16 +595,15 @@ export class Plant extends Actor {
         return this.#failExecution(execution, isNonEmptyString(reason) ? reason : "dispatch failed")
     }
 
+    // Observations only: seed history arrives through loadSeed, so nothing here can invent a past run.
     async recordEvent(e: EventInput): Promise<HistoryEvent> {
         this.#assertSeeded()
         assertEffects(e?.effects)
-        const proposalId = e.proposalId ?? null
-        if (proposalId !== null) {
-            const existing = this.history.find(event => event.proposalId === proposalId)
-            if (existing !== undefined) return existing
-        }
-        const event = proposalId === null ? this.#eventFromCaller(e) : this.#eventFromProposal(proposalId, e)
-        if (this.history.some(item => item.id === event.id)) fail("duplicate_event", event.id)
+        const proposalId = e.proposalId
+        if (!isNonEmptyString(proposalId)) fail("invalid_event", "an observation needs the proposal that caused it")
+        const existing = this.history.find(event => event.proposalId === proposalId)
+        if (existing !== undefined) return existing
+        const event = this.#eventFromProposal(proposalId, e)
 
         const history = [...this.history, event]
         const merged = mergeDerivedRules(this.rules, deriveRules(history, this.topology, event.at))
@@ -562,10 +619,8 @@ export class Plant extends Actor {
             this.rules = merged.rules
             this.companyOutbox = this.#withOutbox(merged.changed)
             this.audit = this.#withAudit(entries)
-            if (proposalId !== null) {
-                const execution = this.executions[proposalId]
-                this.executions = { ...this.executions, [proposalId]: { ...execution, state: "observed", observedAt: event.at } }
-            }
+            const execution = this.executions[proposalId]
+            this.executions = { ...this.executions, [proposalId]: { ...execution, state: "observed", observedAt: event.at } }
         })
         this.#syncCompany()
         return event
@@ -623,14 +678,13 @@ export class Plant extends Actor {
             if (connected !== wasConnected) return Plant.get(plantId).setConnected(connected).catch(() => undefined)
         })
         if (this.tickCount % SWEEP_EVERY_TICKS === 0) await this.sweep()
-        armAlarm(this.alarm)
         return this.tickCount
     }
 
     async sweep(): Promise<void> {
         this.#assertSeeded()
         const now = Date.now()
-        const plan = planSweep(this.proposals, this.setpoints, now)
+        const plan = planSweep(this.proposals, this.setpoints, now, this.leases)
         const changed = plan.proposals.some((proposal, index) => proposal !== this.proposals[index])
         if (changed || plan.audit.length > 0) {
             await this.db.transaction(async () => {
@@ -646,7 +700,41 @@ export class Plant extends Actor {
             }
         }
         await this.#followExecutions(now)
+        this.#requestLeases(plan.needLease)
+        await this.#releaseLeases()
         this.#syncCompany()
+    }
+
+    // Called by #requestLeases once Company has granted the shared resources a proposal touches.
+    async grantLease(proposalId: string): Promise<void> {
+        const open = this.proposals.some(proposal => proposal.id === proposalId && proposal.status === "voting")
+        if (open && !this.leases.includes(proposalId)) this.leases = [...this.leases, proposalId]
+        else if (!open) void Company.get(COMPANY_ACTOR_ID).releaseLease(proposalId).catch(() => undefined)
+    }
+
+    // Called by Component. Plant must not read Component (that would close a mailbox cycle), so margins are pushed.
+    async noteMargin(componentId: ComponentId, marginPct: number): Promise<void> {
+        if (!Object.hasOwn(this.topology, componentId) || !isFiniteNumber(marginPct)) fail("invalid_margin", `${componentId} ${marginPct}`)
+        if (this.margins[componentId] !== marginPct) this.margins = { ...this.margins, [componentId]: marginPct }
+    }
+
+    // Called once per run by Component.addCalibration. Returns what that run proves, so later entries check locally.
+    async acceptCalibration(componentId: ComponentId, entry: CalibrationEntry): Promise<RunFacts> {
+        this.#assertSeeded()
+        const proposal = this.#findProposal(entry.proposalId)
+        const event = this.history.find(item => item.proposalId === entry.proposalId)
+        if (proposal.status !== "executed" || event === undefined) fail("invalid_calibration", `${entry.proposalId} has no observed run`)
+        const vote = proposal.votes.find(item => item.componentId === componentId)
+        if (vote === undefined) fail("invalid_calibration", `${componentId} did not vote on ${entry.proposalId}`)
+        const facts: RunFacts = {
+            proposalId: entry.proposalId,
+            predicted: vote.predicted,
+            observed: Object.fromEntries(event.effects.filter(effect => effect.componentId === componentId).map(effect => [effect.metric, effect.after]))
+        }
+        assertMatchesRun(entry, facts)
+        const summary = `${componentId} ${entry.metric} predicted ${entry.predicted}, observed ${entry.observed}, error ${entry.absError}`
+        this.audit = this.#withAudit([{ at: entry.at, kind: "calibration", refId: entry.proposalId, summary, by: agentIdFor(componentId) }])
+        return facts
     }
 
     // Called by pushToCompany. A rule that gained sightings while the push ran stays queued.
@@ -675,7 +763,37 @@ export class Plant extends Actor {
 
     #assertSeeded(): void {
         if (!this.seeded) fail("not_seeded", `${this.id} has no seed`)
+        this.#ensureAlarm()
+    }
+
+    // Once per activation: a restart loses the alarm, and every alarm read is a round trip to the control plane.
+    #ensureAlarm(): void {
+        if (this.alarmChecked) return
         armAlarm(this.alarm)
+        this.alarmChecked = true
+    }
+
+    // Outside the mailbox, like Company sync. A proposal stays in voting until grantLease arrives.
+    #requestLeases(proposalIds: string[]): void {
+        for (const proposalId of proposalIds) {
+            const proposal = this.#findProposal(proposalId)
+            const local = [proposal.proposerComponentId, ...proposal.requiredVoters].flatMap(id => this.topology[id]?.sharedResources ?? [])
+            const plantId = this.id as PlantId
+            void Company.get(COMPANY_ACTOR_ID)
+                .acquireLease([...new Set(local)], proposalId, LEASE_TTL_MS)
+                .then(granted => (granted ? Plant.get(plantId).grantLease(proposalId) : undefined))
+                .catch(error => console.error(`Plant ${plantId} could not lease shared resources: ${errorText(error)}`))
+        }
+    }
+
+    async #releaseLeases(): Promise<void> {
+        const done = this.leases.filter(id => {
+            const status = this.proposals.find(proposal => proposal.id === id)?.status
+            return status !== "voting" && status !== "veto_window"
+        })
+        if (done.length === 0) return
+        this.leases = this.leases.filter(id => !done.includes(id))
+        for (const proposalId of done) void Company.get(COMPANY_ACTOR_ID).releaseLease(proposalId).catch(() => undefined)
     }
 
     #findProposal(proposalId: string): Proposal {
@@ -703,7 +821,7 @@ export class Plant extends Actor {
         const execution = Object.hasOwn(this.executions, proposalId) ? this.executions[proposalId] : undefined
         if (proposal.status !== "executed" || execution === undefined) fail("not_executed", `${proposalId} is ${proposal.status}`)
         // An observation needs a dispatched command behind it: acceptance alone proves nothing moved.
-        if (execution.state !== "claimed" && execution.state !== "applied") fail("not_dispatched", `${proposalId} is ${execution.state}`)
+        if (execution.state !== "claimed" && execution.state !== "applied" && execution.state !== "unknown") fail("not_dispatched", `${proposalId} is ${execution.state}`)
         if (e.upstreamSnapshot !== undefined && !isFiniteRecord(e.upstreamSnapshot)) fail("invalid_event", "upstreamSnapshot must be finite numbers")
         if (e.incident !== undefined && e.incident !== null && typeof e.incident !== "string") fail("invalid_event", "incident must be a string or null")
         if (e.operator !== undefined && e.operator !== null && typeof e.operator !== "string") fail("invalid_event", "operator must be a string or null")
@@ -724,12 +842,6 @@ export class Plant extends Actor {
         }
     }
 
-    #eventFromCaller(e: EventInput): HistoryEvent {
-        assertHistoryEvent(e)
-        if (e.plantId !== this.id) fail("invalid_event", `event for ${e.plantId} sent to ${this.id}`)
-        return e
-    }
-
     async #followExecutions(now: number): Promise<void> {
         for (const execution of Object.values(this.executions)) {
             if (execution.state === "accepted" && now - Date.parse(execution.lastAttemptAt ?? execution.acceptedAt) >= CALLBACK_RETRY_MS) {
@@ -740,14 +852,19 @@ export class Plant extends Actor {
                 this.executions = { ...this.executions, [execution.proposalId]: { ...execution, attempts: execution.attempts + 1, lastAttemptAt: new Date(now).toISOString() } }
                 void postToGlue("/execute-callback", { proposalId: execution.proposalId }, { "idempotency-key": execution.proposalId })
             }
-            // At most once: a claim that never finished is reported, not retried, because the write may have landed.
+            // At most once: a claim that never finished may have reached the simulator, so it is neither re-sent
+            // nor reverted. A late setMetric or observation can still settle it.
             if (execution.state === "claimed" && now - Date.parse(execution.claimedAt ?? execution.acceptedAt) >= CLAIM_TIMEOUT_MS) {
-                await this.#failExecution(execution, "claimed dispatch never confirmed; simulator outcome unknown")
+                const at = new Date(now).toISOString()
+                await this.db.transaction(async () => {
+                    this.executions = { ...this.executions, [execution.proposalId]: { ...execution, state: "unknown", failure: "dispatch never confirmed" } }
+                    this.audit = this.#withAudit([{ at, kind: "incident", refId: execution.proposalId, summary: "Dispatch never confirmed: simulator outcome unknown", by: "plant" }])
+                })
             }
         }
     }
 
-    async #failExecution(execution: Execution, reason: string): Promise<Execution> {
+    async #failExecution(execution: Execution, reason: string, settled?: number): Promise<Execution> {
         const at = nowIso()
         const failed: Execution = { ...execution, state: "failed", failedAt: at, failure: reason }
         const proposal = this.proposals.find(item => item.id === execution.proposalId)
@@ -756,7 +873,7 @@ export class Plant extends Actor {
             this.audit = this.#withAudit([{ at, kind: "incident", refId: execution.proposalId, summary: `Dispatch failed: ${reason}`, by: "plant" }])
             if (proposal !== undefined) {
                 this.proposals = this.proposals.map(item => (item.id === proposal.id ? { ...proposal, status: "expired" as const } : item))
-                this.setpoints = this.#withSetpoint(proposal, proposal.from)
+                this.setpoints = this.#withSetpoint(proposal, settled ?? proposal.from)
             }
         })
         return failed
@@ -797,6 +914,7 @@ export class Plant extends Actor {
 @Compute({ idleTimeoutMs: 300_000 })
 export class Company extends Actor {
     @Persisted private plantModels: Record<string, string[]> = {}
+    @Persisted private leases: Record<string, { proposalId: string; expiresAt: number }> = {}
 
     @Persisted @Emittable plants: PlantId[] = []
     @Persisted @Emittable sharedResources: CompanyState["sharedResources"] = []
@@ -823,8 +941,28 @@ export class Company extends Actor {
             this.rules = c.rules ?? []
             this.crossPlantProposals = c.crossPlantProposals ?? []
             this.audit = c.audit ?? []
+            this.leases = {}
         })
         return this.getState()
+    }
+
+    // The veto-window guarantee spans plants: two windows must not stack on one shared resource.
+    // The TTL frees a resource if the holding plant dies before releasing it.
+    async acquireLease(resources: string[], proposalId: string, ttlMs: number): Promise<boolean> {
+        const now = Date.now()
+        const heldElsewhere = resources.some(resource => {
+            const lease = this.leases[resource]
+            return lease !== undefined && lease.proposalId !== proposalId && lease.expiresAt > now
+        })
+        if (heldElsewhere) return false
+        const granted = Object.fromEntries(resources.map(resource => [resource, { proposalId, expiresAt: now + ttlMs }]))
+        this.leases = { ...this.leases, ...granted }
+        return true
+    }
+
+    async releaseLease(proposalId: string): Promise<void> {
+        const remaining = Object.entries(this.leases).filter(([, lease]) => lease.proposalId !== proposalId)
+        if (remaining.length !== Object.keys(this.leases).length) this.leases = Object.fromEntries(remaining)
     }
 
     async registerPlant(id: PlantId, models?: string[]): Promise<CompanyState> {
