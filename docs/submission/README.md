@@ -15,14 +15,15 @@ Prepared for the solo Builderbase entry. **Nothing has been submitted or posted.
 | Check | Status |
 |---|---|
 | All four moments on the full stack | **Passed** at [13:42](evidence/e2e-run-134157.md), [14:09](evidence/e2e-run-140851.md) and [15:41](evidence/e2e-run-154135.md) |
-| Dashboard working on live data | **Seen** showing the 15:41 run, [screenshot](evidence/dashboard-live-154228.jpg). Plant B caption not seen, and no person has driven it on a clock |
+| Dashboard working on live data | **Seen** showing the 15:41 run, [screenshot](evidence/dashboard-live-154228.jpg). Plant A and Plant B walks, including both captions, also seen at 15:47 in a scripted browser run. No person has driven it on a clock |
 | Veto click on the full stack | **Passed** at 15:44:58, per main. It was a scripted click in a test browser, not a person. I did not see it myself |
 | Stack ticking | **Check before judging:** `/health` `ticks` must rise between two reads, and the laptop must not sleep. See [demo-script.md](demo-script.md) |
-| Backup video and three slides | Not checked by this session |
+| Slides | Built: [ActorRelay-slides.pdf](ActorRelay-slides.pdf) |
+| Backup video | **Not recorded yet.** Only Zubair can record it |
 
 ## Decisions only Zubair can make
 1. **Solo credit.** Git shows only teammates as authors of `CLAUDE.MD`, `PLAN.MD` and the task files. See "Who did what" in [real-vs-stand-in.md](real-vs-stand-in.md). The entry should not present those as solo work.
-2. **Repo link.** The only remote is `github.com/mrkrishna14/Factoryio`, and `zubair` carries teammates' commits. Decide what the entry links to.
+2. **Repo link.** The repo moved to `github.com/mrkrishna14/ActorRelay`, and `zubair` carries teammates' commits. Decide what the entry links to.
 
 ## How this pack stays honest
 - A claim goes in only with evidence: a file, a run table or a measured result.
