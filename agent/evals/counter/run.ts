@@ -1,10 +1,11 @@
 // Counter-proposal eval. Real model calls end to end: block -> counter -> full vote, up to the cap.
-// bun run evals/counter/run.ts --impl candidate|real --model gpt-6-luna --effort none --scale 1 --tag first
+// bun run evals/counter/run.ts --impl real|patched|candidate --tag first --groups demo --limit 20 --tpm 150000
+// Scenarios start one at a time, paced on measured tokens, so the cap holds and pacing never eats a vote's time budget.
 import { createHash } from "node:crypto";
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Proposal, Vote } from "../../../shared/types";
-import { buildScenarios, buildView, clearsAll, makeProposal, safeCeiling, thresholdOf, type Plantview, type Scenario } from "./fixture";
+import { buildScenarios, buildView, clearsAll, faultVoterId, makeProposal, safeCeiling, thresholdOf, type Plantview, type Scenario } from "./fixture";
 import { loadImpl, type Impl } from "./impl";
 import { createLlm, type LlmCall } from "./llm";
 
@@ -14,15 +15,17 @@ function arg(name: string, fallback: string): string {
 }
 
 const opts = {
-  impl: arg("impl", "candidate"),
+  impl: arg("impl", "real"),
   model: arg("model", "gpt-6-luna"),
   effort: arg("effort", "none"),
   scale: Number(arg("scale", "1")),
-  concurrency: Number(arg("concurrency", "24")),
+  concurrency: Number(arg("concurrency", "8")),
+  slots: Number(arg("slots", "1")),
+  tpm: Number(arg("tpm", "150000")),
+  limit: Number(arg("limit", "0")),
   tag: arg("tag", "run"),
   groups: arg("groups", ""),
   partial: process.argv.includes("--partial"),
-  serial: process.argv.includes("--serial"),
 };
 
 export const MAX_COUNTERS = 2;
@@ -98,11 +101,11 @@ function isSpurious(vote: Vote, view: Plantview): boolean {
   });
 }
 
-async function voteAll(impl: Impl, proposal: Proposal, view: Plantview, llm: ReturnType<typeof createLlm>, rejections: string[]): Promise<{ votes: Vote[]; perVoter: number[]; ms: number; calls: number }> {
+async function voteAll(impl: Impl, proposal: Proposal, view: Plantview, llm: ReturnType<typeof createLlm>, rejections: string[], broken: string | null): Promise<{ votes: Vote[]; perVoter: number[]; ms: number; calls: number }> {
   const results = await Promise.all(
     view.voters.map(async (voter) => {
       const sink: LlmCall[] = [];
-      const vote = await impl.vote(proposal, voter.id, view, llm, sink, (line) => rejections.push(line));
+      const vote = await impl.vote(proposal, voter.id, view, llm, sink, (line) => rejections.push(line), voter.id === broken);
       return { vote, ms: sink.reduce((sum, c) => sum + c.ms, 0), calls: sink.length };
     }),
   );
@@ -117,11 +120,12 @@ async function voteAll(impl: Impl, proposal: Proposal, view: Plantview, llm: Ret
 async function runScenario(impl: Impl, s: Scenario, llm: ReturnType<typeof createLlm>, index: number): Promise<Record_> {
   const view = buildView(s);
   const ceiling = safeCeiling(s);
+  const brokenAt = (round: number) => (s.fault?.round === round ? faultVoterId(s) : null);
   const record: Record_ = { id: s.id, group: s.group, scenario: s, ceiling, parentBlocked: false, parentBlockers: [], parentVotes: [], parentVoteMs: 0, rounds: [], capRefused: null, error: null, rejections: [] };
 
   try {
     const parent = makeProposal(s, view, s.to, null, "Increase throughput");
-    const first = await voteAll(impl, parent, view, llm, record.rejections);
+    const first = await voteAll(impl, parent, view, llm, record.rejections, brokenAt(0));
     parent.votes = first.votes;
     parent.status = first.votes.some((v) => v.vote === "no") ? "blocked" : "veto_window";
     record.parentVoteMs = first.ms;
@@ -149,7 +153,7 @@ async function runScenario(impl: Impl, s: Scenario, llm: ReturnType<typeof creat
       const value = counter.to;
       const lo = Math.min(s.from, s.to);
       const hi = Math.max(s.from, s.to);
-      const voted = await voteAll(impl, counter, view, llm, record.rejections);
+      const voted = await voteAll(impl, counter, view, llm, record.rejections, brokenAt(n));
       counter.votes = opts.partial && voted.votes.some((v) => v.vote === "no") ? voteVisibleAt(voted.votes, voted.perVoter, index + n) : voted.votes;
       const unanimous = voted.votes.every((v) => v.vote === "yes");
       counter.status = unanimous ? "veto_window" : "blocked";
@@ -197,12 +201,13 @@ if (import.meta.main) {
 
   // Every number traces to the exact code it ran on, because these files are being edited during the run.
   const sha = (file: string) => createHash("sha1").update(readFileSync(join(import.meta.dir, "..", "..", file))).digest("hex").slice(0, 10);
-  const code = { counter: sha("counter.ts"), vote: sha("vote.ts"), retrieval: sha("retrieval.ts") };
+  const code = { counter: sha("counter.ts"), vote: sha("vote.ts"), retrieval: sha("retrieval.ts"), llm: sha("llm.ts") };
   const impl = await loadImpl(opts.impl);
   const llm = createLlm({ model: opts.model, effort: opts.effort, concurrency: opts.concurrency });
   const wanted = opts.groups ? new Set(opts.groups.split(",")) : null;
-  const scenarios = buildScenarios(opts.scale).filter((s) => !wanted || wanted.has(s.group));
-  console.error(`[${impl.name}] ${scenarios.length} scenarios, ${opts.model}/${opts.effort}, concurrency ${opts.concurrency}`);
+  const matching = buildScenarios(opts.scale).filter((s) => !wanted || wanted.has(s.group));
+  const scenarios = opts.limit ? matching.slice(0, opts.limit) : matching;
+  console.error(`[${impl.name}] ${scenarios.length} scenarios, ${opts.model}/${opts.effort}, cap ${opts.tpm} tokens/min, code ${JSON.stringify(code)}`);
 
   const started = performance.now();
   let done = 0;
@@ -211,11 +216,22 @@ if (import.meta.main) {
     appendFileSync(outPath, JSON.stringify(record) + "\n");
     if (++done % 20 === 0) console.error(`${done}/${scenarios.length} ${Math.round((performance.now() - started) / 1000)}s ${JSON.stringify(llm.stats)}`);
   };
-  if (opts.serial) {
-    for (const [index, s] of scenarios.entries()) await runOne(s, index);
-  } else {
-    await Promise.all(scenarios.map((s, index) => runOne(s, index)));
-  }
+  // Spend so far decides when the next scenario may start, so the run's average never passes the cap.
+  const pace = async () => {
+    const due = started + (llm.stats.tokens / opts.tpm) * 60_000;
+    const wait = due - performance.now();
+    if (wait > 0) await Bun.sleep(wait);
+  };
+  const queue = scenarios.entries();
+  await Promise.all(
+    Array.from({ length: opts.slots }, async () => {
+      for (const [index, s] of queue) {
+        await pace();
+        await runOne(s, index);
+      }
+    }),
+  );
+  await Bun.sleep(500); // usage bodies still parsing
   writeFileSync(join(outDir, `${opts.tag}.meta.json`), JSON.stringify({ ...opts, implName: impl.name, code, stats: llm.stats, wallSeconds: (performance.now() - started) / 1000 }));
   writeFileSync(join(outDir, `${opts.tag}.flagged.json`), JSON.stringify(llm.flagged));
   console.error(`done ${Math.round((performance.now() - started) / 1000)}s ${JSON.stringify(llm.stats)} -> ${outPath}`);

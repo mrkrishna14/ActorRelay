@@ -20,12 +20,29 @@ export type Llm = (system: string, user: string) => Promise<string>;
 
 export type LlmOptions = { model: string; effort: string; concurrency: number; timeoutMs?: number };
 
+// callOpenAi does not return usage, so the meter reads it off the response the shipped code receives.
+function meterTokens(onTokens: (tokens: number) => void) {
+  const real = globalThis.fetch;
+  globalThis.fetch = (async (...args: Parameters<typeof fetch>) => {
+    const response = await real(...args);
+    if (String(args[0]).includes("api.openai.com")) {
+      void response
+        .clone()
+        .json()
+        .then((body: any) => onTokens(body.usage?.total_tokens ?? 0))
+        .catch(() => undefined);
+    }
+    return response;
+  }) as typeof fetch;
+}
+
 export function createLlm({ model, effort, concurrency, timeoutMs = 30_000 }: LlmOptions) {
   const key = loadKey();
   let active = 0;
   const waiters: (() => void)[] = [];
   const stats = { calls: 0, retries: 0, rateLimited: 0, failures: 0, policyFlagged: 0, tokens: 0, maxMs: 0, lastError: "" };
   const flagged: { system: string; user: string }[] = [];
+  meterTokens((tokens) => (stats.tokens += tokens));
 
   const acquire = async () => {
     if (active >= concurrency) await new Promise<void>((resolve) => waiters.push(resolve));
@@ -36,7 +53,7 @@ export function createLlm({ model, effort, concurrency, timeoutMs = 30_000 }: Ll
     waiters.shift()?.();
   };
 
-  async function once(system: string, user: string): Promise<{ text: string; tokens: number }> {
+  async function once(system: string, user: string): Promise<{ text: string }> {
     const res = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
@@ -46,7 +63,7 @@ export function createLlm({ model, effort, concurrency, timeoutMs = 30_000 }: Ll
     const body = (await res.json()) as any;
     if (!res.ok) throw Object.assign(new Error(`${res.status}: ${body.error?.message}`), { status: res.status });
     const text = body.output.flatMap((o: any) => o.content ?? []).map((c: any) => c.text ?? "").join("");
-    return { text, tokens: body.usage?.total_tokens ?? 0 };
+    return { text };
   }
 
   async function call(system: string, user: string, sink?: LlmCall[]): Promise<string> {
@@ -56,9 +73,8 @@ export function createLlm({ model, effort, concurrency, timeoutMs = 30_000 }: Ll
         const started = performance.now();
         try {
           stats.calls++;
-          const { text, tokens } = await once(system, user);
+          const { text } = await once(system, user);
           const ms = performance.now() - started;
-          stats.tokens += tokens;
           stats.maxMs = Math.max(stats.maxMs, Math.round(ms));
           sink?.push({ ms, retries: attempt, text, user });
           return text;

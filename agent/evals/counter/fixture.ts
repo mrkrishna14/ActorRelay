@@ -37,6 +37,7 @@ export type Scenario = {
   history: HistoryShape;
   rule: boolean;
   overshoot: number; // LV-101 transient points above steady state
+  fault?: { voter: string; round: number }; // this voter's model calls throw; round 0 is the parent, 1 the first counter
 };
 
 const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x));
@@ -55,6 +56,12 @@ export function truthAt(speed: number, overshoot: number): Record<string, Record
     "E-101": { dutyKw: 17.43 * speed + 27 },
     "TV-101": { positionPct: 0.36 * speed + 32.5, steamKgH: 29.7 * speed + 48 },
   };
+}
+
+export function faultVoterId(s: Scenario): string | null {
+  if (!s.fault) return null;
+  const other: PlantId = s.plantId === "plant-a" ? "plant-b" : "plant-a";
+  return s.fault.voter.startsWith("other/") ? `${other}/${s.fault.voter.slice(6)}` : `${s.plantId}/${s.fault.voter}`;
 }
 
 export function thresholdOf(c: ComponentState, metric: string): number | null {
@@ -244,6 +251,13 @@ export function buildScenarios(scale: number): Scenario[] {
   add("moved_mid", { from: 40, to: 70, limits: { "LV-101": { positionPct: { critical: 70, max: 62 } } } }, 4);
   add("moved_high", { from: 70, to: 95, limits: { "LV-101": { positionPct: { critical: 100, max: 90 } }, "P-100": { speedPct: { critical: 110, max: 100 } } } }, 4);
   add("moved_overshoot", { from: 50, to: 85, overshoot: 12, history: "dense" }, 4);
+
+  // One voter fails on the first counter, each voter in turn. A failed voter must not end the chain.
+  for (const voter of ["TK-101", "LV-101", "E-101", "TV-101", "other/TV-101"]) {
+    add(`fault_${voter.replace("/", "_")}`, { from: 50, to: 85, fault: { voter, round: 1 } }, 4);
+  }
+  // LV-101 fails on the parent: the block then rests on whoever else voted no.
+  add("fault_parent_LV-101", { from: 50, to: 85, fault: { voter: "LV-101", round: 0 } }, 4);
 
   // Nothing between from and to can pass. Correct: stop cleanly, no loop, no third counter.
   add("infeasible_tk_margin", { from: 50, to: 85, margins: m({ "TK-101": 15 }) }, 4);

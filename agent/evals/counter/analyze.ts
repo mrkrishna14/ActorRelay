@@ -48,6 +48,8 @@ for (const tag of process.argv.slice(2)) {
   const recs = readFileSync(path, "utf8").trim().split("\n").filter(Boolean).map((l) => JSON.parse(l));
   const metaPath = join(outDir, `${tag}.meta.json`);
   const meta = existsSync(metaPath) ? JSON.parse(readFileSync(metaPath, "utf8")) : {};
+  const tpm = meta.stats?.tokens && meta.wallSeconds ? Math.round((meta.stats.tokens / meta.wallSeconds) * 60) : 0;
+  console.log(`\nmeasured ${meta.stats?.tokens ?? 0} tokens, ${tpm} tokens/min, ${meta.stats?.calls ? Math.round(meta.stats.tokens / meta.stats.calls) : 0} tokens/call`);
   console.log(`\n## ${tag}: ${meta.implName ?? "?"} ${meta.model ?? ""}/${meta.effort ?? ""} ${recs.length} scenarios, code ${JSON.stringify(meta.code ?? {})}, ${JSON.stringify(meta.stats ?? {})}, wall ${Math.round(meta.wallSeconds ?? 0)}s\n`);
   console.log(HEAD);
   console.log(HEAD.split(" | ").map(() => "---").join(" | "));

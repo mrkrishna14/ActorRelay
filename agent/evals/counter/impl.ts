@@ -2,6 +2,7 @@
 import { join } from "node:path";
 import type { Proposal, Vote } from "../../../shared/types";
 import { buildCounter as realBuildCounter } from "../../counter";
+import type { Llm as AgentLlm } from "../../llm";
 import { RetrievalCache } from "../../retrieval";
 import { castVote as realCastVote } from "../../vote";
 import { buildCounter, castVote as candidateVote } from "./candidate";
@@ -13,7 +14,7 @@ type Eval = ReturnType<typeof createLlm>;
 
 export type Impl = {
   name: string;
-  vote(proposal: Proposal, voterId: string, view: Plantview, llm: Eval, sink: LlmCall[], log: (line: string) => void): Promise<Vote>;
+  vote(proposal: Proposal, voterId: string, view: Plantview, llm: Eval, sink: LlmCall[], log: (line: string) => void, broken: boolean): Promise<Vote>;
   counter(chain: Proposal[], view: Plantview, s: Scenario, llm: Eval, sink: LlmCall[]): Promise<{ proposal: Proposal | null; note?: string; decidedBy?: string }>;
 };
 
@@ -25,8 +26,15 @@ const candidateCounter: Impl["counter"] = async (chain, view, s, llm, sink) => {
   return { proposal: makeProposal(s, view, reply.to, chain[chain.length - 1]!, reply.rationale) };
 };
 
-const realVote: Impl["vote"] = (proposal, voterId, view, llm, sink, log) =>
-  realCastVote({ glue: new FixtureGlue(view), llm: llm.agentLlm(sink), cache: new RetrievalCache(), log }, proposal, voterId);
+// What a timeout, a 429 or a policy rejection looks like to vote.ts: every attempt throws.
+const failingLlm: AgentLlm = {
+  complete: async () => {
+    throw new Error("injected voter failure");
+  },
+};
+
+const realVote: Impl["vote"] = (proposal, voterId, view, llm, sink, log, broken) =>
+  realCastVote({ glue: new FixtureGlue(view), llm: broken ? failingLlm : llm.agentLlm(sink), cache: new RetrievalCache(), log }, proposal, voterId);
 
 const counterWith = (build: typeof realBuildCounter): Impl["counter"] => async (chain, view, s, llm, sink) => {
   const lines: string[] = [];
