@@ -2,6 +2,7 @@ import { RelaycastMessagingClient, type RelayMessagingClient, type RelayMessage 
 import {ApiError} from "./actors";
 import {Journal} from "./journal";
 import {schemas} from "./schemas";
+import {z} from "zod";
 const channels=["plant-a","plant-b","company"];
 type Dispatch=(path:string,body:any,sender:string)=>Promise<unknown>;
 export class RelayBridge {
@@ -30,21 +31,26 @@ export class RelayBridge {
    await this.backfill();
   }catch(error){this.status.error=String(error);throw error;}
  }
- async backfill(){if(!this.client)return;for(const channel of channels){const messages=await this.client.messages.list(channel,{limit:100});for(const message of [...messages].reverse())await this.receive(message);}}
+ // One bad message must not stop later ones. Permanent rejections are journaled so they are not retried every backfill.
+ async backfill(){if(!this.client)return;for(const channel of channels){const messages=await this.client.messages.list(channel,{limit:100});for(const message of [...messages].reverse()){try{await this.receive(message);}catch(error){this.status.error=String(error);console.error("Relay backfill rejected:",String(error));if(error instanceof z.ZodError||[400,403,409].includes((error as any)?.status))this.journal.set("relay-rejected",message.id,{error:String(error)});}}}}
  async receive(message:RelayMessage){
   const sender=message.from.name;if(!sender||sender===this.name)return;
+  if(this.journal.get("relay-rejected",message.id))return;
   let envelope:any;try{envelope=JSON.parse(message.text);}catch{return;}
+  if(!envelope||typeof envelope!=="object")return;
   const path=({vote:"/vote",counter:"/counter",calibration:"/calibration",rule:"/rule"} as Record<string,string>)[envelope.type];if(!path)return;
-  const raw=envelope.payload??envelope;
-  const body=schemas[path].parse(raw);
+  const {type:_type,...flat}=envelope;
+  const body=schemas[path].parse(envelope.payload??flat);
   // Sender identity comes from authenticated Relay transport, never the envelope.
   const value:any=body;
-  const claimed=path==="/vote"?value.vote.agentId:path==="/counter"?`agent:${value.proposal.proposerComponentId}`:path==="/calibration"?`agent:${value.componentId}`:path==="/rule"&&value.rule.condition.componentId?`agent:${value.rule.condition.componentId}`:null;
-  if(!claimed||sender!==claimed)throw new ApiError(403,"Relay sender is not authorized for this component action");
+  const allowed:string[]=path==="/vote"?(value.vote.agentId===`agent:${value.vote.componentId}`?[value.vote.agentId]:[]):path==="/counter"?[`agent:${value.proposal.proposerComponentId}`]:path==="/calibration"?[`agent:${value.componentId}`]:path==="/rule"?[value.rule.condition.componentId,value.rule.consequence.componentId].filter(Boolean).map((id:string)=>`agent:${id}`):[];
+  if(!allowed.includes(sender))throw new ApiError(403,"Relay sender is not authorized for this component action");
   const key=path==="/vote"?`${value.vote.proposalId}:${value.vote.componentId}`:message.id;
   if(this.journal.get("relay-inbound",key)||this.inflight.has(key))return;
   this.inflight.add(key);
-  try{await this.dispatch(path,body,sender);this.journal.set("relay-inbound",key,{messageId:message.id,processedAt:new Date().toISOString()});}finally{this.inflight.delete(key);}
+  const processed=()=>this.journal.set("relay-inbound",key,{messageId:message.id,processedAt:new Date().toISOString()});
+  // accepted:true means the actor already committed and only the publish failed; backfill must not resubmit it.
+  try{await this.dispatch(path,body,sender);processed();}catch(error){if((error as any)?.details?.accepted===true)processed();throw error;}finally{this.inflight.delete(key);}
  }
  async publish(type:string,payload:any,targetChannels:string[]){
   const entity=payload.proposal??payload.event??payload.rule??payload;
