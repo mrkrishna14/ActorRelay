@@ -1,3 +1,4 @@
+import { ref } from "./actorCalls.js"
 import { Actor, Emittable, Persisted, type ActorSocket } from "terse-sdk/actor"
 import type {
     AuditEntry,
@@ -212,7 +213,7 @@ export class Plant extends Actor<null, Ping, PlantOutgoing> {
         for (const c of plant.components) {
             if (c.plantId !== (this.id as PlantId)) throw new Error(`component ${c.id} is not in ${(this.id as PlantId)}`)
             info[c.id] = { id: c.id, plantId: c.plantId, tag: c.tag, model: c.model, limits: c.limits, upstream: c.upstream, downstream: c.downstream, sharedResources: c.sharedResources }
-            await Component.get(actorIdFor(c.id)).loadSeed(c)
+            await ref<Component>("Component", actorIdFor(c.id)).loadSeed(c)
         }
         this.info = info
         this.name = plant.name
@@ -224,7 +225,7 @@ export class Plant extends Actor<null, Ping, PlantOutgoing> {
         this.tick = 0
         this.audit = []
 
-        const company = Company.get(COMPANY_ID)
+        const company = ref<Company>("Company", COMPANY_ID)
         await company.registerPlant((this.id as PlantId), Object.fromEntries(plant.components.map(c => [c.id, c.model])))
 
         // Replay seed history in order so rules reflect it, then share them once.
@@ -266,7 +267,7 @@ export class Plant extends Actor<null, Ping, PlantOutgoing> {
                 throw new Error(`parent ${p.parentProposalId} already has 2 counter-proposals`)
             }
         }
-        const from = finite(p.from) ? p.from : (await Component.get(actorIdFor(p.proposerComponentId)).read()).metrics[p.metric]
+        const from = finite(p.from) ? p.from : (await ref<Component>("Component", actorIdFor(p.proposerComponentId)).read()).metrics[p.metric]
         if (!finite(from)) throw new Error(`no current value of ${p.metric} on ${p.proposerComponentId}`)
 
         this.seq += 1
@@ -278,12 +279,12 @@ export class Plant extends Actor<null, Ping, PlantOutgoing> {
             requiredVoters: reachableVoters(this.info, p.proposerComponentId), votes: [],
             status: "voting", vetoDeadline: null, parentProposalId: p.parentProposalId ?? null, crossPlant: false,
         }
-        const cross = await Company.get(COMPANY_ID).requiredCrossPlantVoters(draft)
+        const cross = await ref<Company>("Company", COMPANY_ID).requiredCrossPlantVoters(draft)
         const proposal: Proposal = { ...draft, requiredVoters: [...draft.requiredVoters, ...cross], crossPlant: cross.length > 0 }
         this.proposals = [...this.proposals, proposal]
         const summary = `${tagOf(proposal.proposerComponentId)} ${proposal.metric} ${from} → ${proposal.to}${proposal.parentProposalId ? ` (counter to ${proposal.parentProposalId})` : ""}; voters ${proposal.requiredVoters.join(", ")}`
         this.audit = addAudit(this.audit, this.id as PlantId, "proposal", proposal.id, summary, proposal.proposerAgentId)
-        if (proposal.crossPlant) await Company.get(COMPANY_ID).recordAudit({ at: proposal.at, plantId: "company", kind: "proposal", refId: proposal.id, summary, by: proposal.proposerAgentId })
+        if (proposal.crossPlant) await ref<Company>("Company", COMPANY_ID).recordAudit({ at: proposal.at, plantId: "company", kind: "proposal", refId: proposal.id, summary, by: proposal.proposerAgentId })
         return proposal
     }
 
@@ -303,7 +304,7 @@ export class Plant extends Actor<null, Ping, PlantOutgoing> {
             if (unknown.length > 0) throw new Error(`unknown evidence event ids: ${unknown.join(", ")}`)
         }
 
-        const voter = await Component.get(actorIdFor(v.componentId)).read()
+        const voter = await ref<Component>("Component", actorIdFor(v.componentId)).read()
         let vote = v.vote
         const notes: string[] = []
         for (const [metric, predicted] of Object.entries(v.predicted)) {
@@ -378,7 +379,7 @@ export class Plant extends Actor<null, Ping, PlantOutgoing> {
             this.audit = addAudit(this.audit, this.id as PlantId, "block", p.id, `stale: ${tagOf(p.proposerComponentId)} changed by another execution after this proposal`, "plant")
             return null
         }
-        const proposer = await Component.get(actorIdFor(p.proposerComponentId)).read()
+        const proposer = await ref<Component>("Component", actorIdFor(p.proposerComponentId)).read()
         const limit = proposer.limits[p.metric]!
         const ceiling = safeThreshold(limit, proposer.marginPct)
         if (p.to < limit.min || p.to > ceiling) {
@@ -419,7 +420,7 @@ export class Plant extends Actor<null, Ping, PlantOutgoing> {
         }
         const value = finite(result.applied) ? result.applied : d.value
         const token = executeToken(proposalId, d.componentId, d.metric, value)
-        await Component.get(actorIdFor(d.componentId)).setMetric(d.metric, value, proposalId, token)
+        await ref<Component>("Component", actorIdFor(d.componentId)).setMetric(d.metric, value, proposalId, token)
         const accepted: Dispatch = { ...d, value, state: "accepted", settledAt: at, token }
         this.dispatches = { ...this.dispatches, [proposalId]: accepted }
         this.lastExecutedAt = { ...this.lastExecutedAt, [d.componentId]: at }
@@ -441,7 +442,7 @@ export class Plant extends Actor<null, Ping, PlantOutgoing> {
             const before = this.rules.find(x => x.id === r.id)
             this.rules = upsertRule(this.rules, r)
             this.audit = addAudit(this.audit, this.id as PlantId, "rule_learned", r.id, `${before ? "reinforced" : "learned"}: ${r.text}`, "plant")
-            const companyRule = await Company.get(COMPANY_ID).promoteRule(r)
+            const companyRule = await ref<Company>("Company", COMPANY_ID).promoteRule(r)
             if (companyRule) shared.push(companyRule)
         }
         return { event: e, rules: [...changed, ...shared] }
@@ -454,7 +455,7 @@ export class Plant extends Actor<null, Ping, PlantOutgoing> {
         const before = this.rules.find(x => ruleKey(x) === ruleKey(rule))
         this.rules = upsertRule(this.rules, rule)
         this.audit = addAudit(this.audit, this.id as PlantId, "rule_learned", rule.id, `${before ? "reinforced" : "learned"}: ${rule.text}`, "plant")
-        await Company.get(COMPANY_ID).promoteRule(rule)
+        await ref<Company>("Company", COMPANY_ID).promoteRule(rule)
         return this.rules.find(x => ruleKey(x) === ruleKey(rule))!
     }
 

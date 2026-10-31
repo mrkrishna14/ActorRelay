@@ -1,6 +1,6 @@
 # actor/ — HANDOFF (Person 1)
 
-Three durable actors: `Component`, `Plant`, `Company`. Source: `src/actors.ts` (actors), `src/logic.ts` (pure decision logic), `src/schemas.ts` (input validation), `src/types.ts` (exact copy of `shared/types.ts`).
+Three durable actors: `Component`, `Plant`, `Company`. Source: `src/actors.ts` (actors), `src/logic.ts` (pure decision logic), `src/schemas.ts` (input validation), `src/actorCalls.ts` (actor-to-actor calls), `src/types.ts` (exact copy of `shared/types.ts`).
 
 ## What runs
 | | Where |
@@ -144,7 +144,12 @@ Reply: `{"outcome":{"type":"completed","result":…}}` or `{"outcome":{"type":"f
 ## Verified
 - 24 tests pass (`bun run test`), including all six TASK1 tests, plus: enforced no on a yes past threshold, invented evidence rejected, block → counter → veto window → dispatch → accepted with single-use token, veto, non-voter/closed-proposal rejection, malformed input rejection, seeded plant-a rule reaching the company library.
 - Local runtime: clock ticks once per second; unanimous yes → dispatch approved by the alarm sweep at ~12 s with the real 10 s window; confirmDispatch → `executed`, P-100 speedPct = 65.
-- Cloud: deploys cleanly. Cloud smoke test (`client/smoke.ts` with the cloud env) still needs an API key run; see below.
+- Cloud (Terse): `client/smoke.ts` passes (seed both plants, P-100 → 85 gets 5 voters incl. plant-b/TV-101, crossPlant). Real 10 s veto window → cloud alarm sweep approves the dispatch at ~11.5 s → confirmDispatch → `executed`, P-100 = 65. Cloud seeding takes ~2.5 s per plant.
+
+## Cloud secret (needed for actor-to-actor calls)
+Plant calls Component and Company. The SDK's built-in inner client needs `DURABLE_ACTORS_PROJECT_ID` and a credential, which Terse Cloud 0.14.x does not inject (and reserves as secret names). `src/actorCalls.ts` therefore calls the actor HTTP API itself: locally with no auth, in the cloud with a session minted from the project secret `ACTORRELAY_TERSE_API_KEY` (same `/access` exchange the generated client uses; cached and refreshed).
+- It is set (`terse secrets list`). To replace it with a dedicated key: `printf %s "$KEY" | terse secrets add ACTORRELAY_TERSE_API_KEY --value-stdin` then `bun run deploy`.
+- `terse secrets add` also wrote `actor/.env` with that key for local runs; it is gitignored. Never commit it.
 
 ## Known limits / stubbed
 - `shared/history.json` is not in the repo yet; tests use `tests/fixtures.ts`, shaped like TASK2's requirements.

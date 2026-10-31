@@ -5,7 +5,12 @@
         "strict": true,
         "skipLibCheck": true,
         "noEmit": true,
-        "types": ["node"]
+        "types": [
+            "node"
+        ],
+        "resolveJsonModule": true
     },
-    "include": ["src"]
+    "include": [
+        "src"
+    ]
 }

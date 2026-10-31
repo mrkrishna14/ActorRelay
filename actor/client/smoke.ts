@@ -4,6 +4,7 @@
 //   Cloud: TERSE_ACTOR_URL=https://api.useterse.ai/<project>/actors TERSE_API_KEY=... bun smoke.ts
 //   Local: (with `terse actor dev` running) bun smoke.ts
 // Optional: HISTORY=../../shared/history.json to seed real history (default: none).
+import { readFileSync } from "node:fs"
 import plantsJson from "../../shared/plants.json"
 import type { ComponentState, HistoryEvent, PlantId } from "../src/types.js"
 import { actors } from "./generated/index.js"
@@ -12,7 +13,7 @@ const plants = plantsJson as unknown as {
     company: { plants: PlantId[]; sharedResources: { id: string; name: string; components: string[] }[] }
     plants: { id: PlantId; name: string; components: ComponentState[] }[]
 }
-const history: HistoryEvent[] = process.env.HISTORY ? await Bun.file(process.env.HISTORY).json() : []
+const history: HistoryEvent[] = process.env.HISTORY ? JSON.parse(readFileSync(process.env.HISTORY, "utf8")) : []
 const clock = process.env.CLOCK === "on"
 
 const t0 = Date.now()
