@@ -159,15 +159,13 @@ Codes: `not_seeded`, `invalid_seed`, `invalid_metrics`, `invalid_metric`, `inval
 
 | Suite | Runs on | Latest result |
 |---|---|---|
-| `tests/logic/logic.test.ts` | pure functions, no runtime | 48 pass, 0 fail, current code |
-| `tests/runtime/runtime.test.ts` | real `terse actor dev`, fake glue inside the test | see below |
-| `tests/runtime/durability.ts` | real server plus kill -9 | not yet completed by this suite |
+| `tests/logic/logic.test.ts` | pure functions, no runtime | 48 pass, 0 fail, final code |
+| `tests/chaos` | real Terse and real `kill -9`, fake glue and simulator | 32 of 33 on final `actor/src` (9b943c3), across 37 server kills |
+| `glue/e2e.ts` | real actors, glue, Relay, simulator and agents | 26 of 26 at 14:09, five minutes after the last `actor/src` commit; the run file does not record a commit |
+| `tests/runtime/runtime.test.ts` | real `terse actor dev`, fake glue inside the test | 8 of 8 at 6447368; not rerun on final code |
+| `tests/runtime/durability.ts` | real server plus kill -9 | never completed; `tests/chaos` covers this ground on final code |
 
-Real runs of `tests/runtime`:
-
-- At 6447368: 8 of 8. That included all six TASK1 tests, and the execute path with its forged token, early execute, token replay and duplicate observation checks.
-- Before d4d976b, with the hardening batch: 8 of 9. The one failure was the 30 s voting window closing during five sequential votes under load; votes now go in parallel.
-- At d4d976b: not proven. That run met load above 40 from other runtimes and hosts died (`activation session cannot be reused`, `Rust host disconnected`). No clean run on this commit or later yet.
+Crash results are in [tests/chaos/REPORT.md](tests/chaos/REPORT.md): no acknowledged write lost, and never a second simulation command. The full-stack table is `docs/submission/evidence/e2e-run-140851.md`. On that quiet run the repeat 85 blocked in 342 ms; the same step took 7 to 14 s at load 38, so these timings depend heavily on machine load.
 
 Run the pure suite with `bun test tests/logic` from `actor/`. Run the runtime suite from outside the served project, with the server's `GLUE_URL` pointing at `GLUE_PORT`:
 
@@ -181,6 +179,9 @@ Crash results from `tests/chaos`, a separate suite, are in `tests/chaos/REPORT.m
 
 - Local only. `terse deploy` needs `terse auth login`, and the CLI here is not logged in, so it was not run. No generated client is committed: glue uses the invoke route in `glue/actors.ts`.
 - After a hard kill an actor can answer 503 until its old lease expires, so callers should retry 503.
+- After a server restart a Plant ticks again only once something reads it. Glue's wake loop does that read, but it was not crash tested.
+- `tests/chaos` scenario `c0` is the one failure: Plant ticks ran at up to 1.9 a second, not 1, because the guard against duplicate alarm deliveries passes early alarms. Low severity: every timeout uses wall clock. One intermittent tick pause after a host kill stays unexplained (`c0c`, passing on its latest runs).
+- A stall about every 57 s was measured under heavy load on actors that write. Its cause is not proven, and commit reduction has not been measured against it.
 - Local Terse is sensitive to machine load. Around load 40, with dozens of actor hosts alive, the runtime's own control plane stalls, hosts lose their lease and self-fence. Run one Terse server for the demo.
 - A restart rebuilds the bundle, so a server crash can outlast the voting and claim windows. Veto windows reopen; expired proposals must be proposed again.
 - `Company.promoteRule` checks rule shape, not that cited events exist, because Company never calls Plant. `Plant.promoteRule` does the event check, and glue only uses that path.
