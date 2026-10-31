@@ -10,7 +10,7 @@ import type { Llm, LlmReply, LlmRequest } from "../../llm";
 import { buildView, makeProposal, type Scenario } from "./fixture";
 import { FixtureGlue } from "./glue";
 
-const demo: Scenario = { id: "bounds", group: "bounds", plantId: "plant-a", from: 50, to: 85, margins: {}, history: "standin", rule: true, overshoot: 4 };
+const demo: Scenario = { id: "bounds", group: "bounds", plantId: "plant-a", from: 50, to: 85, margins: {}, history: "real", rule: true, overshoot: 4 };
 
 function scripted(...replies: (string | Error)[]): Llm & { requests: LlmRequest[] } {
   const requests: LlmRequest[] = [];

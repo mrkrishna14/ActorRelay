@@ -6,12 +6,11 @@ import { join } from "node:path";
 import type { Proposal, Vote } from "../../../shared/types";
 import { buildCounter, MAX_COUNTERS_PER_PARENT } from "../../counter";
 import type { Llm, LlmReply, LlmRequest } from "../../llm";
-import { RetrievalCache } from "../../retrieval";
 import { castVote, thresholdFor } from "../../vote";
 import { buildView, makeProposal, type Scenario } from "./fixture";
 import { FixtureGlue } from "./glue";
 
-const demo: Scenario = { id: "closure", group: "closure", plantId: "plant-a", from: 50, to: 85, margins: {}, history: "standin", rule: true, overshoot: 4 };
+const demo: Scenario = { id: "closure", group: "closure", plantId: "plant-a", from: 50, to: 85, margins: {}, history: "real", rule: true, overshoot: 4 };
 
 function model(rationale = "this target stays under the valve's limit"): Llm & { requests: LlmRequest[] } {
   const requests: LlmRequest[] = [];
@@ -143,7 +142,7 @@ describe("issue 3: a wider margin must never be less cautious", () => {
     const proposal = makeProposal(s, view, 75, null, "test");
     const reply = JSON.stringify({ vote: "yes", reason: "under the limit", predicted: { positionPct: 78 } });
     const llm: Llm = { complete: async () => ({ text: reply, provider: "openai", model: "fake", fallback: false }) };
-    const cast = await castVote({ glue: new FixtureGlue(view), llm, cache: new RetrievalCache() }, proposal, "plant-a/LV-101");
+    const cast = await castVote({ glue: new FixtureGlue(view, [proposal]), llm }, proposal, "plant-a/LV-101");
     expect(cast.vote).toBe("no"); // 78 is past 90 * (1 - 25/100) = 67.5
   });
 
@@ -153,7 +152,7 @@ describe("issue 3: a wider margin must never be less cautious", () => {
     const proposal = makeProposal(s, view, 60, null, "test");
     const reply = JSON.stringify({ vote: "yes", reason: "dip recovers", predicted: { levelPct: 50, tempC: 74 } });
     const llm: Llm = { complete: async () => ({ text: reply, provider: "openai", model: "fake", fallback: false }) };
-    const cast = await castVote({ glue: new FixtureGlue(view), llm, cache: new RetrievalCache() }, proposal, "plant-a/TK-101");
+    const cast = await castVote({ glue: new FixtureGlue(view, [proposal]), llm }, proposal, "plant-a/TK-101");
     expect(cast.vote).toBe("yes");
   });
 });

@@ -1,5 +1,5 @@
 // In-memory Glue over one scenario, so the real vote.ts and counter.ts run with no services.
-import type { ComponentId, LearnedRule, PlantId, PlantState } from "../../../shared/types";
+import type { ComponentId, LearnedRule, PlantId, PlantState, Proposal } from "../../../shared/types";
 import type { Glue, SimilarQuery } from "../../glue";
 import type { ProposalInput } from "../../schemas";
 import { similar, type Plantview } from "./fixture";
@@ -7,7 +7,10 @@ import { similar, type Plantview } from "./fixture";
 export class FixtureGlue implements Glue {
   readonly posted: { parentProposalId: string; proposal: ProposalInput }[] = [];
 
-  constructor(private readonly view: Plantview) {}
+  constructor(
+    private readonly view: Plantview,
+    private readonly proposals: Proposal[] = [],
+  ) {}
 
   async component(id: ComponentId) {
     const found = [this.view.proposer, ...this.view.voters].find((c) => c.id === id);
@@ -21,7 +24,7 @@ export class FixtureGlue implements Glue {
     return this.view.rules;
   }
   async plant(plantId: PlantId): Promise<PlantState> {
-    return { id: plantId, name: plantId, components: [], proposals: [], history: this.view.history, rules: this.view.rules, audit: [], tick: 0, connected: true };
+    return { id: plantId, name: plantId, components: [], proposals: this.proposals, history: this.view.history, rules: this.view.rules, audit: [], tick: 0, connected: true };
   }
   async calibration() {}
   async rule() {}

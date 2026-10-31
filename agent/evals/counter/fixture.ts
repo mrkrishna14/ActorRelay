@@ -1,6 +1,6 @@
 // Scenario fixture for the counter-proposal eval: plant state, generated history, physics truth.
 // Physics uses the fitted coefficients from TASK2.MD (fallback section) and the CLAUDE.MD summary.
-// shared/history.json is not required: history shape is one of the things under test.
+// History defaults to shared/history.json, the file the glue seeds from. Other shapes exist to test the shape itself.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { rankSimilar } from "../../../actor/src/logic/similar";
@@ -18,7 +18,8 @@ export const PHYSICS_SUMMARY = (() => {
 })();
 
 export type HistoryShape =
-  | "standin" // actor/tests/fixtures-gen/history.json, the 300-event stand-in for shared/history.json
+  | "real" // shared/history.json, generated from the tank model
+  | "standin" // actor/tests/fixtures-gen/history.json, the earlier fitted stand-in
   | "seed" // the TASK2 hard requirements: incidents >=88, no headroom 80-87, safe 60-70, low 40-58
   | "dense" // seed plus safe runs at 72-78, so "use all the headroom" has evidence behind it
   | "gap" // incidents and low runs only, nothing between 58 and 80
@@ -144,9 +145,10 @@ function makeRule(s: Scenario): LearnedRule {
   };
 }
 
-const standin: HistoryEvent[] = JSON.parse(readFileSync(join(ROOT, "actor", "tests", "fixtures-gen", "history.json"), "utf8"));
+const seeded = (...path: string[]): HistoryEvent[] => JSON.parse(readFileSync(join(ROOT, ...path), "utf8"));
+const FILES = { real: seeded("shared", "history.json"), standin: seeded("actor", "tests", "fixtures-gen", "history.json") };
 
-const SPEEDS: Record<Exclude<HistoryShape, "standin">, number[]> = {
+const SPEEDS: Record<Exclude<HistoryShape, keyof typeof FILES>, number[]> = {
   seed: [88, 92, 95, 100, 80, 82, 84, 85, 87, 60, 62, 64, 65, 66, 68, 70, 40, 45, 50, 55, 58],
   dense: [88, 92, 95, 100, 80, 82, 84, 85, 87, 60, 62, 64, 65, 66, 68, 70, 72, 74, 75, 76, 78, 40, 45, 50, 55, 58],
   gap: [88, 92, 95, 100, 80, 82, 84, 85, 87, 40, 45, 50, 55, 58],
@@ -156,7 +158,7 @@ const SPEEDS: Record<Exclude<HistoryShape, "standin">, number[]> = {
 };
 
 export function makeHistory(s: Scenario): HistoryEvent[] {
-  if (s.history === "standin") return standin.filter((e) => e.plantId === s.plantId);
+  if (s.history === "real" || s.history === "standin") return FILES[s.history].filter((e) => e.plantId === s.plantId);
   return SPEEDS[s.history].map((after, i) => {
     const before = after >= 55 ? 50 : 40;
     const peak = truthAt(after, s.overshoot);
@@ -216,7 +218,7 @@ export function makeProposal(s: Scenario, view: Plantview, to: number, parent: P
 }
 
 const m = (over: Record<string, number> = {}) => over;
-const base = { plantId: "plant-a" as PlantId, rule: true, overshoot: 4, history: "standin" as HistoryShape, margins: m() };
+const base = { plantId: "plant-a" as PlantId, rule: true, overshoot: 4, history: "real" as HistoryShape, margins: m() };
 
 export function buildScenarios(scale: number): Scenario[] {
   const out: Scenario[] = [];
@@ -229,6 +231,7 @@ export function buildScenarios(scale: number): Scenario[] {
   // The demo step, exactly as scripted, many times: distribution of the landing value.
   add("demo", { from: 50, to: 85 }, 40);
   add("demo_minimal_seed", { from: 50, to: 85, history: "seed" }, 15);
+  add("demo_standin", { from: 50, to: 85, history: "standin" }, 10);
 
   // Varied targets.
   for (const from of [40, 50, 60]) for (const to of [80, 85, 90, 95, 100]) add("targets", { from, to }, 2);

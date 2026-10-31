@@ -1,5 +1,5 @@
 // Counter-proposal eval. Real model calls end to end: block -> counter -> full vote, up to the cap.
-// bun run evals/counter/run.ts --impl real|patched|candidate --tag first --groups demo --limit 20 --tpm 150000
+// bun run evals/counter/run.ts --impl real|patched --tag first --groups demo --limit 20 --tpm 150000
 // Scenarios start one at a time, paced on measured tokens, so the cap holds and pacing never eats a vote's time budget.
 import { createHash } from "node:crypto";
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -202,7 +202,7 @@ if (import.meta.main) {
 
   // Every number traces to the exact code it ran on, because these files are being edited during the run.
   const sha = (file: string) => createHash("sha1").update(readFileSync(join(import.meta.dir, "..", "..", file))).digest("hex").slice(0, 10);
-  const code = { counter: sha("counter.ts"), vote: sha("vote.ts"), retrieval: sha("retrieval.ts"), llm: sha("llm.ts") };
+  const code = { counter: sha("counter.ts"), vote: sha("vote.ts"), retrieval: sha("retrieval.ts"), llm: sha("llm.ts"), history: sha("../shared/history.json") };
   const impl = await loadImpl(opts.impl);
   const llm = createLlm({ model: opts.model, effort: opts.effort, concurrency: opts.concurrency });
   const wanted = opts.groups ? new Set(opts.groups.split(",")) : null;

@@ -6,7 +6,7 @@ import { bestCandidate, safeCandidates } from "../../counter";
 import { thresholdFor } from "../../vote";
 import { buildView, makeProposal, similar, type Scenario } from "./fixture";
 
-const base: Scenario = { id: "sens", group: "sens", plantId: "plant-a", from: 50, to: 85, margins: {}, history: "standin", rule: true, overshoot: 4 };
+const base: Scenario = { id: "sens", group: "sens", plantId: "plant-a", from: 50, to: 85, margins: {}, history: "real", rule: true, overshoot: 4 };
 
 let seed = 20261031;
 const rand = () => {
@@ -35,7 +35,7 @@ function tally(values: (number | null)[]) {
 }
 
 const full = buildView(base).history;
-console.log(`stand-in history as is: lands on ${landing(base, full)}`);
+console.log(`shared/history.json as is: lands on ${landing(base, full)}`);
 
 for (const size of [180, 120, 60, 30, 15]) {
   const samples = Array.from({ length: 2000 }, () => landing(base, Array.from({ length: size }, () => full[Math.floor(rand() * full.length)]!)));
