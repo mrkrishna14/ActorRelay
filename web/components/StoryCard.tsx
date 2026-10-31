@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { byTime, tagOf, type Plants } from "@/lib/derive";
+import { GlueError, veto } from "@/lib/glue";
+import { glueStore } from "@/lib/store";
 import type { ComponentView, PlantId, PlantState, Proposal, Vote } from "@/lib/types";
 
 const PLAIN: Record<string, string> = {
@@ -51,6 +54,34 @@ function tell(proposal: Proposal | undefined, plant: PlantState | undefined, com
   return { step: 2, line: `No decision in time: pump ${change} expired.`, tone: "text-ink-2" };
 }
 
+/** The human's say. It sits on the main view because the window is only ten seconds long. */
+function VetoButton({ proposalId }: { proposalId: string }) {
+  const [busy, setBusy] = useState(false);
+  const [refused, setRefused] = useState<string | null>(null);
+
+  async function onVeto() {
+    setBusy(true);
+    setRefused(null);
+    try {
+      await veto(proposalId, "operator");
+    } catch (error) {
+      setRefused(error instanceof GlueError ? `Refused (${error.status}): ${error.message}` : String(error));
+    } finally {
+      setBusy(false);
+      glueStore.refresh();
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-3">
+      {refused ? <span className="text-lg text-bad">{refused}</span> : null}
+      <button disabled={busy} onClick={() => void onVeto()} className="rounded-md bg-bad px-6 py-1 text-lg font-bold text-white disabled:opacity-60">
+        Veto
+      </button>
+    </div>
+  );
+}
+
 export function StoryCard({ view, plants, components, now, details, onDetails, onTour, tour }: { view: PlantId; plants: Plants; components: Record<string, ComponentView>; now: number; details: boolean; onDetails: () => void; onTour: () => void; tour: boolean }) {
   const plant = plants[view];
   const proposal = plant ? byTime(plant.proposals).at(-1) : undefined;
@@ -62,6 +93,7 @@ export function StoryCard({ view, plants, components, now, details, onDetails, o
       <div className="flex items-start justify-between gap-6">
         <p className={`text-[26px] font-semibold leading-[34px] ${tone}`}>{line}</p>
         <div className="flex shrink-0 items-center gap-5">
+          {proposal?.status === "veto_window" ? <VetoButton proposalId={proposal.id} /> : null}
           <button onClick={onDetails} className="text-lg font-semibold text-ice hover:underline">
             {details ? "Hide details" : "Why? See evidence"}
           </button>
