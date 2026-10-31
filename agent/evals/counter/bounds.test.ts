@@ -78,11 +78,18 @@ describe("value bounds, enforced by code", () => {
     expect(made!.proposal.to).toBeLessThan(85);
   });
 
-  test("a valid reply on the re-request is taken", async () => {
+  test("code fixes the target: a well-formed reply naming another candidate cannot move it", async () => {
     const { view, proposal } = blocked(demo);
-    const first = scripted("garbage", reply(60));
-    const made = await buildCounter({ glue: new FixtureGlue(view), llm: first }, proposal, [proposal]);
-    expect(made!.decidedBy).toBe("openai fake");
+    const made = await buildCounter({ glue: new FixtureGlue(view), llm: scripted(reply(60)) }, proposal, [proposal]);
+    expect(made!.proposal.to).toBe(65);
+  });
+
+  test("a valid reply on the re-request supplies the explanation", async () => {
+    const { view, proposal } = blocked(demo);
+    const llm = scripted("garbage", JSON.stringify({ value: 65, rationale: "explained on retry" }));
+    const made = await buildCounter({ glue: new FixtureGlue(view), llm }, proposal, [proposal]);
+    expect(made!.proposal.rationale).toContain("explained on retry");
+    expect(llm.requests.length).toBe(2);
   });
 
   test("a downward proposal counts down and stays strictly inside", async () => {
