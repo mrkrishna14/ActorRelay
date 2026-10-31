@@ -29,3 +29,11 @@ Thumbs.db
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Local runtime state
+.durable-actors/
+.pytest_cache/
+*.tsbuildinfo
+
+# Session coordination board
+.coord/
