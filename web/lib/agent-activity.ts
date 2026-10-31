@@ -92,18 +92,18 @@ export function demoAgentActivities(state: DemoState): AgentActivity[] {
     }
     const last = state.proposals.findLast((item) => item.plantId === equipment.plantId);
     if (last?.status === "blocked" && equipment.tag === "LV-101") {
-      const refusal = last.votes.find((vote) => vote.vote === "no");
+      const refusal = last.votes.find((vote) => vote.vote === "no" && vote.tag === "LV-101" && vote.plantId === equipment.plantId) ?? last.votes.find((vote) => vote.vote === "no");
       activity.state = "blocked";
       activity.task = `Prevent an unsafe ${last.to}% feed target`;
-      activity.summary = `Predicted outlet travel ${refusal?.predicted ?? last.to + 4}% exceeds the 81% threshold. The sample evidence supports refusing this change; current equipment remains at its previous setpoint.`;
+      activity.summary = `Predicted outlet travel ${refusal?.predicted ?? last.to + 4}% exceeds the 81% threshold. The evidence supports refusing this change; current equipment remains at its previous setpoint.`;
       activity.latestAction = `Rejected ${last.id}. Shared the headroom rule and supporting events.`;
       activity.updatedAt = state.messages.findLast((message) => message.proposalId === last.id && message.tag === equipment.tag)?.at ?? last.createdAt;
       activity.evidence = refusal?.evidence ?? ["rule-lv-03"];
       activity.progress = 100;
     } else if (last?.status === "blocked" && equipment.tag === "P-100") {
       activity.state = "ready";
-      activity.task = "Prepare a safer 65% counterproposal";
-      activity.summary = "The outlet agent refused 85%. A 65% target preserves predicted outlet headroom and still needs a fresh five-agent review.";
+      activity.task = "Prepare a safer counterproposal";
+      activity.summary = `The outlet agent refused ${last.to}%. A lower target that past runs show was safe preserves outlet headroom and still needs a fresh five-agent review.`;
       activity.latestAction = `Proposed a safer alternative after ${last.id} was blocked.`;
       activity.updatedAt = state.messages.findLast((message) => message.proposalId === last.id && message.tag === equipment.tag)?.at ?? last.createdAt;
       activity.evidence = ["event-a-102"];

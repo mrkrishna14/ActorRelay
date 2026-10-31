@@ -193,6 +193,8 @@ export class Plant extends Actor<null, Ping, PlantOutgoing> {
     @Persisted private dispatches: Record<string, Dispatch> = {}
     @Persisted private lastExecutedAt: Record<ComponentId, string> = {}
     @Persisted private seq = 0
+    /** Stamp per reset so proposal ids never repeat across resets (glue journals commands by proposal id). */
+    @Persisted private epoch = ""
     @Persisted private lastHeartbeat = 0
     @Persisted private config: PlantConfig = { vetoWindowMs: 10_000, voteTimeoutMs: 30_000, clock: true }
 
@@ -228,6 +230,7 @@ export class Plant extends Actor<null, Ping, PlantOutgoing> {
         this.dispatches = {}
         this.lastExecutedAt = {}
         this.seq = 0
+        this.epoch = Date.now().toString(36)
         this.tick = 0
         this.audit = []
 
@@ -278,7 +281,7 @@ export class Plant extends Actor<null, Ping, PlantOutgoing> {
 
         this.seq += 1
         const draft: Proposal = {
-            id: p.id ?? `${(this.id as PlantId)}-p${String(this.seq).padStart(4, "0")}`,
+            id: p.id ?? `${(this.id as PlantId)}-${this.epoch || "x"}-p${String(this.seq).padStart(3, "0")}`,
             at: nowIso(), plantId: (this.id as PlantId), proposerComponentId: p.proposerComponentId,
             proposerAgentId: p.proposerAgentId ?? `agent:${p.proposerComponentId}`,
             metric: p.metric, from, to: p.to, rationale: p.rationale,

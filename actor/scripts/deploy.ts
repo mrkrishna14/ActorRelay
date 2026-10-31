@@ -12,7 +12,10 @@ run(["bun", "run", "sync-types"])
 run(["bun", "run", "--bun", "check"])
 const state = ".durable-actors"
 const parked = join(tmpdir(), `actorrelay-durable-actors-${Date.now()}`)
-const moved = existsSync(state)
+// Never move the state of a running `terse actor dev` (its open database turns read-only → 503s).
+const devRunning = await fetch("http://127.0.0.1:7100/", { signal: AbortSignal.timeout(500) }).then(() => true, () => false)
+if (devRunning) console.log("terse actor dev is running: deploying without setting local state aside")
+const moved = existsSync(state) && !devRunning
 if (moved) renameSync(state, parked)
 try {
     run(["terse", "deploy"])

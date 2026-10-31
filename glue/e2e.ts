@@ -121,7 +121,7 @@ async function main() {
   if (!await check('Unsafe proposal and cross-plant evidence', async () => {
     bad = proposalFrom(await api('/propose', { plantId: 'plant-a', proposerComponentId: 'plant-a/P-100', metric: 'speedPct', to: 85, rationale: 'E2E throughput request' }));
     assert(bad.id, 'Missing proposal ID');
-    const s = await waitFor(state, x => proposals(x).some(p => p.id === bad.id && p.status === 'blocked'), 25000, 'unsafe proposal blocked by agents');
+    const s = await waitFor(state, x => proposals(x).some(p => p.id === bad.id && p.status === 'blocked' && p.votes.some((v: any) => String(v.componentId).endsWith('/LV-101'))), 25000, 'unsafe proposal blocked by agents');
     bad = proposals(s).find(p => p.id === bad.id);
     assert(bad.crossPlant === true && bad.requiredVoters.includes('plant-b/TV-101'), 'Missing shared-header voter');
     const v = bad.votes.find((v: any) => v.componentId === 'plant-a/LV-101');
@@ -141,7 +141,7 @@ async function main() {
     const s = await waitFor(state, x => {
       const p = proposals(x).find(p => p.id === safe.id);
       const c = x.components.find((c: any) => c.id === 'plant-a/LV-101');
-      return p?.status === 'executed' && c?.metrics.positionPct >= 60 && c?.metrics.positionPct <= 72 && x.plant.history?.some((e: any) => e.proposalId === safe.id);
+      return p?.status === 'executed' && c?.metrics.positionPct >= 60 && c?.metrics.positionPct <= 72 && x.plant.history?.some((e: any) => e.proposalId === safe.id) && safe.requiredVoters.every((id: string) => x.components.find((k: any) => k.id === id)?.calibration?.some((e: any) => e.proposalId === safe.id));
     }, 30000, 'execution with measured valve response and history');
     observed = s.plant.history.find((e: any) => e.proposalId === safe.id);
     const allComponents = [...s.components, ...(await state('plant-b')).components];
@@ -151,7 +151,7 @@ async function main() {
   })) return;
   await check('Repeat request uses recent evidence', async () => {
     const p = proposalFrom(await api('/propose', { plantId: 'plant-a', proposerComponentId: 'plant-a/P-100', metric: 'speedPct', to: 85, rationale: 'E2E repeated request' }));
-    const s = await waitFor(state, x => proposals(x).some(q => q.id === p.id && q.status === 'blocked'), 10000, 'repeat block');
+    const s = await waitFor(state, x => proposals(x).some(q => q.id === p.id && q.status === 'blocked' && q.votes.some((v: any) => String(v.componentId).endsWith('/LV-101'))), 10000, 'repeat block');
     const v = proposals(s).find(q => q.id === p.id).votes.find((v: any) => v.componentId === 'plant-a/LV-101');
     assert(v?.evidenceEventIds?.[0] === observed.id, 'Latest execution must be cited first alongside unsafe-event evidence');
     assert(v.evidenceEventIds.length >= 3, 'Safe run alone cannot justify an unsafe-outcome claim');
@@ -159,7 +159,7 @@ async function main() {
   });
   await check('Plant B shared learning', async () => {
     const p = proposalFrom(await api('/propose', { plantId: 'plant-b', proposerComponentId: 'plant-b/P-100', metric: 'speedPct', to: 85, rationale: 'E2E cross-plant learning' }));
-    const s = await waitFor(() => state('plant-b'), x => proposals(x).some(q => q.id === p.id && q.status === 'blocked'), 25000, 'plant-b block');
+    const s = await waitFor(() => state('plant-b'), x => proposals(x).some(q => q.id === p.id && q.status === 'blocked' && q.votes.some((v: any) => String(v.componentId).endsWith('/LV-101'))), 25000, 'plant-b block');
     const v = proposals(s).find(q => q.id === p.id).votes.find((v: any) => v.componentId === 'plant-b/LV-101');
     assert(v?.vote === 'no', 'Plant B LV-101 must reject');
     const rules = new Set((s.company.rules ?? []).map((r: any) => r.id));

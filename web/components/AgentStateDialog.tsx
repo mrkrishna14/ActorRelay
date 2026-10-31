@@ -7,7 +7,7 @@ import { agentStateLabels } from "./AgentContextBar";
 import { agentColorStyle } from "../lib/agent-colors";
 import "./agent-context.css";
 
-interface Props { activity: AgentActivity | null; onClose: () => void; onEvidence: (id: string) => void }
+interface Props { activity: AgentActivity | null; onClose: () => void; onEvidence: (id: string) => void; live?: boolean }
 
 const definitions: Record<AgentActivityState, string> = {
   monitoring: "Watching the equipment's sample measurements. No proposal needs this agent's review.",
@@ -24,7 +24,7 @@ const workflow = [
   { state: "waiting", label: "Waiting" }, { state: "observing", label: "Observing" },
 ] as const;
 
-export default function AgentStateDialog({ activity, onClose, onEvidence }: Props) {
+export default function AgentStateDialog({ activity, onClose, onEvidence, live = false }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
@@ -50,7 +50,7 @@ export default function AgentStateDialog({ activity, onClose, onEvidence }: Prop
     onClick={(event) => { if (event.target === event.currentTarget) closeRef.current(); }}>
     <div className="agent-state-shell ar-agent-hue" style={agentColorStyle(activity.plantId, activity.tag)}>
       <header className="agent-state-header"><div><span className="agent-state-eyebrow">{activity.plantId === "plant-a" ? "PLANT A" : "PLANT B"} / EQUIPMENT AGENT</span><h2 id={titleId}><span className="agent-state-avatar" aria-hidden="true"><Cpu size={18} weight="light" /></span><code className="agent-state-tag">{activity.tag}</code><span>{activity.equipmentName}</span></h2></div><button className="agent-state-close" aria-label="Close agent details" onClick={() => closeRef.current()}><X size={19} /></button></header>
-      <div className="agent-state-metadata"><span>{role}</span><span>{activity.vendor === "codex" ? "Codex" : "Claude"}</span><span>{activity.location}</span><span className="agent-state-sample">Sample activity</span></div>
+      <div className="agent-state-metadata"><span>{role}</span><span>{activity.vendor === "codex" ? "Codex" : "Claude"}</span><span>{activity.location}</span><span className="agent-state-sample">{live ? "Live" : "Sample activity"}</span></div>
 
       <div className="agent-state-content">
         <section className="agent-state-task"><div className="agent-state-section-label"><h3>Current task</h3><span className={`agent-context-state agent-context-state-${activity.state}`}><i />{agentStateLabels[activity.state]}</span></div><p>{activity.task}</p><small>{definitions[activity.state]}</small></section>
@@ -65,7 +65,7 @@ export default function AgentStateDialog({ activity, onClose, onEvidence }: Prop
 
         <details className="agent-state-help"><summary><Info size={15} />What do agent states mean?</summary><dl>{(Object.keys(definitions) as AgentActivityState[]).map((state) => <div key={state} className={activity.state === state ? "agent-state-definition-current" : ""}><dt>{agentStateLabels[state]}</dt><dd>{definitions[state]}</dd></div>)}</dl></details>
       </div>
-      <footer id={noteId} className="agent-state-footer">Sample activity follows the frontend scenario. States and summaries do not indicate that a live model, tool, or harness has run.</footer>
+      <footer id={noteId} className="agent-state-footer">{live ? "Live votes and decisions from the equipment agents, recorded by the durable actors. The plant is simulated." : "Sample activity follows the frontend scenario. States and summaries do not indicate that a live model, tool, or harness has run."}</footer>
     </div>
   </dialog>;
 }
