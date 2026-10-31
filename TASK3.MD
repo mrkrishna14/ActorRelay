@@ -36,4 +36,4 @@ Visible proof: the second identical bad proposal must be blocked with the most r
 - Calibration after a 1-point error leaves marginPct unchanged; after five 12-point errors marginPct rises.
 
 ## Do not
-No UI, no actors, no simulator. Never let an agent call `setMetric` or write OPC UA. Never invent evidence ids.
+No UI, no actors, no simulator. Never let an agent call `setMetric` or write to the simulator. Never invent evidence ids.

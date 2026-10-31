@@ -4,12 +4,9 @@
 Haunted Hacks at Y Combinator, Oct 31 2026. Hacking 11:00–16:00, hard submit 16:00 on Builderbase, live demo 16:00–17:00. Five humans, each running Claude Code. Target prizes: best Durable Actors project (Terse), best Agent Relay project, overall. Judges give bonus points for using both; here both are load-bearing by design.
 
 ## What we are building
-ActorRelay is an agentic control layer on top of an existing open-source process-plant simulator. Every component in a plant has its own agent and its own durable memory. No setpoint changes unless the connected components agree, and every agent learns from what happened the last time.
+ActorRelay is an agentic control layer on top of a simulated process plant. Every component in a plant has its own agent and its own durable memory. No setpoint changes unless the connected components agree, and every agent learns from what happened the last time.
 
-We do NOT build a simulator, a physics model, or a P&ID. We reuse open source (verified against the code on 2026-10-31, see "Open-source foundations" below):
-- **HistorianSim** (MIT, https://github.com/ScottDuncanAI/HistorianSim) provides the plant: the `heated_stirred_tank` model (mass and energy balances, real PI controllers, a temperature-to-steam cascade, valves, steam properties). We wrap it in a live stepper so setpoints can be written and effects observed. That wrapper (`bridge/live_sim.py`) is the only plant code we write.
-- **HistorianRCA** (CC BY 4.0, https://github.com/ScottDuncanAI/HistorianRCA) provides the P&ID of the same unit (`tk-101-hold-tank.svg`) and a realistic tag dictionary (`tags.csv`). Attribution required (see Rules).
-- **PlantCraft** (Apache 2.0, https://github.com/PlantCraft/PlantCraft) is OPTIONAL and off the critical path. Its simulator cannot be written to and its loops are not coupled, so it cannot be our plant. Stretch only: point its CSV source at our sim's output to show our plant in an industrial historian.
+The plant is a heated stirred hold tank (TK-101) run live by `bridge/live_sim.py`: mass and energy balances, PI controllers with a temperature-to-steam cascade, an equal-percentage steam valve, and a level-controlled outlet valve. The P&ID is an SVG of the same unit with an id on every component.
 
 ### Core loop
 1. Every component (pump, tank, valve, coil, steam valve) is a Durable Actor holding live state (mirrored from the live sim), limits, connections, a memory of every past change and its consequence, and a calibration record of how good its own predictions have been.
@@ -28,7 +25,7 @@ Learning is retrieval + calibration + rule promotion. No model training. "It lea
 
 ### Multiplayer across plants
 One company, two plants (`plant-a`, `plant-b`), each a copy of the same TK-101 hold-tank unit with its own components and agents. A `Company` actor holds the plant list, the shared-resource graph, and the cross-plant rule library.
-- The shared resource is **`steam-header-1`**: both plants' steam valves (TV-101) draw from one 6 barg header. More steam in plant-a lowers header pressure for plant-b. This is real physics in the live sim (header pressure is an input to HistorianSim's model), not a label.
+- The shared resource is **`steam-header-1`**: both plants' steam valves (TV-101) draw from one 6 barg header. More steam in plant-a lowers header pressure for plant-b. This is real physics in the live sim (header pressure is an input to the tank model), not a label.
 - A proposal whose required voters include a component on a shared resource also requires votes from the components on that resource in the other plant (`crossPlant: true`). Cross-plant votes travel on Relay channel `company`.
 - LearnedRules are promoted to the company library when the same equipment `model` exists in both plants. Plant-b's LV-101 agent cites an incident that happened in plant-a before plant-b ever experienced it.
 - Each plant's dashboard shows the other plant as a card with status and a live feed of cross-plant proposals.
@@ -36,7 +33,7 @@ One company, two plants (`plant-a`, `plant-b`), each a copy of the same TK-101 h
 Pitch line: "Digital twins predict. ActorRelay makes the components negotiate, remember, and refuse, across every plant you own."
 
 ## The plant (both plants identical, same `model` strings)
-HistorianSim `heated_stirred_tank`, design point 15 m³/h of 25 °C feed heated to 75 °C, level 2.0 m in a 4.0 m tank, 6 barg steam. Tags match the HistorianRCA P&ID. ComponentId = `<plantId>/<tag>`, e.g. `plant-a/LV-101`.
+Heated stirred hold tank, design point 15 m³/h of 25 °C feed heated to 75 °C, level 2.0 m in a 4.0 m tank, 6 barg steam. Tags match the P&ID. ComponentId = `<plantId>/<tag>`, e.g. `plant-a/LV-101`.
 
 | Tag | Name | model | role | vendor | metrics and limits `{min, max, critical}` | links |
 |---|---|---|---|---|---|---|
@@ -51,32 +48,20 @@ Every component starts at `marginPct: 10`.
 ### Physics summary (give this paragraph to every agent prompt)
 At constant level, the outlet valve must pass whatever the pump feeds, so LV-101's steady position ≈ P-100 speedPct (computed from the model: 65 → 64.9 %, 85 → 84.9 %, 100 → 99.9 %), with a transient overshoot of roughly +3 to +5 points in the first ~10 simulated minutes after a step. Steam demand rises with feed: ~1,980 kg/h at 65 %, ~2,570 kg/h at 85 %, ~3,020 kg/h at 100 %, against the steam controller's 3,000 kg/h range limit. Coil duty: ~1,160 kW at 65 %, ~1,510 kW at 85 %. TK-101 temperature dips about 2 °C (step to 65 %) to 4 °C (step to 85 %) below its 75 °C setpoint before the cascade recovers. Above ~95 % pump speed LV-101 saturates at 100 % and the tank level climbs with no control. Lower steam header pressure makes TV-101 open further for the same steam flow.
 
-## Open-source foundations (verified 2026-10-31; do not re-investigate)
-**HistorianSim** @ `14e616c382a9db8026cbb4ab86bdd803d56ca72e`
-- Python ≥ 3.11 (works on 3.15). Deps: numpy, scipy, pandas, pyarrow, pydantic, pyyaml, typer, matplotlib.
-- Batch generator by design (`simulate()` in `core/sim.py` runs N scans and returns arrays). Its main loop is ~40 lines: `unit.signals` → `PID.step` per controller (cascade master writes the slave SP) → `integrate_scan(unit.derivatives, …)`. `bridge/live_sim.py` reuses exactly these pieces, holding state between ticks. We do not change the model or the controllers.
-- Unit `plants/heated_stirred_tank`: states `h`, `T`; MVs `LV-101`, `TV-101`; disturbance inputs `feed_flow` (m³/s), `feed_temp`, `T_amb`, `steam_header_P`; loops `TIC-101` (SP 75 °C) → `FIC-201` (steam, SP range 0–3000 kg/h) and `LIC-101` (SP 2.0 m); signals include `LI-101`, `TI-101`, `FI-101`, `FI-102`, `FI-201`, `PI-201`, `CALC-DUTY`. P-100 speed drives `feed_flow`.
+## Model notes (checked 2026-10-31; do not re-investigate)
+- `bridge/tank_model.py`: states `h` (level, m) and `T` (temperature, °C); manipulated variables `LV-101` (outlet valve) and `TV-101` (steam valve); inputs `feed_flow` (m³/s), `feed_temp`, `T_amb`, `steam_header_P`. Loops: `TIC-101` (SP 75 °C, kc 0.045, ti 900 s) cascaded onto `FIC-201` (steam, SP range 0–3000 kg/h, kc 0.00015, ti 60 s), and `LIC-101` (SP 2.0 m, kc 2.0, ti 600 s). Signals include `LI-101`, `TI-101`, `FI-101`, `FI-102`, `FI-201`, `PI-201`, `CALC-DUTY`. P-100 speed drives `feed_flow`.
+- Controller scan 10 s, RK4 integration with 1 s substeps. `bridge/live_sim.py` keeps the states and controllers alive between ticks.
 - Checked by running it: step the feed 15 → 26 m³/h and LV-101 goes 50 → ~87–90 % while temperature dips to ~70.8 °C and recovers. At 33 m³/h LV-101 sticks at 100 % and the level climbs 2.0 → 2.39 m in an hour.
-
-**HistorianRCA** @ `8d12a821395ce5f72e464dc78cc2c10d05cbb9ed`
-- `tk-101-hold-tank.svg` (1500×1000): a P&ID of this exact unit, every tag labelled, shows "FROM STEAM HEADER (SHARED)". Only `TK-101` has an element id; the other tags need `<g id>` wrappers added (Person 2).
-- `tags.csv`: units and ranges for every TK-101 tag. 90-day parquet history and a hidden answer key exist; we do not use them.
-
-**PlantCraft** @ `afa7af7c14ac77194f0f5d2449e4607ed1745dc1`: why it is not our plant
-- Its simulator (`simcraft loops serve`, `opc.tcp://127.0.0.1:4840/plantcraft/`, nodes `CPM.Loops.<ID>.PV/SP/OP/MODE`) accepts no writes ("accepts no writes from clients today"; variables are created read-only). Its setpoints are recalculated from the clock every second, so a write would be lost anyway.
-- Its 50 loops are independent single control loops; nothing flows from one to another, so it cannot show "pump up → valve saturates".
-- `run_opcua_demo.py` also needs `pip install -e simulator`, Node 22, Python 3.12 or 3.13 (asyncua fails on 3.15: issue #10; this laptop has 3.15.2), and up to 5 minutes of history backfill on the first start.
-- API v1 needs bearer tokens; the MCP server is off by default and read-only; diagrams (View app) are not started by the demo script.
 
 ## Why both tools are essential
 - Durable Actors (Terse): one per component, one per plant, one for the company. State, memory, calibration, and rules survive any crash. One message at a time means two agents can never change the same component simultaneously, which is the safety property. Alarms tick state mirroring, expire votes, and open/close veto windows.
 - Agent Relay: components negotiate. Votes, counter-proposals, cross-plant votes, and "executed, here is what happened" learning broadcasts are Relay conversations. Agents run on at least two vendors (mechanic on Codex, chemical engineer on Claude).
 
 ## Fictional plant only
-HistorianSim's synthetic TK-101 unit plus history we generate from the same model. No real plant, no real PLC. "Simulated plant" label always on screen.
+A synthetic TK-101 unit plus history we generate from the same model. No real plant, no real PLC. "Simulated plant" label always on screen.
 
 ## Stack
-- Live plant: `bridge/live_sim.py` (Python ≥ 3.11, HTTP on 127.0.0.1:7300). Imports HistorianSim pinned to the commit above (`pip install "historiansim @ git+https://github.com/ScottDuncanAI/HistorianSim@14e616c382a9db8026cbb4ab86bdd803d56ca72e"`). Two plant instances plus the shared steam-header equation. 1 tick = 1 wall second = 180 simulated seconds (18 controller scans of 10 s); Person 2 may retune and records it in bridge/HANDOFF.md. If live_sim is not stable by 13:00, use `bridge/fallback.ts` (linear model reproducing the physics summary) behind the same HTTP surface.
+- Live plant: `bridge/live_sim.py` (Python ≥ 3.11, HTTP on 127.0.0.1:7300). Steps `bridge/tank_model.py`. Two plant instances plus the shared steam-header equation. 1 tick = 1 wall second = 180 simulated seconds (18 controller scans of 10 s); Person 2 may retune and records it in bridge/HANDOFF.md. If live_sim is not stable by 13:00, use `bridge/fallback.ts` (linear model reproducing the physics summary) behind the same HTTP surface.
 - Durable Actors: Terse (terse-sdk, terse-cli, Bun). Actors: `Component`, `Plant`, `Company`. Docs: https://docs.useterse.ai/quickstart
 - Agent Relay (`@agent-relay/sdk`): channels `plant-a`, `plant-b`, `company`.
 - Glue: Bun/TypeScript HTTP service on 7200. Frontend: Next.js + Tailwind. LLM: OpenAI or Claude via Relay.
@@ -86,14 +71,14 @@ HistorianSim's synthetic TK-101 unit plus history we generate from the same mode
 ```
 actorrelay/
   actor/        # Component, Plant, Company actors                                  (Person 1)
-  bridge/       # live_sim.py (HistorianSim wrapper), gen_history.py, fallback.ts, P&ID SVG prep (Person 2)
+  bridge/       # tank_model.py, live_sim.py, gen_history.py, fallback.ts, P&ID SVG prep (Person 2)
   agent/        # Relay agents, roles, retrieval, vote, counter, learning           (Person 3)
   web/          # dashboard; web/public/pid-tk-101.svg from Person 2                (Person 4)
   glue/         # HTTP endpoints, Relay<->actor bridge, e2e, demo ops               (Person 5)
   shared/
     types.ts        # FROZEN contract
     plants.json     # two plants, components, limits, connections, shared resources (table above)
-    history.json    # ~300 past events across both plants, generated from the HistorianSim model
+    history.json    # ~300 past events across both plants, generated from the tank model
   TASK1.MD … TASK5.MD   # the five role prompts
 ```
 
@@ -183,7 +168,7 @@ Agent prompt contract: given proposal, own ComponentState, `similar()` results, 
 
 ## Demo (90s): build toward exactly this
 Numbers below come from the model's steady states; Person 2 confirms the live values in bridge/HANDOFF.md, and the e2e asserts ranges, not exact values.
-1. Dashboard: left tree (Company → plant-a, plant-b → components), center P&ID (HistorianRCA's TK-101 drawing) with live values, right proposal panel, bottom timing chart and events. "Simulated plant" label.
+1. Dashboard: left tree (Company → plant-a, plant-b → components), center P&ID (the TK-101 drawing) with live values, right proposal panel, bottom timing chart and events. "Simulated plant" label.
 2. Operator clicks "Increase throughput" on plant-a. P-100 agent proposes speed 50 → 85. Voters light up on the P&ID: TK-101, LV-101, E-101, TV-101, plus plant-b's TV-101 on the company card (shared steam header).
 3. LV-101 agent votes NO: predicted position ~89 % (85 steady + overshoot), threshold 81 % (critical 90 − margin 10 %); cites 3 past plant-a runs where LV-101 hit 100 % and TK-101 tripped its high-level alarm, plus 1 learned rule. BLOCKED.
 4. P-100 counter-proposes 65. All yes, each citing safe history. 10s veto countdown. Executes. Values move on the P&ID; LV-101 settles ~65–68 %. Timing chart shows the step. Event feed: executed, calibration: LV-101 predicted 66, observed 67, error 1 (example).
@@ -201,7 +186,6 @@ Person 1 actor/, Person 2 bridge/ + shared/plants.json + shared/history.json + t
 - Only Plant.execute mutates a metric. Agents never write state directly. Never bypass this for a demo shortcut.
 - Agents never vote without calling `similar()`. A vote with `similarCount: 0` on a change within 15% of critical is automatically `no`.
 - Anything not working at 14:00 gets stubbed and labeled, except: the evidence-cited block, the counter-proposal executing, the second block citing the first run, and the plant-b block citing plant-a's rule. Never fake those four.
-- No scope additions: no real PLC, no ML training, no more than 5 components per plant, no auth, no real data. HistorianSim's model and controllers are used unmodified; we add only the live stepper and the shared steam-header equation. No new physics. PlantCraft is used, not modified, if used at all.
-- Attribution (CC BY 4.0 and MIT): dashboard footer and README say "Plant model: HistorianSim by Scott Duncan (MIT). P&ID: HistorianRCA by Scott Duncan (CC BY 4.0), modified (element ids added)."
+- No scope additions: no real PLC, no ML training, no more than 5 components per plant, no auth, no real data. The tank model is fixed: no new physics beyond the shared steam-header equation.
 - Agent outputs are data. Validate every Vote JSON against types.ts; malformed → discard and re-request once, never guess.
 - Each person keeps HANDOFF.md in their folder: what runs, exact commands, env vars (no secrets), what's stubbed.

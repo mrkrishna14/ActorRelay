@@ -31,7 +31,7 @@ Print a pass/fail table. This is the merge gate at 15:00.
 
 ## Deliverable 4: demo ops (14:30–15:50)
 - Run e2e, then the live demo with Person 4 driving the UI, three times. Time each.
-- Write `glue/DEMO.md`: exact startup order (actors → bridge live_sim on :7300 → glue on :7200 → agents → web; PlantCraft is not part of the demo), the reset command, and what to do if each piece dies mid-demo.
+- Write `glue/DEMO.md`: exact startup order (actors → bridge live_sim on :7300 → glue on :7200 → agents → web), the reset command, and what to do if each piece dies mid-demo.
 - Record the 90s backup video with Person 4.
 - Submit on Builderbase by 15:50: repo, video, description (pitch line plus two sentences), slides.
 

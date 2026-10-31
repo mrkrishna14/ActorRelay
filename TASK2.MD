@@ -1,15 +1,13 @@
-# Person 2 — Live plant (HistorianSim), seed data, P&ID (bridge/, shared/plants.json, shared/history.json)
+# Person 2 — Live plant, seed data, P&ID (bridge/, shared/plants.json, shared/history.json)
 
-You own `bridge/`, `shared/plants.json`, `shared/history.json`, and the P&ID SVG. Read CLAUDE.md (especially "The plant", "Physics summary", "Open-source foundations") and shared/types.ts first. Do not touch actor/, agent/, web/, glue/.
-
-**Plan change (2026-10-31):** PlantCraft is no longer our plant. Its simulator accepts no writes and its 50 loops aren't connected (details in CLAUDE.md). Skip the old "PlantCraft running" and "OPC UA write test" deliverables. The plant is HistorianSim's `heated_stirred_tank` model, run live by us.
+You own `bridge/`, `shared/plants.json`, `shared/history.json`, and the P&ID SVG. Read CLAUDE.md (especially "The plant", "Physics summary", "Model notes") and shared/types.ts first. Do not touch actor/, agent/, web/, glue/.
 
 ## Deliverable 1: live sim (by 12:45)
-`bridge/live_sim.py`, Python ≥ 3.11, HTTP on 127.0.0.1:7300 (stdlib `http.server` or FastAPI).
-- Install: `python3 -m venv .venv && .venv/bin/pip install "historiansim @ git+https://github.com/ScottDuncanAI/HistorianSim@14e616c382a9db8026cbb4ab86bdd803d56ca72e"`.
-- Reuse HistorianSim's pieces, do not modify them: `HeatedStirredTank` (`plants/heated_stirred_tank/model.py`), `tank_loops()` and `DESIGN_D` (`loops.py`), `PID` (`core/pid.py`), `integrate_scan` (`core/integrator.py`), and the cascade helpers `_order_by_cascade`, `_map_setpoint`, `_unmap_setpoint` (`core/sim.py`). Copy the controller initialisation and scan loop from `simulate()` in `core/sim.py` (lines ~232–335), but keep `x`, `u` and the PID objects alive between ticks instead of running a fixed N.
-- Two instances (`plant-a`, `plant-b`), same parameters. Start at the design steady state (`steady_inputs` + `steady_state`), P-100 at 50 % (15 m³/h).
-- Time: 1 tick = 180 simulated seconds = 18 scans of 10 s (`integrate_scan(..., dt_sim=1.0, n_sub=10)` per scan). Retune if needed; write the final value in HANDOFF.md.
+`bridge/tank_model.py` + `bridge/live_sim.py`, Python ≥ 3.11 (numpy, scipy), HTTP on 127.0.0.1:7300 (stdlib `http.server` or FastAPI).
+- `tank_model.py`: the heated stirred tank exactly as specified in CLAUDE.md "Model notes" (states, loops, tunings, signals). Each scan: read signals → step every PI controller (the cascade master writes the slave setpoint) → integrate 10 s with RK4 holding the valve outputs constant.
+- `live_sim.py`: keeps the states and controller objects alive between ticks.
+- Two instances (`plant-a`, `plant-b`), same parameters. Start at the design steady state (valve outputs solved for level 2.0 m and 75 °C), P-100 at 50 % (15 m³/h).
+- Time: 1 tick = 180 simulated seconds = 18 scans of 10 s (10 RK4 substeps of 1 s per scan). Retune if needed; write the final value in HANDOFF.md.
 - Pump: `feed_flow = 0.3 × speedPct / 3600` m³/s (50 % = design 15 m³/h). Keep `feed_temp` 25, `T_amb` 20 constant (no noise during the demo).
 - Shared steam header: `steam_header_P = clamp(6.0 − 0.0005 × (FI-201[a] + FI-201[b] − 3066), 4.5, 6.5)` barg, fed to both instances each tick (3066 kg/h = two plants at design). Tune the 0.0005 so plant-a at 85 % drops the header by roughly 0.3–0.6 barg.
 - Metric mapping per plant (ComponentId `<plant>/<tag>`):
@@ -23,7 +21,7 @@ You own `bridge/`, `shared/plants.json`, `shared/history.json`, and the P&ID SVG
   - `POST /setpoint {componentId, metric, value, proposalId}`: accepts `P-100.speedPct` (and optionally `TK-101` level/temperature setpoints → `LIC-101.sp` / `TIC-101.sp`). Logs every write. Returns the value applied.
   - `POST /reset` → both plants back to the design steady state.
   - `effects observer`: after each setpoint, sample 5 ticks and `POST glue /observed {proposalId, effects[]}` with before/after/`ticksToSettle` for every metric that moved.
-- **Validate before announcing:** run HistorianSim's own `simulate()` with an `on_scan` callback that steps feed 15 → 25.5 m³/h and compare LV-101 / TI-101 against your live stepper. In my quick prototype the temperature loop swung 67–86 °C at feeds ≥ 30 m³/h; check whether that is real model behavior or a bug in the wrapper.
+- **Validate before announcing:** step feed 15 → 25.5 m³/h and check LV-101 / TI-101 against the CLAUDE.md numbers. An earlier quick run showed the temperature loop swinging 67–86 °C at feeds ≥ 30 m³/h; check whether that is real model behavior or a stepping bug.
 - Fallback (only if live_sim is not stable by 13:00, and tell the group): `bridge/fallback.ts`, same HTTP surface, first-order lag of 2 ticks: `LV-101.positionPct → speedPct + 4 × overshoot pulse`, `TV-101.steamKgH → 29.7 × speedPct + 48`, `E-101.dutyKw → 17.43 × speedPct + 27`, `TV-101.positionPct → 0.36 × speedPct + 32.5`, `TK-101.tempC` dips `0.05 × Δspeed` then recovers, LV-101 clamps at 100 and level rises 1 %/tick above 95 % speed. These coefficients are fitted to the model's steady states.
 
 ## Deliverable 2: shared/plants.json and shared/history.json (by 12:45)
@@ -36,8 +34,8 @@ You own `bridge/`, `shared/plants.json`, `shared/history.json`, and the P&ID SVG
   - Because the history comes from the live model, live observations should land near history, which is what makes calibration errors small and real.
 
 ## Deliverable 3: P&ID for web (by 13:00)
-- Take `tk-101-hold-tank.svg` from HistorianRCA @ `8d12a821395ce5f72e464dc78cc2c10d05cbb9ed` (CC BY 4.0). Only `TK-101` has an id. Wrap the drawn elements of P-100, LV-101, TV-101 (with FIC-201/FT-201), and E-101 in `<g id="P-100">` etc. Keep `id="TK-101"`. Use bare tags as ids; the web picks the plant with its switcher.
-- Remove nothing else. Add a small text line "P&ID: HistorianRCA, Scott Duncan, CC BY 4.0, modified". Hand it to Person 4 as `web/public/pid-tk-101.svg`.
+- A clean SVG (1500×1000) of the TK-101 unit: feed P-100, tank TK-101 with steam coil E-101, TV-101 with FIC-201/FT-201 from the shared steam header, outlet LV-101 with LIC-101, TIC-101. Wrap each component in `<g id="P-100">` etc. Use bare tags as ids; the web picks the plant with its switcher.
+- Hand it to Person 4 as `web/public/pid-tk-101.svg`.
 
 ## bridge/HANDOFF.md
 Exact commands, port, tick scaling, the live steady-state numbers at speed 50 / 65 / 85 / 100 (LV-101 %, TV-101 %, steam kg/h, duty kW, temperature dip), and whether fallback.ts is in use. Person 3 copies the physics summary from here if your live numbers differ from CLAUDE.md.
@@ -51,4 +49,4 @@ Exact commands, port, tick scaling, the live steady-state numbers at speed 50 / 
 - `gen_history.py` output passes a zod/pydantic check against types.ts and meets every hard requirement above.
 
 ## Do not
-No agents, no actors, no UI beyond the SVG. Do not modify HistorianSim's model, controllers, or parameters. No new physics beyond the steam-header equation. PlantCraft is optional: only after 14:00 and only if everything above passes, point its CSV source at a CSV dump of live_sim.
+No agents, no actors, no UI beyond the SVG. No new physics beyond the tank model and the steam-header equation.
