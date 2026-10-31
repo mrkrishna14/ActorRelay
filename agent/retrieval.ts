@@ -44,7 +44,7 @@ export function evidenceEstimates(events: HistoryEvent[], own: ComponentState, t
       t.weight += weight;
     }
   }
-  return Object.fromEntries(Object.entries(totals).map(([metric, t]) => [metric, t.sum / t.weight]));
+  return Object.fromEntries(Object.entries(totals).map(([metric, t]) => [metric, Math.round((t.sum / t.weight) * 100) / 100]));
 }
 
 export const newestFirst = (a: HistoryEvent, b: HistoryEvent) => Date.parse(b.at) - Date.parse(a.at);

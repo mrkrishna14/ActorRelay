@@ -22,14 +22,19 @@ export const SIMILAR_K = 5;
 const NEAR_CRITICAL_FRACTION = 0.85;
 /** A prediction outside this multiple of critical is noise, not a prediction. */
 const PLAUSIBLE_MULTIPLE = 3;
-const MAX_REASON_CHARS = 700;
-const MAX_AGENT_NOTE_CHARS = 300;
+const MAX_REASON_CHARS = 900;
+const MAX_AGENT_NOTE_CHARS = 240;
+const MAX_IDS_IN_REASON = 3;
 
 export const LLM_TIMEOUT_MS = { openai: 8000, claude: 9000 };
 /** Relay's reply window is 20 s; both attempts must fit inside it. */
 export const TOTAL_LLM_BUDGET_MS = 18_000;
-/** A no the evidence already proves is posted after this long even if the model is slow, so one voter never delays a block. */
-export const FAST_NO_MS = 2500;
+/**
+ * A no the evidence already proves is posted after this long even if the model is slow. A first block can wait for the
+ * model's reasoning. A repeat has fresh memory behind it, so it goes early: with a 2 s sweep that keeps it under 5 s.
+ */
+export const FIRST_NO_MS = 6000;
+export const FAST_NO_MS = 1500;
 
 export type VoteDeps = { glue: Glue; llm: Llm; cache: RetrievalCache; fastNoMs?: number; log?: (line: string) => void };
 
@@ -255,26 +260,43 @@ function noIsSupported(context: VoteContext, predicted: Record<string, number>):
 
 type Answered = { answer: LlmVote; reply: LlmReply };
 
+/** A breach that every similar run contradicts is usually a misread table, so the model gets one chance to look again. */
+function contradicted(context: VoteContext, answer: LlmVote): string | null {
+  if (context.retrieved.length < MIN_SIMILAR) return null;
+  for (const [metric, threshold] of Object.entries(context.thresholds)) {
+    if (answer.predicted[metric] < threshold) continue;
+    const rows = context.retrieved.flatMap((e) => ownRows(e, context.own)).filter((r) => r.metric === metric);
+    if (rows.length < MIN_SIMILAR) continue;
+    const peak = Math.max(...rows.map((r) => r.after));
+    if (peak < threshold) return `you predicted ${metric} ${answer.predicted[metric]}, but the ${rows.length} retrieved runs peaked at ${peak}, under the ${threshold} threshold. Re-read the table`;
+  }
+  return null;
+}
+
 async function askModel(deps: VoteDeps, context: VoteContext): Promise<Answered | null> {
   const started = Date.now();
   const vendor = context.own.vendor;
   const system = systemPrompt(context.own.role);
   let user = buildVotePrompt(context);
+  let questioned: Answered | null = null;
   for (let attempt = 0; attempt < 2; attempt++) {
     const budget = TOTAL_LLM_BUDGET_MS - (Date.now() - started);
-    if (budget <= 0) return null;
+    if (budget <= 0) return questioned;
     const timeoutMs = Math.min(budget, vendor === "claude" ? LLM_TIMEOUT_MS.claude : LLM_TIMEOUT_MS.openai);
     try {
       const reply = await deps.llm.complete({ vendor, system, user, timeoutMs });
       const parsed = parseAnswer(reply.text, context);
-      if (parsed.ok) return { answer: parsed.answer, reply };
-      deps.log?.(`${context.own.id} attempt ${attempt + 1} rejected: ${parsed.error}`);
-      user = `${buildVotePrompt(context)}\nYour previous reply was rejected: ${parsed.error}. Return only the JSON object.`;
+      const doubt = parsed.ok && attempt === 0 ? contradicted(context, parsed.answer) : null;
+      if (parsed.ok && !doubt) return { answer: parsed.answer, reply };
+      if (parsed.ok) questioned = { answer: parsed.answer, reply };
+      const error = parsed.ok ? (doubt as string) : parsed.error;
+      deps.log?.(`${context.own.id} attempt ${attempt + 1} rejected: ${error}`);
+      user = `${buildVotePrompt(context)}\nYour previous reply was rejected: ${error}. Return only the JSON object.`;
     } catch (error) {
       deps.log?.(`${context.own.id} attempt ${attempt + 1} failed: ${error instanceof Error ? error.message : error}`);
     }
   }
-  return null;
+  return questioned;
 }
 
 /** Model text goes on a dashboard, so it is reduced to one bounded line. */
@@ -334,16 +356,21 @@ function effectivePrediction(context: VoteContext, answered: Answered | null): R
   return predicted;
 }
 
-function thresholdReason(context: VoteContext, predicted: Record<string, number>): string | null {
+function listIds(ids: string[]): string {
+  const shown = ids.slice(0, MAX_IDS_IN_REASON).join(", ");
+  return ids.length > MAX_IDS_IN_REASON ? `${shown} and ${ids.length - MAX_IDS_IN_REASON} more` : shown;
+}
+
+/** `cited` says a binding rule already carries the evidence for this no, so the prediction does not stand alone. */
+function thresholdReason(context: VoteContext, predicted: Record<string, number>, cited = false): string | null {
   const breaches = Object.keys(context.thresholds).filter((m) => predicted[m] !== undefined && predicted[m] >= context.thresholds[m]);
   if (!breaches.length) return null;
   const parts = breaches.map((metric) => {
     const limit = context.own.limits[metric];
+    const claim = `predicted ${metric} ${show(predicted[metric])} is at or past the ${show(context.thresholds[metric])} threshold (critical ${limit.critical} less ${context.own.marginPct}% margin)`;
     const reached = context.retrieved.filter((e) => ownRows(e, context.own).some((r) => r.metric === metric && r.after >= context.thresholds[metric]));
-    const basis = reached.length
-      ? `${reached.length} of ${context.retrieved.length} similar runs reached it (${reached.map((e) => e.id).join(", ")})`
-      : "no similar run reached it, so this rests on the prediction alone";
-    return `predicted ${metric} ${show(predicted[metric])} is at or past the ${show(context.thresholds[metric])} threshold (critical ${limit.critical} less ${context.own.marginPct}% margin); ${basis}`;
+    if (reached.length) return `${claim}; ${reached.length} of ${context.retrieved.length} similar runs reached it (${listIds(reached.map((e) => e.id))})`;
+    return cited ? claim : `${claim}; no similar run reached it, so this rests on the prediction alone`;
   });
   return parts.join("; ");
 }
@@ -356,8 +383,9 @@ function newestNote(context: VoteContext): string | null {
   return `Newest run ${newest.id} (${change}) stayed safe; it is the latest observation, not proof that this change is unsafe.`;
 }
 
+/** Rule text may carry its own older count, so the live timesSeen is the only one shown. */
 function ruleReason(rules: LearnedRule[]): string {
-  return rules.map((r) => `${r.scope} rule ${r.id}: ${r.text} (seen ${r.timesSeen} times)`).join("; ");
+  return rules.map((r) => `${r.scope} rule ${r.id}: ${r.text.replace(/,?\s*seen \d+ times?/i, "")} (seen ${r.timesSeen} times)`).join("; ");
 }
 
 function compose(parts: (string | null)[], max = MAX_REASON_CHARS): string {
@@ -374,14 +402,14 @@ function decide(context: VoteContext, answered: Answered | null): Pick<Vote, "vo
 
   let grounds: string | null = null;
   if (binding.length) {
-    grounds = compose([ruleReason(binding), thresholdReason(context, predicted)]);
+    grounds = compose([`${ruleReason(binding)};`, thresholdReason(context, predicted, true)]);
   } else if (insufficientHistory(context) && nearLimit) {
     grounds = `insufficient history: ${context.retrieved.length} similar events (${MIN_SIMILAR} needed) for a change within 15% of a critical limit`;
   } else {
     grounds = thresholdReason(context, predicted);
   }
   if (grounds) {
-    return { vote: "no", predicted, reason: compose([`${prefix}${grounds}.`, newestNote(context), note]) + suffix };
+    return { vote: "no", predicted, reason: compose([`${prefix}${grounds}.`, newestNote(context), note ? note : null]) + suffix };
   }
   const reason = agentNote(answered ? answered.answer.reason : "no limit is reached");
   return { vote: "yes", predicted, reason: `${prefix}${reason}${suffix}` };
@@ -415,7 +443,7 @@ export async function castVote(deps: VoteDeps, proposal: Proposal, componentId: 
   }
 
   const asking = askModel(deps, context);
-  const fastNoMs = deps.fastNoMs ?? FAST_NO_MS;
+  const fastNoMs = deps.fastNoMs ?? (context.newest ? FAST_NO_MS : FIRST_NO_MS);
   let timer: ReturnType<typeof setTimeout> | undefined;
   const raced = provenNo(context)
     ? await Promise.race([
@@ -430,9 +458,10 @@ export async function castVote(deps: VoteDeps, proposal: Proposal, componentId: 
 
   const answered = raced === "timeout" ? null : raced;
   const decision = decide(context, answered);
-  const citedRules = answered?.answer.evidenceRuleIds ?? [];
-  const known = new Set(context.rules.map((r) => r.id));
-  const ruleIds = [...context.applicable.map((r) => r.id), ...citedRules.filter((id) => known.has(id))];
+  // A rule whose condition does not match this change is not evidence, whoever cites it.
+  const applicableIds = new Set(context.applicable.map((r) => r.id));
+  const cited = (answered?.answer.evidenceRuleIds ?? []).filter((id) => applicableIds.has(id));
+  const ruleIds = [...cited, ...applicableIds];
   return voteSchema.parse({
     proposalId: proposal.id,
     componentId,

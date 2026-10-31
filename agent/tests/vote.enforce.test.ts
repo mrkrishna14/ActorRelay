@@ -40,6 +40,22 @@ describe("malformed output", () => {
     expect(vote.vote).toBe("yes");
   });
 
+  test("a breach every similar run contradicts is questioned once, and a corrected answer stands", async () => {
+    const llm = new ScriptedLlm((_, call) => (call === 1 ? answer("no", { positionPct: 80, steamKgH: 3000, headerBarg: 5.8 }) : answer("yes", { positionPct: 57, steamKgH: 2010, headerBarg: 5.8 })));
+    const vote = await castVote(deps(new FakeGlue(), llm), makeProposal({ to: 65 }), "plant-a/TV-101");
+    expect(llm.requests).toHaveLength(2);
+    expect(llm.requests[1].user).toContain("Re-read the table");
+    expect(vote.vote).toBe("yes");
+  });
+
+  test("a model that insists keeps its no: code never turns a no into a yes", async () => {
+    const llm = new ScriptedLlm(() => answer("no", { positionPct: 80, steamKgH: 3000, headerBarg: 5.8 }));
+    const vote = await castVote(deps(new FakeGlue(), llm), makeProposal({ to: 65 }), "plant-a/TV-101");
+    expect(llm.requests).toHaveLength(2);
+    expect(vote.vote).toBe("no");
+    expect(vote.reason).toContain("3000");
+  });
+
   test("a model failure on both attempts is a safe no", async () => {
     const llm = new ScriptedLlm(() => {
       throw new Error("network down");
