@@ -3,7 +3,7 @@
 import type { ComponentId, PlantId, PlantState, Proposal } from "../shared/types";
 import { HttpError, plantOfProposal, type ActorPort } from "./actors";
 import { SetpointFailed, type BridgePort, type Snapshot } from "./bridge";
-import { dispatchClaimSchema } from "./contract";
+import { dispatchClaimSchema } from "./schemas";
 
 const SET_METRIC_TRIES = 3;
 const SET_METRIC_WAIT_MS = 300;

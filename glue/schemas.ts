@@ -1,156 +1,151 @@
-// Zod schemas for every glue route, written against shared/types.ts. agent/tests/live-relay-proof.ts copies this file
-// out of glue/, so it imports nothing but zod.
+// Zod schemas for every route body and every reply glue acts on. `satisfies` ties them to the frozen shared/types.ts,
+// so a change there fails to compile here. Strict: a body with an unknown key is refused, not trimmed.
 import { z } from "zod";
+import type { CalibrationEntry, ComponentState, HistoryEvent, LearnedRule, Limit, Vote } from "../shared/types";
 
 const finite = z.number().finite();
-const metricRecord = z.record(z.string(), finite);
-const text = z.string().min(1);
+const id = z.string().min(1);
 
 export const plantIdSchema = z.enum(["plant-a", "plant-b"]);
-export const componentIdSchema = z.string().regex(/^plant-[a-z0-9]+\/[A-Za-z0-9._-]+$/, "componentId must be <plantId>/<tag>");
-export const proposalIdSchema = z.string().regex(/^plant-[a-z0-9]+-p\d+-/, "not a proposal id");
+export const componentIdSchema = z.string().regex(/^plant-[ab]\/[A-Z]+-\d+$/, "ComponentId must be <plantId>/<tag>");
+export const metricsSchema = z.record(z.string(), finite);
 
-const plantOf = (componentId: string) => componentId.split("/")[0];
-
-export const voteSchema = z.object({
-  proposalId: proposalIdSchema,
+export const effectSchema = z.strictObject({
   componentId: componentIdSchema,
-  agentId: text,
-  vote: z.enum(["yes", "no"]),
-  reason: z.string(),
-  predicted: metricRecord,
-  marginPct: finite,
-  evidenceEventIds: z.array(z.string()),
-  evidenceRuleIds: z.array(z.string()),
-  similarCount: z.number().int().min(0),
-});
-
-export const calibrationEntrySchema = z.object({
-  at: text,
-  proposalId: text,
-  metric: text,
-  predicted: finite,
-  observed: finite,
-  absError: finite,
-});
-
-const ruleSide = z.object({
-  componentId: componentIdSchema.nullable(),
-  metric: text,
-  op: z.enum([">=", "<="]),
-  value: finite,
-});
-
-export const learnedRuleSchema = z.object({
-  id: text,
-  scope: z.enum(["component", "plant", "company"]),
-  model: z.string().nullable(),
-  text: text,
-  condition: ruleSide,
-  consequence: ruleSide.extend({ withinTicks: finite }),
-  supportEventIds: z.array(z.string()),
-  timesSeen: z.number().int().min(0),
-  createdAt: text,
-  lastSeenAt: text,
-});
-
-export const effectSchema = z.object({
-  componentId: componentIdSchema,
-  metric: text,
+  metric: id,
   before: finite,
   after: finite,
-  ticksToSettle: finite,
+  ticksToSettle: finite.nonnegative(),
 });
 
-/** The five fields a person or agent may set. `from`, the id and the voters are the Plant's to decide. */
+export const calibrationEntrySchema = z.strictObject({
+  at: id,
+  proposalId: id,
+  metric: id,
+  predicted: finite,
+  observed: finite,
+  absError: finite.nonnegative(),
+}) satisfies z.ZodType<CalibrationEntry>;
+
+const ruleOp = z.enum([">=", "<="]);
+const ruleClause = z.strictObject({ componentId: componentIdSchema.nullable(), metric: id, op: ruleOp, value: finite });
+
+export const learnedRuleSchema = z.strictObject({
+  id,
+  scope: z.enum(["component", "plant", "company"]),
+  model: z.string().nullable(),
+  text: id,
+  condition: ruleClause,
+  consequence: ruleClause.extend({ withinTicks: finite.nonnegative() }),
+  supportEventIds: z.array(id),
+  timesSeen: finite,
+  createdAt: id,
+  lastSeenAt: id,
+}) satisfies z.ZodType<LearnedRule>;
+
+export const voteSchema = z.strictObject({
+  proposalId: id,
+  componentId: componentIdSchema,
+  agentId: id,
+  vote: z.enum(["yes", "no"]),
+  reason: id,
+  predicted: metricsSchema,
+  marginPct: finite,
+  evidenceEventIds: z.array(id),
+  evidenceRuleIds: z.array(id),
+  similarCount: z.number().int().nonnegative(),
+}) satisfies z.ZodType<Vote>;
+
 export const proposalInputSchema = z
-  .object({
-    plantId: plantIdSchema,
-    proposerComponentId: componentIdSchema,
-    metric: text,
-    to: finite,
-    rationale: text,
-  })
-  .strict()
-  .refine(p => plantOf(p.proposerComponentId) === p.plantId, {
-    message: "proposerComponentId belongs to another plant",
-    path: ["proposerComponentId"],
-  });
+  .strictObject({ plantId: plantIdSchema, proposerComponentId: componentIdSchema, metric: id, to: finite, rationale: id })
+  .refine((p) => p.proposerComponentId.startsWith(`${p.plantId}/`), "proposer must belong to the plant");
+export type ProposalInput = z.infer<typeof proposalInputSchema>;
 
-export const proposeBodySchema = proposalInputSchema;
+const limitSchema = z.strictObject({ min: finite, max: finite, critical: finite }) satisfies z.ZodType<Limit>;
 
-export const counterBodySchema = z
-  .object({ parentProposalId: proposalIdSchema, proposal: proposalInputSchema })
-  .strict()
-  .refine(body => body.parentProposalId.startsWith(`${body.proposal.plantId}-p`), {
-    message: "a counter stays in the plant of its parent",
-    path: ["proposal", "plantId"],
-  });
+export const componentStateSchema = z.strictObject({
+  id: componentIdSchema,
+  plantId: plantIdSchema,
+  tag: id,
+  name: id,
+  model: id,
+  role: z.enum(["mechanic", "process_engineer", "chemical_engineer", "safety"]),
+  vendor: z.enum(["claude", "codex", "gemini"]),
+  metrics: metricsSchema,
+  limits: z.record(z.string(), limitSchema),
+  upstream: z.array(componentIdSchema),
+  downstream: z.array(componentIdSchema),
+  sharedResources: z.array(z.string()),
+  status: z.enum(["ok", "warning", "critical", "offline"]),
+  marginPct: finite,
+  lastTick: z.string(),
+}) satisfies z.ZodType<ComponentState>;
 
-export const voteBodySchema = z.object({ vote: voteSchema }).strict();
-export const vetoBodySchema = z.object({ proposalId: proposalIdSchema, by: text }).strict();
-export const calibrationBodySchema = z.object({ componentId: componentIdSchema, entry: calibrationEntrySchema }).strict();
-export const ruleBodySchema = z
-  .object({ rule: learnedRuleSchema })
-  .strict()
-  .refine(({ rule }) => (rule.condition.componentId ?? rule.consequence.componentId) !== null, {
-    message: "a rule needs a componentId in its condition or consequence, or glue cannot tell which plant owns it",
-    path: ["rule", "condition", "componentId"],
-  });
-
-export const tickBodySchema = z.object({}).strict();
-export const resetBodySchema = z.object({}).strict();
-export const executeCallbackBodySchema = z.object({ proposalId: proposalIdSchema }).strict();
-
-/** The bridge owns these two payloads and may add keys, so extras are dropped rather than refused. */
-export const mirrorBodySchema = z.object({ componentId: componentIdSchema, metrics: metricRecord });
-export const observedBodySchema = z.object({
-  proposalId: proposalIdSchema,
+export const historyEventSchema = z.strictObject({
+  id,
+  at: id,
+  plantId: plantIdSchema,
+  componentId: componentIdSchema,
+  metric: id,
+  before: finite,
+  after: finite,
+  upstreamSnapshot: metricsSchema,
   effects: z.array(effectSchema),
-  upstreamSnapshot: metricRecord.optional(),
-  incident: z.string().nullable().optional(),
-  operator: z.string().nullable().optional(),
+  incident: z.string().nullable(),
+  approvedBy: z.array(z.string()),
+  operator: z.string().nullable(),
+  proposalId: z.string().nullable(),
+}) satisfies z.ZodType<HistoryEvent>;
+
+export const plantsFileSchema = z.strictObject({
+  company: z.strictObject({
+    plants: z.array(plantIdSchema),
+    sharedResources: z.array(z.strictObject({ id, name: id, components: z.array(componentIdSchema) })),
+  }),
+  plants: z.array(z.strictObject({ id: plantIdSchema, name: id, components: z.array(componentStateSchema) })),
 });
+export type PlantsFile = z.infer<typeof plantsFileSchema>;
 
-/** Query strings arrive as text, so numbers and the JSON snapshot are parsed here. */
-const numberFromQuery = z
-  .string()
-  .min(1)
-  .transform(Number)
-  .pipe(z.number().finite());
+/** POST bodies, one per route. Telemetry from the simulator may carry extra keys; only these two are forwarded. */
+export const routeSchemas = {
+  "/mirror": z.object({ componentId: componentIdSchema, metrics: metricsSchema }),
+  "/tick": z.strictObject({}),
+  "/propose": proposalInputSchema,
+  "/vote": z.strictObject({ vote: voteSchema }),
+  "/counter": z.strictObject({ parentProposalId: id, proposal: proposalInputSchema }),
+  "/veto": z.strictObject({ proposalId: id, by: id }),
+  "/execute-callback": z.strictObject({ proposalId: id }),
+  "/observed": z.strictObject({ proposalId: id, effects: z.array(effectSchema) }),
+  "/calibration": z.strictObject({ componentId: componentIdSchema, entry: calibrationEntrySchema }),
+  "/rule": z.strictObject({ rule: learnedRuleSchema }),
+  "/reset": z.strictObject({}),
+} as const;
+export type Route = keyof typeof routeSchemas;
+export type RouteBody<R extends Route> = z.infer<(typeof routeSchemas)[R]>;
 
-const jsonRecordFromQuery = z.string().transform((value, ctx) => {
+const jsonRecord = z.string().transform((text, ctx) => {
   try {
-    return metricRecord.parse(JSON.parse(value));
+    return JSON.parse(text) as unknown;
   } catch {
-    ctx.addIssue({ code: "custom", message: "upstreamSnapshot must be a JSON object of finite numbers" });
+    ctx.addIssue({ code: "custom", message: "upstreamSnapshot must be JSON" });
     return z.NEVER;
   }
 });
 
+/** agent/glue.ts sends numbers as text and upstreamSnapshot as a JSON string; Plant.similar rejects anything but real values. */
 export const similarQuerySchema = z.object({
   componentId: componentIdSchema,
-  metric: text,
-  to: numberFromQuery,
-  k: numberFromQuery.pipe(z.number().int().min(1).max(100)).default(5),
-  upstreamSnapshot: jsonRecordFromQuery.optional(),
+  metric: id,
+  to: z.coerce.number().finite(),
+  k: z.coerce.number().int().min(1).max(100).default(5),
+  upstreamSnapshot: jsonRecord.pipe(metricsSchema).optional(),
 });
 
-export const rulesQuerySchema = z.object({
-  componentId: componentIdSchema,
-  model: text,
-});
+export const rulesQuerySchema = z.object({ componentId: componentIdSchema, model: id.optional() });
 
-export const stateQuerySchema = z.object({
-  plantId: plantIdSchema,
-  full: z.string().optional(),
-});
-
-/** One message from Relay: JSON text {type, payload}. Whatever the type, the payload is checked by its route's schema. */
-export const relayEnvelopeSchema = z.object({ type: z.string().min(1), payload: z.unknown() });
-
-export type VoteBody = z.infer<typeof voteBodySchema>;
-export type CounterBody = z.infer<typeof counterBodySchema>;
-export type ProposeBody = z.infer<typeof proposeBodySchema>;
-export type ObservedBody = z.infer<typeof observedBodySchema>;
-export type MirrorBody = z.infer<typeof mirrorBodySchema>;
+/** Plant.claimDispatch. Parsing it is what makes a missing token a refusal rather than a write. */
+export const dispatchClaimSchema = z.discriminatedUnion("dispatch", [
+  z.object({ dispatch: z.literal(true), proposalId: id, componentId: componentIdSchema, metric: id, value: finite, token: id }),
+  z.object({ dispatch: z.literal(false), proposalId: id, state: z.string() }),
+]);
+export type DispatchClaim = z.infer<typeof dispatchClaimSchema>;

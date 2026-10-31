@@ -128,7 +128,7 @@ export class FakeActors implements ActorPort {
   };
 
   plant(id: PlantId): PlantState {
-    return { id, name: id, components: ["x"], proposals: [this.proposal], history: [], rules: [], audit: [], tick: 1, connected: true };
+    return { id, name: id, components: [`${id}/P-100`], proposals: [this.proposal], history: [], rules: [], audit: [], tick: 1, connected: true };
   }
 
   async call<T>(kind: ActorKind, id: string, method: string, args: unknown[] = []): Promise<T> {

@@ -8,7 +8,7 @@ Glue is a Bun HTTP service on port 7200. It connects the simulator, the actors, 
 |---|---|
 | `server.ts` | Process entry. Binds 127.0.0.1, because a Windows browser reaches a WSL service on that address only with an exact bind. |
 | `app.ts` | Every route, the origin and content-type checks, reset, the wake loop, agent messages from Relay. |
-| `contract.ts` | Zod schemas for route bodies, seed files and `claimDispatch`, tied to `shared/types.ts` with `satisfies`. |
+| `schemas.ts` | Zod schemas for route bodies, seed files and `claimDispatch`, tied to `shared/types.ts` with `satisfies`. |
 | `actors.ts` | The Terse invoke route. Sorts failures into refused (409, or 404 for an unknown proposal) and no answer (503). |
 | `dispatch.ts` | The only path to the simulator. |
 | `mirror.ts` | Live metrics into the Component actors. |
@@ -18,8 +18,6 @@ Glue is a Bun HTTP service on port 7200. It connects the simulator, the actors, 
 | `seed.ts` | Reads `shared/plants.json` and the history, and labels a stand-in. |
 | `e2e.ts`, `stack-wsl.sh` | The five TASK3 steps with a pass/fail table, and a private stack to run them on. |
 | `run-wsl.sh` | Copies glue to the Linux filesystem and starts it. Re-run it to pick up changes. |
-
-`glue/schemas.ts` is not used by this service. See "Known issues".
 
 ## Routes
 
