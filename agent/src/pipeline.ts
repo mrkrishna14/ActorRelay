@@ -104,7 +104,9 @@ export async function counterFor(proposal: Proposal, plant: PlantState, deps: De
         if (safeAt(x)) { best = x; break }
     }
     if (best === null) return null
-    const to = Math.abs(best + step - proposal.from) >= 5 ? best + step : best
+    // One 5-point step below the highest safe value, and only if that still moves meaningfully from where we are.
+    const to = best + step
+    if (Math.abs(to - proposal.from) < 5 || (step < 0 ? to <= proposal.from : to >= proposal.from)) return null
     const why = blockers.map(v => `${tagOf(v.componentId)}: ${v.reason.slice(0, 160)}`).join(" | ")
     return {
         proposerComponentId: proposal.proposerComponentId, proposerAgentId: `agent:${proposal.proposerComponentId}`, metric: proposal.metric, to,
