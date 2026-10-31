@@ -207,6 +207,12 @@ export function toCompanyRule(rule: LearnedRule, plantId: string): LearnedRule {
     }
 }
 
+// Keeps a rule's wording and its source plant while the numbers in it change.
+function retell(text: string, rule: LearnedRule): string {
+    const numbers = /^(\S+ \S+ [≥≤] )\S+( → \S+ \S+ [≥≤] )\S+( within )\S+( ticks, seen )\d+/
+    return text.replace(numbers, (_, a, b, c, d) => `${a}${rule.condition.value}${b}${rule.consequence.value}${c}${rule.consequence.withinTicks}${d}${rule.timesSeen}`)
+}
+
 export function mergeCompanyRule(existing: LearnedRule[], incoming: LearnedRule, now: string): { rules: LearnedRule[]; rule: LearnedRule } {
     const index = existing.findIndex(rule => companyRuleKey(rule) === companyRuleKey(incoming))
     if (index === -1) return { rules: [...existing, incoming], rule: incoming }
@@ -215,16 +221,12 @@ export function mergeCompanyRule(existing: LearnedRule[], incoming: LearnedRule,
     const tightest = (op: Op, a: number, b: number, widenLow: boolean) => (op === ">=" === widenLow ? Math.min(a, b) : Math.max(a, b))
     const condition = { ...current.condition, value: tightest(current.condition.op, current.condition.value, incoming.condition.value, true) }
     const consequence = { ...current.consequence, value: tightest(current.consequence.op, current.consequence.value, incoming.consequence.value, false) }
-    const merged: LearnedRule = {
-        ...current,
-        text: condition.value === incoming.condition.value && consequence.value === incoming.consequence.value ? incoming.text : current.text,
-        condition,
-        consequence,
-        supportEventIds: [...new Set([...current.supportEventIds, ...incoming.supportEventIds])],
-        timesSeen: current.timesSeen + 1,
-        lastSeenAt: now
-    }
-    return { rules: existing.map((item, position) => (position === index ? merged : item)), rule: merged }
+    const supportEventIds = [...new Set([...current.supportEventIds, ...incoming.supportEventIds])]
+    // Counts distinct evidence, not deliveries, so a retry of the same rule changes nothing.
+    const timesSeen = Math.max(current.timesSeen, incoming.timesSeen, supportEventIds.length)
+    const merged: LearnedRule = { ...current, condition, consequence, supportEventIds, timesSeen, lastSeenAt: now }
+    const told = { ...merged, text: retell(current.text, merged) }
+    return { rules: existing.map((item, position) => (position === index ? told : item)), rule: told }
 }
 
 export function crossPlantVoters(input: {

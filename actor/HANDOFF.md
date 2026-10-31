@@ -51,7 +51,7 @@ The reply is `{"outcome":{"type":"completed","result":...}}`, or `{"outcome":{"t
 
 ### Examples
 
-Seed, Company first, because a Plant's next sweep pushes rules learned from its seed history and a later `Company.loadSeed` would wipe them:
+Seed, Company first. Any order recovers, because Plants re-push their rules when Company's seed generation changes, but Company first avoids a sweep of delay:
 
 ```bash
 curl -s -X POST http://127.0.0.1:7100/v1/projects/local/actors/Company/company/invoke \
@@ -92,7 +92,7 @@ All are async. Inputs are validated at the actor; agent output is treated as dat
 **Plant**
 - `getState()` returns `PlantState`.
 - `loadSeed(plant, history)` replaces everything, clears proposals and executions, and derives rules from the history.
-- `propose({proposerComponentId, metric, to, rationale, from?, proposerAgentId?, parentProposalId?})` returns `Proposal`. Refuses a target outside `min..critical`, and a `from` that is not the current value.
+- `propose({proposerComponentId, metric, to, rationale, from?, proposerAgentId?, parentProposalId?})` returns `Proposal`. Refuses a target outside `min..max`, and a `from` that is not the current value.
 - `vote(vote)` returns `Proposal`.
 - `veto(proposalId, by)` returns `Proposal`. Works until the proposal leaves `veto_window`.
 - `execute(proposalId)` returns `Execution`. Idempotent.
@@ -107,7 +107,7 @@ All are async. Inputs are validated at the actor; agent output is treated as dat
 **Company**
 - `getState()` returns `CompanyState`.
 - `loadSeed(company)`, `registerPlant(id, models?)`, `requiredCrossPlantVoters(proposal)`, `promoteRule(rule)`, `recordAudit(entry)`.
-- Called by Plant: `modelExistsElsewhere`, `addCrossPlantProposal`, `acquireLease`, `releaseLease`.
+- Called by Plant: `getGeneration`, `modelExistsElsewhere`, `addCrossPlantProposal`, `acquireLease`, `releaseLease`.
 
 ## Proposal lifecycle
 
@@ -134,7 +134,7 @@ Execution states are `accepted`, `claimed`, `applied`, `observed`, `failed`, `un
 ## Learning
 
 - `similar`: nearest by `|after - to| / range + 0.5 × mean upstream distance`. Two additions: the newest live event is always first, whatever its distance, and seeded events beyond 15% of range from `to` are dropped, so a plant with no history near the target gets nothing back and "insufficient history" can fire.
-- Rules: `loadSeed` and `recordEvent` derive them. The condition value is the lowest 5-step threshold at which every recorded run at or past it crossed the limit on that effect, with at least 3 runs. A plant rule is keyed by condition and consequence, so a fourth sighting updates it.
+- Rules: `loadSeed` and `recordEvent` derive them. The condition value is the lowest 5-step threshold at which every recorded run at or past it crossed the limit on that effect, with at least 3 runs. A plant rule is keyed by condition and consequence, so a fourth sighting updates it. At Company, `timesSeen` counts distinct supporting events, so a retried delivery changes nothing.
 - Company rules drop component ids (`condition.componentId` and `consequence.componentId` are null) and match on `model`, the affected component's model. The source plant is in `text`, "first learned in plant-a". Merges only tighten a rule.
 - `Plant.vote` also judges on its own data: it counts similar events itself, uses the higher of the claimed and reported margin, and turns a yes into a no when an applicable plant rule says so or when fewer than 3 similar events exist within 15% of critical. A yes past the threshold, a yes missing a limited metric, and evidence ids that do not exist are refused.
 
@@ -158,7 +158,7 @@ Codes: `not_seeded`, `invalid_seed`, `invalid_metrics`, `invalid_metric`, `inval
 
 | Suite | Runs on | Latest result |
 |---|---|---|
-| `tests/logic/logic.test.ts` | pure functions, no runtime | 42 pass, 0 fail, current code |
+| `tests/logic/logic.test.ts` | pure functions, no runtime | 47 pass, 0 fail, current code |
 | `tests/runtime/runtime.test.ts` | real `terse actor dev`, fake glue inside the test | see below |
 | `tests/runtime/durability.ts` | real server plus kill -9 | not yet completed by this suite |
 
@@ -179,6 +179,7 @@ Crash results from `tests/chaos`, a separate suite, are in `tests/chaos/REPORT.m
 ## Known limits
 
 - Local only. `terse deploy` needs `terse auth login`, and the CLI here is not logged in, so it was not run. No generated client is committed: glue uses the invoke route in `glue/actors.ts`.
+- After a hard kill an actor can answer 503 until its old lease expires, so callers should retry 503.
 - Local Terse is sensitive to machine load. Around load 40, with dozens of actor hosts alive, the runtime's own control plane stalls, hosts lose their lease and self-fence. Run one Terse server for the demo.
 - A restart rebuilds the bundle, so a server crash can outlast the voting and claim windows. Veto windows reopen; expired proposals must be proposed again.
 - `Company.promoteRule` checks rule shape, not that cited events exist, because Company never calls Plant. `Plant.promoteRule` does the event check, and glue only uses that path.

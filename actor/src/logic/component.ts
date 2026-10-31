@@ -50,6 +50,8 @@ export function applyCalibration(input: {
         .map(item => normalizedError(item, limits))
         .filter((error): error is number => error !== null)
         .slice(-WINDOW)
+    // The cap can evict limited entries, and a mean over fewer than 5 is the single reading this gate exists to ignore.
+    if (window.length < WINDOW) return { calibration, marginPct, sinceAdjustment }
     const mean = window.reduce((sum, error) => sum + error, 0) / window.length
 
     const next = mean > WIDEN_ABOVE ? clampMargin(marginPct + 5) : mean < NARROW_BELOW ? clampMargin(marginPct - 2) : marginPct

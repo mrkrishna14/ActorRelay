@@ -121,23 +121,30 @@ function postToGlue(path: string, body: unknown, headers: Record<string, string>
 
 // Runs outside the Plant mailbox and reports back with ackCompanySync. Awaiting Company inside the alarm
 // would let one cold or slow Company hold up every tick and every proposal in the plant.
-async function pushToCompany(plantId: PlantId, models: string[] | null, rules: LearnedRule[]): Promise<void> {
+async function pushToCompany(plantId: PlantId, known: number | null, models: string[], rules: LearnedRule[], outbox: LearnedRule[]): Promise<void> {
     const company = Company.get(COMPANY_ACTOR_ID)
+    const generation = await withTimeout(company.getGeneration(), "Company.getGeneration")
+    // A changed generation means Company was reseeded, whatever the order, so it needs every rule again.
+    const reseeded = generation !== known
+    const pending = reseeded ? rules : outbox
+    if (!reseeded && pending.length === 0) return
     const delivered: { id: string; timesSeen: number }[] = []
-    let registered = false
+    let registered = !reseeded
     try {
-        if (models !== null) {
+        if (reseeded) {
             await withTimeout(company.registerPlant(plantId, models), "Company.registerPlant")
             registered = true
         }
-        for (const rule of rules) {
-            if (rule.model === null || !(await withTimeout(company.modelExistsElsewhere(plantId, rule.model), "Company.modelExistsElsewhere"))) continue
-            await withTimeout(company.promoteRule(toCompanyRule(rule, plantId)), "Company.promoteRule")
+        for (const rule of pending) {
+            if (rule.model !== null) {
+                if (!(await withTimeout(company.modelExistsElsewhere(plantId, rule.model), "Company.modelExistsElsewhere"))) continue
+                await withTimeout(company.promoteRule(toCompanyRule(rule, plantId)), "Company.promoteRule")
+            }
             delivered.push({ id: rule.id, timesSeen: rule.timesSeen })
         }
     } finally {
-        // Partial progress still counts, or a later retry would bump timesSeen on rules Company already has.
-        if (registered || delivered.length > 0) await withTimeout(Plant.get(plantId).ackCompanySync(registered, delivered), "Plant.ackCompanySync")
+        // Partial progress is still acknowledged, so a retry does not re-send what already arrived.
+        if (registered) await withTimeout(Plant.get(plantId).ackCompanySync(generation, delivered), "Plant.ackCompanySync")
     }
 }
 
@@ -337,7 +344,7 @@ export class Plant extends Actor {
     @Persisted private tokenHashes: Record<string, string> = {}
     @Persisted private liveEventIds: string[] = []
     @Persisted private companyOutbox: LearnedRule[] = []
-    @Persisted private registeredWithCompany = false
+    @Persisted private companyGeneration: number | null = null
     @Persisted private margins: Record<ComponentId, number> = {}
     @Persisted private leases: string[] = []
     @Ephemeral private alarmChecked = false
@@ -401,7 +408,7 @@ export class Plant extends Actor {
             this.tokenHashes = {}
             this.liveEventIds = []
             this.companyOutbox = rules
-            this.registeredWithCompany = false
+            this.companyGeneration = null
             this.companyRuleIds = []
             this.margins = margins
             this.leases = []
@@ -646,6 +653,7 @@ export class Plant extends Actor {
         if (unsupported !== null) fail("invalid_rule", `event ${unsupported} does not show this rule`)
         const refuted = counterexampleId(r, this.history)
         if (refuted !== null) fail("invalid_rule", `event ${refuted} refutes this rule`)
+        if (r.model !== this.topology[r.consequence.componentId]?.model) fail("invalid_rule", `model must be that of ${r.consequence.componentId}`)
         const at = nowIso()
         const { rules, rule } = mergeSubmittedRule(this.rules, r, at)
         await this.db.transaction(async () => {
@@ -753,12 +761,16 @@ export class Plant extends Actor {
     }
 
     // Called by pushToCompany. A rule that gained sightings while the push ran stays queued.
-    async ackCompanySync(registered: boolean, delivered: { id: string; timesSeen: number }[]): Promise<void> {
+    async ackCompanySync(generation: number, delivered: { id: string; timesSeen: number }[]): Promise<void> {
         const sent = new Map(delivered.map(rule => [rule.id, rule.timesSeen]))
-        const remaining = this.companyOutbox.filter(rule => sent.get(rule.id) !== rule.timesSeen)
+        const reseeded = generation !== this.companyGeneration
+        const remaining = (reseeded ? this.rules : this.companyOutbox).filter(rule => sent.get(rule.id) !== rule.timesSeen)
         await this.db.transaction(async () => {
-            if (registered) this.registeredWithCompany = true
-            if (remaining.length !== this.companyOutbox.length) this.companyOutbox = remaining
+            if (reseeded) {
+                this.companyGeneration = generation
+                this.companyRuleIds = []
+            }
+            if (reseeded || remaining.length !== this.companyOutbox.length) this.companyOutbox = remaining
         })
     }
 
@@ -837,6 +849,7 @@ export class Plant extends Actor {
         if (proposal.status !== "executed" || execution === undefined) fail("not_executed", `${proposalId} is ${proposal.status}`)
         // An observation needs a dispatched command behind it: acceptance alone proves nothing moved.
         if (execution.state !== "claimed" && execution.state !== "applied" && execution.state !== "unknown") fail("not_dispatched", `${proposalId} is ${execution.state}`)
+        if (e.effects.length === 0) fail("invalid_event", "an observation needs measured effects")
         // Rows may name the other plant, which is a copy of this one, so they are checked by tag.
         for (const { componentId, metric } of e.effects) {
             const known = this.setpoints[`${this.id}/${componentId.split("/")[1]}`]
@@ -893,7 +906,11 @@ export class Plant extends Actor {
             this.audit = this.#withAudit([{ at, kind: "incident", refId: execution.proposalId, summary: `Dispatch failed: ${reason}`, by: "plant" }])
             if (proposal !== undefined) {
                 this.proposals = this.proposals.map(item => (item.id === proposal.id ? { ...proposal, status: "expired" as const } : item))
-                this.setpoints = this.#withSetpoint(proposal, settled ?? proposal.from)
+                // Only undo this proposal's own step: a newer proposal may have moved the setpoint since.
+                const current = this.setpoints[proposal.proposerComponentId]?.[proposal.metric]
+                const stillOurs = current !== undefined && Math.abs(current - proposal.to) <= SETPOINT_TOLERANCE
+                if (settled !== undefined) this.setpoints = this.#withSetpoint(proposal, settled)
+                else if (stillOurs) this.setpoints = this.#withSetpoint(proposal, proposal.from)
             }
         })
         return failed
@@ -909,10 +926,10 @@ export class Plant extends Actor {
 
     // At most one push runs at a time; anything it misses stays in the outbox for the next sweep.
     #syncCompany(): void {
-        if (this.companySyncing || (this.registeredWithCompany && this.companyOutbox.length === 0)) return
+        if (this.companySyncing) return
         this.companySyncing = true
-        const models = this.registeredWithCompany ? null : [...new Set(Object.values(this.topology).map((def: ComponentDef) => def.model))]
-        void pushToCompany(this.id as PlantId, models, this.companyOutbox)
+        const models = [...new Set(Object.values(this.topology).map((def: ComponentDef) => def.model))]
+        void pushToCompany(this.id as PlantId, this.companyGeneration, models, this.rules, this.companyOutbox)
             .catch(error => console.error(`Plant ${this.id} could not reach Company: ${errorText(error)}`))
             .finally(() => {
                 this.companySyncing = false
@@ -933,6 +950,7 @@ export class Plant extends Actor {
 // Company has no alarm, so without this every quiet moment costs the next propose a cold start.
 @Compute({ idleTimeoutMs: 300_000 })
 export class Company extends Actor {
+    @Persisted private generation = 0
     @Persisted private plantModels: Record<string, string[]> = {}
     @Persisted private leases: Record<string, { proposalId: string; expiresAt: number }> = {}
 
@@ -962,8 +980,14 @@ export class Company extends Actor {
             this.crossPlantProposals = c.crossPlantProposals ?? []
             this.audit = c.audit ?? []
             this.leases = {}
+            this.generation = this.generation + 1
         })
         return this.getState()
+    }
+
+    // Plants compare this each sweep, so a reseed is recovered from whatever order actors were seeded in.
+    async getGeneration(): Promise<number> {
+        return this.generation
     }
 
     // The veto-window guarantee spans plants: two windows must not stack on one shared resource.

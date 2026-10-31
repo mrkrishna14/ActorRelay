@@ -1,5 +1,5 @@
 import type { AuditEntry, ComponentId, LearnedRule, Limit, PlantId, Proposal, Vote } from "../../../shared/types.js"
-import { SETPOINT_TOLERANCE, VETO_LAPSE_MS, VETO_WINDOW_MS, VOTE_TIMEOUT_MS, WAITING_TIMEOUT_MS } from "../config.js"
+import { MAX_COUNTERS_PER_PARENT, SETPOINT_TOLERANCE, VETO_LAPSE_MS, VETO_WINDOW_MS, VOTE_TIMEOUT_MS, WAITING_TIMEOUT_MS } from "../config.js"
 import { agentIdFor } from "../ids.js"
 import type { ComponentDef, Topology } from "./rules.js"
 import { fail, isFiniteNumber, isNonEmptyString, isRecord } from "./validate.js"
@@ -64,7 +64,7 @@ export function assertProposalInput(input: unknown, plantId: PlantId, topology: 
     if (from !== undefined && !isFiniteNumber(from)) fail("invalid_proposal", "from must be a finite number")
     if (!isNonEmptyString(rationale)) fail("invalid_proposal", "rationale is required")
     const limit = def.limits[metric]
-    if (to < limit.min || to >= limit.critical) fail("out_of_limits", `${metric} ${to} is outside ${limit.min}..${limit.critical}`)
+    if (to < limit.min || to > limit.max) fail("out_of_limits", `${metric} ${to} is outside ${limit.min}..${limit.max}`)
     const current = setpoints[proposerComponentId]?.[metric]
     if (current === undefined) fail("invalid_proposal", `${proposerComponentId} has no current ${metric}`)
     if (from !== undefined && Math.abs(from - current) > SETPOINT_TOLERANCE) fail("stale_proposal", `from ${from} does not match current ${current}`)
@@ -78,8 +78,18 @@ export function assertCounterAllowed(input: ProposalInput, proposals: Proposal[]
     if (parent === undefined) fail("proposal_not_found", parentId)
     if (parent.proposerComponentId !== input.proposerComponentId) fail("invalid_counter", "a counter must come from the parent's proposer")
     if (parent.status !== "blocked") fail("parent_not_blocked", `${parentId} is ${parent.status}`)
-    const counters = proposals.filter(proposal => proposal.parentProposalId === parentId).length
-    if (counters >= 2) fail("too_many_counters", `${parentId} already has ${counters} counters`)
+    // Counted from the root, so a chain of counters cannot walk past the cap one parent at a time.
+    const rootOf = (start: Proposal): string => {
+        let current = start
+        for (;;) {
+            const above = proposals.find(proposal => proposal.id === current.parentProposalId)
+            if (above === undefined) return current.id
+            current = above
+        }
+    }
+    const root = rootOf(parent)
+    const counters = proposals.filter(proposal => proposal.parentProposalId !== null && rootOf(proposal) === root).length
+    if (counters >= MAX_COUNTERS_PER_PARENT) fail("too_many_counters", `${root} already has ${counters} counters`)
 }
 
 export function unanimousYes(proposal: Proposal): boolean {
@@ -129,6 +139,7 @@ export function enforceVoteSafety(vote: Vote, def: ComponentDef | undefined, con
         // Without this a yes with predicted {} would pass every threshold below.
         if (!Object.hasOwn(vote.predicted, metric)) fail("invalid_vote", `a yes from ${vote.componentId} must predict ${metric}`)
         const predicted = vote.predicted[metric]
+        if (predicted < 0) fail("invalid_vote", `${vote.componentId} predicts ${metric} ${predicted}, which no reading can be`)
         if (predicted >= Math.max(limit.critical * (1 - marginPct / 100), limit.max)) {
             fail("unsafe_yes", `${vote.componentId} predicts ${metric} ${predicted} past its limit`)
         }
@@ -158,7 +169,7 @@ export function assertExecutable(proposal: Proposal, topology: Topology, setpoin
     if (isStale(proposal, setpoints)) fail("stale_proposal", `${proposal.id} was proposed from ${proposal.from}`)
     const limit = topology[proposal.proposerComponentId]?.limits[proposal.metric]
     if (limit === undefined) fail("not_approved", `no limit for ${proposal.metric}`)
-    if (proposal.to < limit.min || proposal.to >= limit.critical) fail("out_of_limits", `${proposal.metric} ${proposal.to} is outside ${limit.min}..${limit.critical}`)
+    if (proposal.to < limit.min || proposal.to > limit.max) fail("out_of_limits", `${proposal.metric} ${proposal.to} is outside ${limit.min}..${limit.max}`)
 }
 
 // `leases` holds proposals granted the shared resources they touch. Omitted, no lease is required.

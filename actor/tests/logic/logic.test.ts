@@ -5,7 +5,7 @@ import type { ComponentState, HistoryEvent, LearnedRule, PlantId, Proposal, Vote
 import plants from "../../../shared/plants.json"
 import history from "../fixtures/history.json"
 import { applyCalibration, computeStatus } from "../../src/logic/component"
-import { assertExecutable, assertVoteAllowed, enforceVoteSafety, planSweep, reachableVoters, unanimousYes, type Setpoints } from "../../src/logic/proposals"
+import { assertCounterAllowed, assertExecutable, assertVoteAllowed, enforceVoteSafety, planSweep, reachableVoters, unanimousYes, type Setpoints } from "../../src/logic/proposals"
 import { counterexampleId, crossPlantVoters, deriveRules, mergeCompanyRule, mergeDerivedRules, mergeSubmittedRule, toCompanyRule, unsupportedEventId, type Topology } from "../../src/logic/rules"
 import { rankSimilar } from "../../src/logic/similar"
 import { normalizeCalibration, normalizeVote } from "../../src/logic/validate"
@@ -232,6 +232,30 @@ describe("sweep", () => {
 })
 
 describe("small guards", () => {
+    test("a target above the operating max is refused before dispatch", () => {
+        const windowed = proposal({ status: "veto_window", vetoDeadline: new Date(1_010_000).toISOString(), votes: voters.map(voter => vote(voter)), to: 91 })
+        expect(() => assertExecutable(windowed, topologyA, setpointsA, 1_020_000)).toThrow("out_of_limits")
+    })
+
+    test("a negative prediction is malformed", () => {
+        expect(() => enforceVoteSafety(vote("plant-a/LV-101", { predicted: { positionPct: -5 } }), lv101)).toThrow("invalid_vote")
+    })
+
+    test("counters are capped from the root, so a chain cannot walk past the cap", () => {
+        const counterOf = (id: string, parent: string) => proposal({ id, parentProposalId: parent, status: "blocked" })
+        const chain = [proposal({ id: "root", status: "blocked" }), counterOf("c1", "root"), counterOf("c2", "c1")]
+        const next = { proposerComponentId: "plant-a/P-100", metric: "speedPct", to: 60, rationale: "again", parentProposalId: "c2" }
+        expect(() => assertCounterAllowed(next, chain)).toThrow("too_many_counters")
+        expect(() => assertCounterAllowed({ ...next, parentProposalId: "c1" }, chain.slice(0, 2))).not.toThrow()
+    })
+
+    test("margin ignores a window the cap has thinned below 5", () => {
+        const limits = plantA.components.find(component => component.tag === "TV-101")!.limits
+        const noise = Array.from({ length: 49 }, (_, index) => normalizeCalibration({ at: "t", proposalId: `n${index}`, metric: "headerBarg", predicted: 6, observed: 5 }))
+        const entry = normalizeCalibration({ at: "t", proposalId: "p", metric: "positionPct", predicted: 50, observed: 90 })
+        expect(applyCalibration({ calibration: noise, entry, limits, marginPct: 10, sinceAdjustment: 4 }).marginPct).toBe(10)
+    })
+
     test("k below 1 returns nothing", () => {
         expect(rankSimilar({ history: events, componentId: "plant-a/P-100", metric: "speedPct", to: 85, upstreamSnapshot: {}, k: 0, liveEventIds: [] })).toEqual([])
     })
@@ -398,6 +422,17 @@ describe("rules", () => {
         expect(counterexampleId(rule, rows)).toBeNull()
         const broad = { ...rule, condition: { ...rule.condition, value: 20 } }
         expect(counterexampleId(broad, [...rows, event("safe", 65, 66)])).toBe("safe")
+    })
+
+    test("a replayed company rule changes nothing, and new evidence keeps the source plant", () => {
+        const rows = [event("e1", 82, 86), event("e2", 84, 87), event("e3", 86, 89)]
+        const company = toCompanyRule(deriveRules(rows, topologyA, now)[0], "plant-a")
+        const replayed = mergeCompanyRule([company], company, now).rule
+        expect(replayed.timesSeen).toBe(company.timesSeen)
+        const later = mergeCompanyRule([company], { ...company, supportEventIds: [...company.supportEventIds, "e4"], timesSeen: 4, text: "from plant-b" }, now).rule
+        expect(later.timesSeen).toBe(4)
+        expect(later.text).toContain("seen 4 times")
+        expect(later.text).toContain("first learned in plant-a")
     })
 
     test("a merge can only tighten a company rule", () => {
