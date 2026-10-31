@@ -1,23 +1,23 @@
 # Person 1 status
 
-**12:42 PT. Agents work with a fake glue. Actors are written but not yet proven on real Terse. The adapter that joins them to glue isn't on disk, so no live demo has run.**
+**12:55 PT. Not demo-ready. Agents work over real Relay with a fake glue. Actors run on real Terse but stalled in my run. Actors and agents don't match Person 3's latest glue yet, and no end-to-end run has happened.**
 
 | Area | State | Proof I saw | As of |
 |---|---|---|---|
-| Agent votes, counters, learning | Code done | 53 scripted tests reported pass; I reran 59 of the 62 agent cases, full run pending | 12:40 |
-| Hostile model tests on `vote.ts` | 11 of 122 failing | I ran it, fake glue | 12:36 |
-| Actor classes (`actor/src`) | Code on disk | Read only; no real Terse run seen | 12:39 |
-| Actor HTTP adapter | **Not on disk.** Main is building it, port 7150 | None | 12:41 |
-| Relay broker | Running in WSL, port 8787 | Listener seen; agents not yet proven on it | 12:40 |
-| Terse runtime | Running in WSL for a probe, port 7100 | Listener seen; no ActorRelay run seen | 12:40 |
-| `shared/history.json` | **Person 2, not delivered.** Tests use a labelled stand-in | File absent | 12:41 |
-| `bridge/`, `web/`, `glue/` on this branch | Not merged | Glue read from Person 3's branch | 12:41 |
+| Agent votes, counters, learning | Works | 58 of 58 agent tests, real model on 5, fake glue | 12:41 |
+| Agents on real Relay | Works | Relay proof passed; first decisive vote took 19 s under load | 12:52 |
+| Actor decision logic | Works | 29 of 29 logic tests, pure | 12:41 |
+| Actors on real Terse | **Partly.** Seed, propose, cross-plant voters, company rules and vote rejections work | Real run on my port | 12:51 |
+| Plant speed on real Terse | **Broken.** 15 s queue, one vote gave no reply in 30 s; glue allows 8 s | Real run; cause not isolated | 12:51 |
+| Execute, veto, `recordEvent` on real Terse | **Not run.** My run stopped at the stall | None | 12:51 |
+| Actor port for glue | **Not on disk.** Main is building it | None | 12:54 |
+| Actors vs glue `bcfd064` | **Do not match:** `authorizeExecution`, callback token, reset order | Read in code | 12:54 |
+| Agents vs glue `bcfd064` | **Do not match:** Relay message shape, system name. HTTP `/vote` works | Read in code | 12:54 |
+| `bridge/`, `shared/history.json` | **Person 2, not delivered.** Tests use a labelled stand-in | Absent | 12:54 |
 
-## Doesn't work yet
-- No end-to-end run on real actors, real Relay and a real simulator.
-- All four never-fake items are unproven live.
-- Claude roles run on the labelled GPT fallback (main's decision, 12:35), so there is one real vendor today.
+## Never-fake items
+All four pass only on fakes or shims. None has run on real actors, real glue and a real simulator.
 
 ## Needs a person
-- Person 3: use `ACTOR_API_URL=http://127.0.0.1:7150` and `RELAY_PUBLISH_URL=http://127.0.0.1:7201/publish`.
-- Person 2: deliver `shared/history.json`, then rerun the agent cases on it.
+- Person 2: deliver `bridge/` and `shared/history.json`.
+- Main: stop evals during proof runs. The OpenAI cap was hit at 12:43.
