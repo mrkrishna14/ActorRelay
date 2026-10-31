@@ -34,7 +34,7 @@ export function Stage({ hood, ...props }: ComponentProps<typeof PidStage> & { ho
         ))}
       </div>
       <div className="relative min-h-0 flex-1">
-        {shown === "3d" ? <Plant3D {...props} onUnavailable={onUnavailable} /> : shown === "pid" ? <PidStage {...props} /> : hood}
+        {shown === "3d" ? <Plant3D {...props} onUnavailable={onUnavailable} /> : shown === "pid" ? <PidStage {...props} caption={null} /> : hood}
       </div>
     </div>
   );

@@ -16,15 +16,15 @@ const LEVEL_TONE: Record<string, Tone> = { warning: "warn", critical: "bad" };
 type Plate = { key: string; tag: string; metrics: string[]; dx: number; dy: number; transform: string };
 
 const PLATES: Plate[] = [
-  { key: "P-100", tag: "P-100", metrics: ["speedPct", "feedM3h"], dx: 0, dy: 8, transform: "translate(-50%, -100%)" },
-  { key: "TK-101", tag: "TK-101", metrics: ["levelPct", "tempC"], dx: 0, dy: 16, transform: "translate(-50%, -50%)" },
+  { key: "P-100", tag: "P-100", metrics: ["speedPct", "feedM3h"], dx: 0, dy: 0, transform: "translate(-50%, -50%)" },
+  { key: "TK-101", tag: "TK-101", metrics: ["levelPct", "tempC"], dx: 0, dy: 0, transform: "translate(-50%, -50%)" },
   { key: "E-101", tag: "E-101", metrics: ["dutyKw"], dx: 0, dy: 0, transform: "translate(-50%, -50%)" },
-  { key: "LV-101", tag: "LV-101", metrics: ["positionPct"], dx: 16, dy: -2, transform: "translate(-50%, -50%)" },
-  { key: "TV-101", tag: "TV-101", metrics: ["positionPct", "steamKgH"], dx: 100, dy: -24, transform: "translate(-100%, 0)" },
+  { key: "LV-101", tag: "LV-101", metrics: ["positionPct"], dx: 0, dy: 0, transform: "translate(-50%, -50%)" },
+  { key: "TV-101", tag: "TV-101", metrics: ["positionPct", "steamKgH"], dx: 0, dy: 0, transform: "translate(-50%, -50%)" },
 ];
 
 /** The shared header has no group of its own. Its pressure is read from TV-101 and sits on the header line. */
-const HEADER_PLATE = { x: 1440, y: 50, transform: "translate(-100%, -50%)" };
+const HEADER_PLATE = { x: 2200, y: 200, transform: "translate(-100%, -50%)" };
 
 const OUTLINE_PAD = 16;
 const CHIP_BELOW = new Set(["TV-101"]);

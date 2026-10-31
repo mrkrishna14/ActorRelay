@@ -1,116 +1,206 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1000" width="1500" height="1000" role="img" aria-labelledby="pid-title pid-desc" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2800 1000" width="2800" height="1000" role="img" aria-labelledby="pid-title pid-desc" font-family="Arial, Helvetica, sans-serif">
   <title id="pid-title">TK-101 hold tank piping and instrumentation diagram</title>
-  <desc id="pid-desc">Simulated plant. Feed pump P-100 fills hold tank TK-101. Steam from header 1 passes control valve TV-101 into coil E-101. Outlet valve LV-101 drains the tank under level control LIC-101. TIC-101 cascades onto FIC-201, which reads FT-201.</desc>
+  <desc id="pid-desc">Simulated plant. Feed pump P-100 fills hold tank TK-101. Steam from header 1 passes control valve TV-101 into coil E-101, and condensate leaves through a steam trap. Outlet valve LV-101 drains the tank under level control LIC-101. TIC-101 cascades onto FIC-201, which reads FT-201.</desc>
   <defs>
     <style>
-      .pid-liquid { fill: none; stroke: #5aa9e6; stroke-width: 7; }
-      .pid-steam { fill: none; stroke: #b7a6e0; stroke-width: 7; }
-      .pid-condensate { fill: none; stroke: #b7a6e0; stroke-width: 4; stroke-dasharray: 14 10; }
-      .pid-signal { fill: none; stroke: #8fa3b5; stroke-width: 3; stroke-dasharray: 10 8; }
-      .pid-equip { fill: #16202b; stroke: #d6dee6; stroke-width: 4; }
-      .pid-line { fill: none; stroke: #d6dee6; stroke-width: 4; }
-      .pid-rule { stroke: #d6dee6; stroke-width: 2; }
-      .pid-tag { fill: #eef3f7; font-size: 30px; font-weight: 600; text-anchor: middle; }
-      .pid-instrument { fill: #eef3f7; font-size: 28px; font-weight: 600; text-anchor: middle; }
-      .pid-name { fill: #a9b8c6; font-size: 28px; text-anchor: middle; }
-      .pid-note { fill: #a9b8c6; font-size: 28px; }
-      .live-value { fill: #eef3f7; font-size: 30px; font-weight: 600; text-anchor: middle; }
+      .sheet { fill: #ffffff; }
+      .frame { fill: none; stroke: #1c2730; stroke-width: 3; }
+      .tick { stroke: #1c2730; stroke-width: 2; }
+      .pipe { fill: none; stroke: #1c2730; stroke-width: 3.5; }
+      .heavy { fill: none; stroke: #1c2730; stroke-width: 6; }
+      .signal { fill: none; stroke: #1c2730; stroke-width: 2; stroke-dasharray: 12 8; }
+      .sym { fill: #ffffff; stroke: #1c2730; stroke-width: 3; }
+      .thin { fill: none; stroke: #1c2730; stroke-width: 2; }
+      .nll { fill: none; stroke: #1c2730; stroke-width: 2; stroke-dasharray: 24 9 5 9; }
+      .tag { fill: #101820; font-size: 38px; font-weight: 700; text-anchor: middle; }
+      .name { fill: #33414d; font-size: 34px; text-anchor: middle; }
+      .bubble { fill: #101820; font-size: 33px; font-weight: 700; text-anchor: middle; }
+      .line-no { fill: #33414d; font-size: 33px; }
+      .small { fill: #101820; font-size: 33px; font-weight: 600; text-anchor: middle; }
+      .key { fill: #33414d; font-size: 33px; }
+      .title { fill: #101820; font-size: 36px; font-weight: 700; }
+      .live-value { fill: #101820; font-size: 30px; font-weight: 600; text-anchor: middle; }
     </style>
-    <marker id="pid-arrow-liquid" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#5aa9e6"/></marker>
-    <marker id="pid-arrow-steam" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#b7a6e0"/></marker>
-    <marker id="pid-arrow-signal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#8fa3b5"/></marker>
+    <marker id="flow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L12 6 L0 12 Z" fill="#1c2730"/></marker>
+    <g id="gate"><path class="sym" d="M-20 -14 L20 14 V-14 L-20 14 Z"/></g>
+    <g id="gate-v"><path class="sym" d="M-14 -20 L14 20 H-14 L14 -20 Z"/></g>
   </defs>
 
+  <rect class="sheet" x="0" y="0" width="2800" height="1000"/>
+  <rect class="frame" x="16" y="16" width="2768" height="968"/>
+  <path class="tick" d="M556 16 V30 M1110 16 V30 M1664 16 V30 M2218 16 V30 M556 984 V970 M1110 984 V970 M1664 984 V970 M2218 984 V970 M16 258 H30 M16 500 H30 M16 742 H30 M2784 258 H2770 M2784 500 H2770 M2784 742 H2770"/>
+
   <g id="piping">
-    <path class="pid-liquid" d="M60 700 H224"/>
-    <path class="pid-liquid" d="M376 700 H470 V300 H556" marker-end="url(#pid-arrow-liquid)"/>
-    <path class="pid-liquid" d="M740 760 V850 H1010"/>
-    <path class="pid-liquid" d="M1130 850 H1440" marker-end="url(#pid-arrow-liquid)"/>
-    <path class="pid-steam" d="M60 90 H1440" marker-end="url(#pid-arrow-steam)"/>
-    <path class="pid-steam" d="M1290 90 V430"/>
-    <path class="pid-steam" d="M1290 550 V580 H925"/>
-    <path class="pid-condensate" d="M925 700 H1250 V750"/>
+    <path class="heavy" d="M250 112 H1990" marker-end="url(#flow)"/>
+    <path class="pipe" d="M1720 112 V260"/>
+    <path class="pipe" d="M1720 340 V500 H1170"/>
+    <path class="pipe" d="M1170 660 H1586"/>
+    <path class="pipe" d="M1654 660 H1990" marker-end="url(#flow)"/>
+    <path class="pipe" d="M250 690 H358"/>
+    <path class="pipe" d="M420 628 V560 H760 V246 H850" marker-end="url(#flow)"/>
+    <path class="pipe" d="M1000 776 V838 H1480"/>
+    <path class="pipe" d="M1560 838 H1990" marker-end="url(#flow)"/>
+  </g>
+
+  <g id="valves-manual">
+    <use href="#gate-v" x="1720" y="170"/>
+    <use href="#gate" x="300" y="690"/>
+    <use href="#gate-v" x="760" y="430"/>
+    <use href="#gate" x="1240" y="838"/>
+    <use href="#gate" x="1760" y="838"/>
+    <use href="#gate" x="1400" y="660"/>
+    <path class="sym" d="M586 544 V576 L622 560 Z"/>
+    <path class="thin" d="M622 544 V576"/>
+  </g>
+
+  <g id="steam-trap">
+    <circle class="sym" cx="1620" cy="660" r="34"/>
+    <text class="bubble" x="1620" y="672">T</text>
   </g>
 
   <g id="signals">
-    <path class="pid-signal" d="M920 380 H1016" marker-end="url(#pid-arrow-signal)"/>
-    <path class="pid-signal" d="M920 500 H990 V220 H1016" marker-end="url(#pid-arrow-signal)"/>
-    <path class="pid-signal" d="M1070 430 V796" marker-end="url(#pid-arrow-signal)"/>
-    <path class="pid-signal" d="M1120 220 H1410 V301" marker-end="url(#pid-arrow-signal)"/>
-    <path class="pid-signal" d="M1350 355 H1356" marker-end="url(#pid-arrow-signal)"/>
-    <path class="pid-signal" d="M1410 405 V490 H1342" marker-end="url(#pid-arrow-signal)"/>
+    <path class="signal" d="M1150 340 H1230 V248 H1274"/>
+    <path class="signal" d="M1386 248 H1440 V300 H1504"/>
+    <path class="signal" d="M1150 420 H1464"/>
+    <path class="signal" d="M1520 476 V766"/>
+    <path class="signal" d="M1616 300 H1640"/>
+    <path class="signal" d="M1600 216 L1584 250"/>
   </g>
 
   <g id="instruments">
+    <g id="FT-201">
+      <path class="thin" d="M1704 224 H1736 M1704 236 H1736 M1654 190 H1720"/>
+      <circle class="sym" cx="1620" cy="190" r="34"/>
+      <text class="bubble" x="1620" y="202">FT</text>
+    </g>
     <g id="TIC-101">
-      <circle class="pid-equip" cx="1070" cy="220" r="50"/>
-      <line class="pid-rule" x1="1022" y1="220" x2="1118" y2="220"/>
-      <text class="pid-instrument" x="1070" y="209">TIC</text>
-      <text class="pid-instrument" x="1070" y="253">101</text>
+      <circle class="sym" cx="1330" cy="248" r="56"/>
+      <line class="thin" x1="1274" y1="248" x2="1386" y2="248"/>
+      <text class="bubble" x="1330" y="236">TIC</text>
+      <text class="bubble" x="1330" y="284">101</text>
     </g>
     <g id="LIC-101">
-      <circle class="pid-equip" cx="1070" cy="380" r="50"/>
-      <line class="pid-rule" x1="1022" y1="380" x2="1118" y2="380"/>
-      <text class="pid-instrument" x="1070" y="369">LIC</text>
-      <text class="pid-instrument" x="1070" y="413">101</text>
+      <circle class="sym" cx="1520" cy="420" r="56"/>
+      <line class="thin" x1="1464" y1="420" x2="1576" y2="420"/>
+      <text class="bubble" x="1520" y="408">LIC</text>
+      <text class="bubble" x="1520" y="456">101</text>
     </g>
     <g id="FIC-201">
-      <circle class="pid-equip" cx="1410" cy="355" r="50"/>
-      <line class="pid-rule" x1="1362" y1="355" x2="1458" y2="355"/>
-      <text class="pid-instrument" x="1410" y="344">FIC</text>
-      <text class="pid-instrument" x="1410" y="388">201</text>
+      <circle class="sym" cx="1560" cy="300" r="56"/>
+      <line class="thin" x1="1504" y1="300" x2="1616" y2="300"/>
+      <text class="bubble" x="1560" y="288">FIC</text>
+      <text class="bubble" x="1560" y="336">201</text>
     </g>
-    <g id="FT-201">
-      <rect class="pid-equip" x="1230" y="330" width="120" height="50" rx="6"/>
-      <text class="pid-instrument" x="1290" y="366">FT-201</text>
+    <g id="PI-101">
+      <path class="thin" d="M540 498 L490 560"/>
+      <circle class="sym" cx="566" cy="466" r="42"/>
+      <text class="bubble" x="566" y="478">PI</text>
     </g>
+  </g>
+
+  <g id="agitator">
+    <path class="thin" d="M1000 150 V86"/>
+    <circle class="sym" cx="1000" cy="62" r="26"/>
+    <text class="bubble" x="1000" y="74">M</text>
+  </g>
+
+  <g id="supports">
+    <path class="thin" d="M874 758 V808 M1126 758 V808 M852 808 H896 M1104 808 H1148"/>
   </g>
 
   <g id="P-100">
-    <circle class="pid-equip" cx="300" cy="700" r="76"/>
-    <path class="pid-line" d="M250 646 L360 700 L250 754"/>
-    <path class="pid-equip" d="M230 790 H370 V810 H230 Z"/>
-    <text class="pid-tag" x="300" y="605">P-100</text>
-    <text class="pid-name" x="300" y="855">Feed pump</text>
-    <text id="P-100-value" class="live-value" x="300" y="565"> </text>
+    <path class="sym" d="M366 745 H474 L492 776 H348 Z"/>
+    <circle class="sym" cx="420" cy="690" r="62"/>
+    <path class="thin" d="M420 628 H482 M358 690 L420 628"/>
+    <text class="tag" x="420" y="704">P-100</text>
+    <text class="name" x="420" y="826">Feed pump</text>
+    <text id="P-100-value" class="live-value" x="190" y="470"> </text>
   </g>
 
   <g id="TK-101">
-    <path class="pid-equip" d="M560 210 Q560 170 600 170 H880 Q920 170 920 210 V720 Q920 760 880 760 H600 Q560 760 560 720 Z"/>
-    <path d="M564 465 H916" stroke="#5aa9e6" stroke-width="3" stroke-dasharray="20 12"/>
-    <text class="pid-tag" x="740" y="240">TK-101</text>
-    <text class="pid-name" x="740" y="282">Hydrolysis hold tank</text>
-    <text id="TK-101-value" class="live-value" x="740" y="345"> </text>
+    <path class="sym" d="M850 240 C850 178 930 150 1000 150 C1070 150 1150 178 1150 240 V686 C1150 748 1070 776 1000 776 C930 776 850 748 850 686 Z"/>
+    <path class="thin" d="M850 240 H1150 M850 686 H1150"/>
+    <path class="nll" d="M856 462 H1144"/>
+    <text class="key" x="1064" y="450">NLL</text>
+    <path class="thin" d="M1000 150 V596 M940 596 H1060 M940 582 V610 M1060 582 V610"/>
+    <text class="tag" x="1000" y="214">TK-101</text>
+    <text id="TK-101-value" class="live-value" x="540" y="178"> </text>
   </g>
 
   <g id="E-101">
-    <path class="pid-steam" d="M925 580 H640 A20 20 0 0 0 640 620 H860 A20 20 0 0 1 860 660 H640 A20 20 0 0 0 640 700 H925"/>
-    <text class="pid-tag" x="650" y="530">E-101</text>
-    <text class="pid-name" x="800" y="530">Steam coil</text>
-    <text id="E-101-value" class="live-value" x="740" y="735"> </text>
+    <path class="pipe" d="M1170 500 H890 A16 16 0 0 0 890 532 H1110 A16 16 0 0 1 1110 564 H890 A16 16 0 0 0 890 596 H1110 A16 16 0 0 1 1110 628 H890 A16 16 0 0 0 890 660 H1170"/>
+    <text class="tag" x="1000" y="736">E-101</text>
+    <text id="E-101-value" class="live-value" x="1350" y="580"> </text>
   </g>
 
   <g id="LV-101">
-    <path class="pid-equip" d="M1010 815 V885 L1130 815 V885 Z"/>
-    <path class="pid-line" d="M1070 850 V800 M1040 800 H1100"/>
-    <text class="pid-tag" x="1070" y="935">LV-101</text>
-    <text class="pid-name" x="1070" y="975">Outlet level valve</text>
-    <text id="LV-101-value" class="live-value" x="1270" y="820"> </text>
+    <path class="sym" d="M1480 810 V866 L1560 810 V866 Z"/>
+    <path class="thin" d="M1520 838 V790"/>
+    <path class="sym" d="M1478 790 A42 26 0 0 1 1562 790 Z"/>
+    <text class="tag" x="1520" y="916">LV-101</text>
+    <text id="LV-101-value" class="live-value" x="1810" y="760"> </text>
   </g>
 
   <g id="TV-101">
-    <path class="pid-equip" d="M1250 430 H1330 L1250 550 H1330 Z"/>
-    <path class="pid-line" d="M1290 490 H1342 M1342 460 V520"/>
-    <text class="pid-tag" x="1160" y="480">TV-101</text>
-    <text class="pid-name" x="1160" y="520">Steam valve</text>
-    <text id="TV-101-value" class="live-value" x="1395" y="620"> </text>
+    <path class="sym" d="M1692 260 H1748 L1692 340 H1748 Z"/>
+    <path class="thin" d="M1720 300 H1664"/>
+    <path class="sym" d="M1664 258 A26 42 0 0 0 1664 342 Z"/>
+    <text class="tag" x="1830" y="408">TV-101</text>
+    <text id="TV-101-value" class="live-value" x="1960" y="290"> </text>
+  </g>
+
+  <g id="connectors">
+    <path class="sym" d="M44 84 H220 L250 112 L220 140 H44 Z"/>
+    <path class="sym" d="M1990 84 H2180 L2210 112 L2180 140 H1990 Z"/>
+    <path class="sym" d="M44 662 H220 L250 690 L220 718 H44 Z"/>
+    <path class="sym" d="M1990 632 H2180 L2210 660 L2180 688 H1990 Z"/>
+    <path class="sym" d="M1990 810 H2180 L2210 838 L2180 866 H1990 Z"/>
+    <text class="small" x="136" y="124">BOILER</text>
+    <text class="small" x="2094" y="124">PLANT B</text>
+    <text class="small" x="136" y="702">FEED</text>
+    <text class="small" x="2094" y="672">RETURN</text>
+    <text class="small" x="2094" y="850">PRODUCT</text>
   </g>
 
   <g id="streams">
-    <text class="pid-note" x="60" y="60">Steam header 1, 6 barg, shared with the other plant</text>
-    <text class="pid-note" x="60" y="745">Feed, 25 °C</text>
-    <text class="pid-note" x="1262" y="765">Condensate</text>
-    <text class="pid-note" x="1300" y="895">Product</text>
-    <text class="pid-note" x="60" y="960">Simulated plant</text>
+    <text class="line-no" x="270" y="86">6"-ST-101 STEAM HEADER</text>
+    <text class="line-no" x="56" y="648">4"-PR-101</text>
+    <text class="line-no" x="1740" y="636">2"-CD-101</text>
+    <text class="line-no" x="1040" y="880">4"-PR-103</text>
+  </g>
+
+  <g id="legend">
+    <rect class="thin" x="2250" y="40" width="510" height="920"/>
+    <path class="thin" d="M2250 112 H2760"/>
+    <text class="title" x="2280" y="90">LEGEND</text>
+    <use href="#gate" x="2310" y="176"/>
+    <text class="key" x="2370" y="188">Block valve</text>
+    <path class="sym" d="M2286 256 V288 L2322 272 Z"/>
+    <path class="thin" d="M2322 256 V288"/>
+    <text class="key" x="2370" y="284">Check valve</text>
+    <path class="sym" d="M2284 350 V390 L2336 350 V390 Z"/>
+    <path class="sym" d="M2284 338 A26 16 0 0 1 2336 338 Z"/>
+    <path class="thin" d="M2310 338 V370"/>
+    <text class="key" x="2370" y="380">Control valve</text>
+    <circle class="sym" cx="2310" cy="464" r="30"/>
+    <line class="thin" x1="2280" y1="464" x2="2340" y2="464"/>
+    <text class="key" x="2370" y="476">Controller</text>
+    <circle class="sym" cx="2310" cy="556" r="30"/>
+    <text class="bubble" x="2310" y="568">T</text>
+    <text class="key" x="2370" y="568">Steam trap</text>
+    <path class="signal" d="M2276 648 H2348"/>
+    <text class="key" x="2370" y="660">Signal</text>
+    <path class="pipe" d="M2276 736 H2348" marker-end="url(#flow)"/>
+    <text class="key" x="2370" y="748">Process line</text>
+    <path class="nll" d="M2276 828 H2348"/>
+    <text class="key" x="2370" y="840">Normal level</text>
+  </g>
+
+  <g id="title-block">
+    <rect class="sym" x="40" y="892" width="1390" height="76"/>
+    <path class="thin" d="M820 892 V968 M1110 892 V968"/>
+    <text class="title" x="60" y="944">HYDROLYSIS HOLD TANK TK-101</text>
+    <text class="key" x="842" y="942">SIMULATED</text>
+    <text class="key" x="1132" y="942">PID-101 REV C</text>
   </g>
 </svg>
