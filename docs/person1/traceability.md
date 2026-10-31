@@ -4,7 +4,7 @@ Every Person 1 requirement from `TASK1.MD`, the `PLAN.MD` acceptance gate and `C
 
 **Status rules.** `met`: I read the code and the test and saw the test pass. `partial`: code exists, but the test is missing, failing, or ran only on a fake where the requirement needs the real thing. `missing`: no code. Evidence is what I read or ran, not what a session reported. Fake-backed runs are labelled `[fake]`, pure-function runs `[pure]`, real Terse or Relay runs `[live]`.
 
-**Last refresh:** 12:54 PT, git `cf88750`. Real Terse ran seed, propose and vote rejections, then stalled. Real Relay proof passed on a fake glue. No run has joined real actors, Relay, glue and simulator.
+**Last refresh:** 12:56 PT, git `2d873b2`. Real Terse ran seed, propose and vote rejections, then stalled. No run has joined real actors, Relay, glue and simulator.
 
 | Scoreboard | met | partial | missing |
 |---|---|---|---|
@@ -12,9 +12,9 @@ Every Person 1 requirement from `TASK1.MD`, the `PLAN.MD` acceptance gate and `C
 
 ## Open gaps
 1. **Plant stalls on real Terse.** At 12:51 calls queued up to 15 s (`queueWaitMs`) and one `Plant.vote` did not return in 30 s. Glue times out at 8 s. Cause not isolated, machine load included. Execution has not run on Terse. Reported to main.
-2. **Actor port not on disk.** `actor/adapter/`, built by main. Glue `bcfd064` needs `read`/`call`, not REST. Blocks P-16, P-17, G-1 to G-7.
+2. **Actor port not yet run with live glue.** `actor/adapter/` landed; its tests pass on a stubbed Terse. Blocks P-16, P-17, G-1 to G-7.
 3. **Actors do not match glue `bcfd064`.** `Plant.authorizeExecution` is missing, the sweep marks `executed` before the callback, and the callback has no bearer token. Glue seeds Company last, which can lose the company rule (never-fake #4).
-4. **Agents do not match glue `bcfd064`.** Relay `{type, payload}` is not parsed, and both register `actorrelay-system`. Agent HTTP `/vote` and `/counter` work. `agent/HANDOFF.md` still names `RELAY_PUBLISH_URL`.
+4. **Relay proof needs a rerun.** Agents moved to glue's `{type, payload}` format at `d210b55`, after the code my 12:52 proof ran.
 5. **No `shared/history.json` and no `bridge/`.** Every event-based pass uses a labelled stand-in, and no real simulator has been in the path.
 6. **Open adversarial findings.** ar-adversarial reports A1 to A11 on actors; ar-agents reports G1 to G11 handled at 12:52. I last ran the hostile suite at 12:41 (9 of 122 failing), before that fix.
 7. **One real vendor today.** Claude roles use the labelled fallback (main's decision, 12:35), and `codex` means OpenAI Responses, not the Codex CLI. S-2 stays `partial`.
@@ -30,7 +30,7 @@ Every Person 1 requirement from `TASK1.MD`, the `PLAN.MD` acceptance gate and `C
 | `mirror` | Overwrite metrics | Merge into existing metrics | A partial push keeps the other metrics |
 | `tick` field | `PlantState.tick` | Socket field `tickCount`; `getState()` returns `tick` | Method `tick()` owns the name |
 | Agent processes | One agent per component | Ten Relay identities in one process | Replies arrive at once instead of after a harness turn |
-| Adapter | Not in TASK1 | HTTP adapter added | Person 3's live glue forwards every route to it |
+| Actor port | Not in TASK1 | `actor/adapter/` added | Person 3's live glue reaches actors only through it |
 
 ## 1. Component actor (TASK1 D1)
 | ID | Requirement | Code | Test | Status | Evidence / gap |
@@ -64,8 +64,8 @@ Every Person 1 requirement from `TASK1.MD`, the `PLAN.MD` acceptance gate and `C
 | P-13 | `similar` is pure over persisted history, no LLM; called with the proposer's componentId and metric | `rankSimilar` | `similar.test.ts` | partial | Read: pure, no LLM. `agent/vote.ts` passes the proposer's id and metric |
 | P-14 | Alarm every 1 s: `tick()` increments tick and POSTs glue `/tick` | `Plant.onAlarm`, `armAlarm` | | partial | Read: one alarm multiplexed, 1 s, re-armed first. Not run on Terse |
 | P-15 | Alarm every 2 s: all required yes → `veto_window` (deadline now + 10 s); any no → `blocked` | `logic/proposals.ts` `planSweep`, `Plant.sweep` | `logic.test.ts` sweep cases; `lifecycle.test.ts` | partial | Passed [pure]. Real sweep not observed: my Terse run stalled before the block |
-| P-16 | Veto window passed → `execute` → `Component.setMetric` → bridge writes setpoint | `Plant.sweep` → `execute`; `actor/adapter/` pending | | partial | Actor half read. Adapter runs claim, `/setpoint`, `setMetric`; not on disk yet |
-| P-17 | After 5 ticks `recordEvent` with observed effects → broadcast `executed` | `Plant.recordEvent`; adapter `/observed` pending | | partial | Actor half read. The 5-tick wait is the bridge's observer; `executed` publish depends on the adapter reply shape |
+| P-16 | Veto window passed → `execute` → `Component.setMetric` → bridge writes setpoint | `Plant.sweep` → `execute`; `glue/live.ts` `execute` | | partial | **Fails against `bcfd064`:** `authorizeExecution` missing, status flips before the callback, no bearer token |
+| P-17 | After 5 ticks `recordEvent` with observed effects → broadcast `executed` | `Plant.recordEvent`; `glue/live.ts` `/observed` | | partial | Actor half read. Glue publishes `executed`. The 5-tick wait is the bridge's observer, not delivered |
 | P-18 | Votes missing after 30 s → `expired` | `planSweep` | `logic.test.ts` "missing votes expire after 30s" | partial | Passed [pure]. Also expires stale proposals |
 | P-19 | At most one proposal per component in `veto_window`; the second waits in `voting` | `planSweep` `touched`, `occupied` | `logic.test.ts` "two proposals on one component" | partial | Passed [pure]. Proposer plus all voters count as touched; second stays in `voting` |
 | P-20 | Only `Plant.execute` mutates a metric | `Component.setMetric`, `Plant.redeemToken` | `actor-attacks.test.ts` | partial | Read: `mirror` also writes metrics, by design, from the simulator. Only token-backed `setMetric` writes a commanded value |
@@ -86,7 +86,7 @@ Every Person 1 requirement from `TASK1.MD`, the `PLAN.MD` acceptance gate and `C
 |---|---|---|---|---|---|
 | AD-1 | `terse deploy` and `terse actor generate` | | | partial | `terse actor dev` built and served the actors locally at 12:50, seen by me. No `terse deploy` or generated client |
 | AD-2 | `actor/HANDOFF.md`: URL, API key instructions without secrets, every method signature, one-time execute token flow, three examples (loadSeed, propose, vote) | | | missing | No `actor/HANDOFF.md` yet |
-| AD-3 | Actor clients and agent startup instructions supplied to Person 3 | `docs/person1/INTEGRATION.md` | | partial | Draft on disk; waiting on real runs |
+| AD-3 | Actor clients and agent startup instructions supplied to Person 3 | `docs/person1/INTEGRATION.md`, `actor/adapter/` | | partial | Handoff on disk. Port tests passed 12:55 on a stubbed Terse |
 | AT-1 | Test: two `vote` calls for one componentId → second rejected | | `actor/tests/logic/logic.test.ts` | met | Passed 12:41 [pure]: 29 of 29 in the file. Same check on Terse pending |
 | AT-2 | Test: two proposals on one component → only one reaches `veto_window` | | `logic.test.ts` | met | Passed 12:41 [pure] |
 | AT-3 | Test: `similar("plant-a/P-100", "speedPct", 85, …)` returns seeded ≥ 80% events with LV-101 positionPct ≥ 85 effects | | `logic.test.ts` | met | Passed 12:41 [pure], on the labelled stand-in history |
@@ -97,8 +97,8 @@ Every Person 1 requirement from `TASK1.MD`, the `PLAN.MD` acceptance gate and `C
 ## 5. Agents (TASK1 agent workstream)
 | ID | Requirement | Code | Test | Status | Evidence / gap |
 |---|---|---|---|---|---|
-| S-1 | `spawn.ts`: one agent per component in both plants (10) with `@agent-relay/sdk`, on `plant-a` or `plant-b`, all joining `company` | `agent/spawn.ts` | | partial | `agent/tests/live-relay-proof.ts` passed 12:52 on the real broker [real Relay, real model, fake glue]. One process runs all ten |
-| S-2 | Mechanics (P-100, LV-101) on Codex; TK-101, E-101, TV-101 on Claude; agent id `agent:<ComponentId>` | `agent/spawn.ts`, `agent/llm.ts` `RoutedLlm` | | partial | Agent id correct. Vendor gap: `codex` routes to OpenAI Responses, and Claude falls back to OpenAI (main, 12:35). One real vendor today, labelled in each vote |
+| S-1 | `spawn.ts`: one agent per component in both plants (10) with `@agent-relay/sdk`, on `plant-a` or `plant-b`, all joining `company` | `agent/spawn.ts`, `agent/wire.ts` | | partial | `live-relay-proof.ts` passed 12:52 [real Relay, real model, fake glue], before the `wire.ts` change at `d210b55`. Rerun needed |
+| S-2 | Mechanics (P-100, LV-101) on Codex; TK-101, E-101, TV-101 on Claude; agent id `agent:<ComponentId>` | `agent/spawn.ts`, `agent/wire.ts`, `agent/llm.ts` `RoutedLlm` | | partial | Agent id correct. Vendor gap: `codex` routes to OpenAI Responses, and Claude falls back to OpenAI (main, 12:35). One real vendor today, labelled in each vote |
 | S-3 | `roles/*.md`: four system prompts with role priorities and the hard contract | `agent/roles/*.md`, `agent/physics.md`, `vote.ts` `systemPrompt` | | partial | Read: four roles, contract and physics summary joined per vote. No test on prompt text |
 | V-1 | Vote step 1: fetch own state from glue `/component/:id` | `agent/vote.ts` `gatherContext` | `agent/tests/vote.real.test.ts`, `vote.enforce.test.ts` | partial | Agent suites passed 58 of 58 at 12:41 [fake glue]. Real adapter not yet in the path |
 | V-2 | Vote step 2: glue `/similar` with the proposer's id and metric, `to`, `upstreamSnapshot`, `k: 5`; read effects rows for this component | `vote.ts` `loadSharedContext`, `retrieval.ts` `ownRows` | `vote.enforce.test.ts`, `llm-hostile.test.ts` | partial | Passed [fake glue]. Adapter must parse `upstreamSnapshot` from a JSON query param |
@@ -109,7 +109,7 @@ Every Person 1 requirement from `TASK1.MD`, the `PLAN.MD` acceptance gate and `C
 | V-7 | Vote step 6b: `similarCount < 3` and a predicted metric within 15% of critical → forced `no`, reason "insufficient history" | `vote.ts` `decide`, `retrieval.ts` `relevantEvents` | `vote.real.test.ts`, `vote.enforce.test.ts` "far-away events do not count" | partial | Passed [real model, fake glue]. Open hostile test: "events with no effect row for this component are not evidence for it" |
 | V-8 | Vote step 6c: predicted ≥ `critical × (1 − marginPct/100)` → forced `no` | `vote.ts` `decide`, `thresholdReason` | `vote.enforce.test.ts` "safety lives in code" | met | Passed 12:41, including exact threshold and wider margin [fake] |
 | V-9 | Vote step 6d: `evidenceEventIds` and `evidenceRuleIds` attached from what was retrieved, never invented | `vote.ts` `orderEvidence`, `castVote` | `vote.enforce.test.ts`, `llm-hostile.test.ts` | met | Passed 12:41 [fake]. `Plant.vote` also rejects unknown ids |
-| V-10 | Vote step 7: post `vote` to the plant channel → glue | `agent/runtime.ts` `voteAs`, `channelForVote`, `agent/system.ts` | `agent/tests/live-relay-proof.ts` | partial | Passed 12:52 [real Relay, fake glue]. Not aligned with glue `bcfd064` Relay messages |
+| V-10 | Vote step 7: post `vote` to the plant channel → glue | `agent/runtime.ts` `voteAs`, `channelForVote`, `agent/spawn.ts` | `agent/tests/live-relay-proof.ts` | partial | Proof passed 12:52 before the `wire.ts` change. Rerun needed |
 | CP-1 | `counter.ts`: when the proposer's own proposal is `blocked`, read blocking votes, ask LLM for a value between `from` and `to` under every voter's threshold minus margin, post `counter` | `agent/counter.ts` `buildCounter`, `runtime.ts` `watchForBlock` | `agent/tests/counter.test.ts`, `runtime.test.ts` | partial | Passed 12:41 [fake glue]. Code computes allowed candidates, the model picks one; a code-chosen value is labelled. Not run on real Relay |
 | CP-2 | Max 2 counters per parent | `counter.ts` `counterCount`; `assertCounterAllowed` | `counter.test.ts` "stops at two counters per parent" | met | Passed 12:41 [fake]. Also enforced in `Plant.propose` (`too_many_counters`) |
 | LN-1 | `learn.ts`: for every voter compare `vote.predicted[metric]` to observed → `CalibrationEntry` → glue `/calibration` | `agent/learn.ts` `calibrationEntries`, `calibrate` | `agent/tests/learn.test.ts` | partial | Passed 12:41 [fake glue]: every voter gets an entry, falling back to the live reading when `effects` has no row |
@@ -146,12 +146,12 @@ Every Person 1 requirement from `TASK1.MD`, the `PLAN.MD` acceptance gate and `C
 ## 8. Relay protocol (CLAUDE.MD)
 | ID | Requirement | Code | Test | Status | Evidence / gap |
 |---|---|---|---|---|---|
-| RP-1 | Channels `plant-a`, `plant-b`, `company` | `agent/system.ts` `CHANNELS` | `live-relay-proof.ts` | partial | Passed 12:52 [real Relay, fake glue] |
+| RP-1 | Channels `plant-a`, `plant-b`, `company` | `agent/wire.ts` `CHANNELS` | `live-relay-proof.ts` | partial | Proof passed 12:52 [real Relay, fake glue], before `wire.ts`. Rerun needed |
 | RP-2 | `proposal {proposal}` handled; each required voter replies within 20 s | `runtime.ts` `onProposal`, `vote.ts` `TOTAL_LLM_BUDGET_MS` | `live-relay-proof.ts` | partial | Proof passed, but first decisive vote took 19 s and all votes 21 s at 12:52, under load and rate limits. Near the 20 s window |
-| RP-3 | `vote {vote}` agent → glue → `Plant.vote` | `system.ts` `InboundBridge` | `live-relay-proof.ts` | partial | Passed 12:52 [real Relay, fake glue] |
-| RP-4 | `counter {parentProposalId, proposal}` agent → glue → `Plant.propose` | `InboundBridge`, `Plant.propose` | `live-relay-proof.ts` | partial | Passed 12:52 [real Relay, fake glue]; counter arrived 17.7 s after the block |
-| RP-5 | `executed {proposalId, event}` reaches all plant agents and `company` when cross-plant or model shared | `system.ts` `toWireMessage`, `runtime.ts` `onExecuted` | `live-relay-proof.ts` | partial | Passed 12:52 [fake glue]. Glue `bcfd064` sends `{type, payload}`, which agents do not parse yet |
-| RP-6 | `rule {rule}` on `company` when scope is company | `toWireMessage`, `runtime.ts` `onMessage` | | partial | Read: only for agent-submitted rules via glue `/rule`. See LN-4 |
+| RP-3 | `vote {vote}` agent → glue → `Plant.vote` | `agent/spawn.ts`, `glue/relay.ts` | `live-relay-proof.ts` | partial | Agents now send `{type, payload}`, as sender `agent:<componentId>`; glue accepts that. Read only since `d210b55` |
+| RP-4 | `counter {parentProposalId, proposal}` agent → glue → `Plant.propose` | `agent/spawn.ts`, `Plant.propose` | `live-relay-proof.ts` | partial | Exactly the five glue fields. Counter took 17.7 s after the block in the 12:52 proof |
+| RP-5 | `executed {proposalId, event}` reaches all plant agents and `company` when cross-plant or model shared | `agent/wire.ts` `decodeEnvelope`, `runtime.ts` `onExecuted` | `live-relay-proof.ts` | partial | Read: agents parse `{type, payload}` since `d210b55`. Glue publishes `executed` to the plant channel and `company`. Not run together |
+| RP-6 | `rule {rule}` on `company` when scope is company | `wire.ts` `decodeEnvelope`, `runtime.ts` `onMessage` | | partial | Read: only for agent-submitted rules via glue `/rule`. See LN-4 |
 | RP-7 | Prompt contract: proposal, own state, `similar()` results, rules, physics summary; only JSON matching Vote | `vote.ts` `buildVotePrompt`, `parseAnswer` | | partial | See V-4, V-5 |
 | RP-8 | `similarCount` equals retrieved events | `vote.ts` `castVote` | | partial | `similarCount` counts events after the relevance cut, so a far newest run is cited but not counted |
 | RP-9 | A `no` includes a predicted value past `critical − marginPct%` (LV-101: 81) | `vote.ts` `noIsSupported`, `effectivePrediction` | | partial | Read: a model `no` with no breach is rejected as malformed; a safe no carries no prediction, as TASK1 step 5 specifies |
@@ -182,7 +182,7 @@ Every Person 1 requirement from `TASK1.MD`, the `PLAN.MD` acceptance gate and `C
 Person 3 runs the gate. These rows track the Person 1 share.
 | ID | Requirement | Code | Test | Status | Evidence / gap |
 |---|---|---|---|---|---|
-| G-1 | Reset produces all ten component snapshots and clears prior pending work | `Plant.loadSeed`; adapter `/reset` pending | | partial | Actor side clears work (real seed ran 12:51). Glue seeds Company last, so the company rule can be lost, see Open gaps |
+| G-1 | Reset produces all ten component snapshots and clears prior pending work | `Plant.loadSeed`; `glue/live.ts` `/reset` | | partial | Actor side clears work (real seed ran 12:51). Glue seeds Company last, so the company rule can be lost, see Open gaps |
 | G-2 | Pump 50 → 85 blocked with real evidence, includes the other plant's steam-valve vote | | | missing | |
 | G-3 | Safer target ≈ 65 passes, executes after the veto window, observed metrics settle within verified ranges | | | missing | |
 | G-4 | Repeated unsafe proposal cites the newest relevant observation, without a safe run alone counting as proof of an unsafe outcome | `vote.ts` `orderEvidence`, `newestNote` | `vote.enforce.test.ts` "the repeated block" | partial | Passed [fake]: newest run first, and a safe run alone never supplies the block. Not observed end to end |
@@ -190,8 +190,8 @@ Person 3 runs the gate. These rows track the Person 1 share.
 | G-6a | Invalid votes rejected | `normalizeVote`, `enforceVoteSafety` | `votes.test.ts`, `actor-attacks.test.ts` | partial | Real Terse 12:51 [live]: wrong agent id and invented evidence rejected. Actor findings A1 to A11 open at ar-adversarial |
 | G-6b | Duplicate votes rejected | `assertVoteAllowed` | `votes.test.ts` | met | Real Terse 12:51 [live]: `duplicate_vote` |
 | G-6c | Stale proposals rejected | `assertVoteAllowed`, `isStale`, `assertExecutable` | `lifecycle.test.ts` | partial | Read; logic passed [pure]. Not run on Terse |
-| G-6d | Unapproved writes rejected | `assertExecutable`, `redeemToken` | `actor-attacks.test.ts` | partial | Read. Adapter's `/execute-callback` must not dispatch without a claim; pending |
-| G-6e | Retries do not duplicate a simulation command | `Plant.claimDispatch` | | partial | Read: single claim, a claimed write is never retried. Needs adapter and a simulator-side check |
+| G-6d | Unapproved writes rejected | `assertExecutable`, `redeemToken`; `actor/adapter/port.ts` allowlist | `actor-attacks.test.ts` | partial | Read. Port allows only glue's methods. Execute path not run on Terse |
+| G-6e | Retries do not duplicate a simulation command | `Plant.claimDispatch`; `glue/journal.ts` | | partial | Read: glue's journal and Plant's single claim both stop a redispatch. Not run together |
 | G-7 | Dashboard, actor state, command result and trends agree; recovery is never marked from command acceptance alone | `ExecutionState` in `actor.ts` | | partial | Read: accepted, claimed, applied, observed and failed are separate states |
 | G-8 | No scripted conversation presented as live reasoning; any fallback labelled | `vote.ts` `provenance`, `counter.ts` `source` | | partial | Read: fallback and code-decided values are labelled in the vote or rationale text |
 | PS-1 | Plan scope: validate the current proposal and limits immediately before dispatch | `assertExecutable` | | partial | Read: rechecks status, deadline, unanimity, staleness and limits |

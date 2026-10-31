@@ -1,13 +1,11 @@
 # Person 1 integration handoff (for Person 3)
 
-Written against glue at `bcfd064`, last checked 12:54 PT. It complements `actor/HANDOFF.md` and `agent/HANDOFF.md`. **Anything marked `pending` was not proven at the time of writing.** See `STATUS.md` for what works now.
+Written against glue at `bcfd064`, last checked 12:57 PT. It complements `actor/HANDOFF.md` and `agent/HANDOFF.md`. **Anything marked `pending` was not proven at the time of writing.** See `STATUS.md` for what works now.
 
 ## Boundary
-Glue reaches actors through one port, `read(kind, id)` and `call(kind, id, method, args)`, with `kind` as `Component`, `Plant` or `Company`. Person 1 supplies that port as `ACTOR_CLIENT_MODULE`, or at `POST $ACTOR_API_URL/rpc`. Main is building it in `actor/adapter/`: pending.
+Glue reaches actors through one port, `read(kind, id)` and `call(kind, id, method, args)`, with `kind` as `Component`, `Plant` or `Company`. Person 1 supplies it in `actor/adapter/`. Set either `ACTOR_CLIENT_MODULE=<repo>/actor/adapter/port.ts`, or `ACTOR_API_URL=http://127.0.0.1:7150` and run `rpc.ts`. Its tests pass on a stubbed Terse; it has not run with live glue.
 
-The port maps two things glue does not know about:
-- `read` calls `getState()`.
-- ComponentId `plant-a/LV-101` becomes actor id `plant-a.LV-101`, because Terse ids cannot hold `/`. Company's id is `company`.
+The port does two mappings: `read` calls `getState()`, and ComponentId `plant-a/LV-101` becomes actor id `plant-a.LV-101`, because Terse ids cannot hold `/`. It only allows the methods glue uses.
 
 Glue runs the Relay system participant, the simulator calls, the mirror poller and `/reset`.
 
@@ -18,20 +16,21 @@ Terse, Relay and agents need Linux. On this machine that means WSL, from a copy 
 |---|---|---|---|
 | 1 | Relay broker | 8787 | `wsl.exe -d Ubuntu --exec bash "/mnt/c/Users/zubai/Haunted Hacks/Factoryio/agent/spikes/relay/start-relay.sh"`; run `setup-runtime.sh` from the same folder once first |
 | 2 | Terse actors | 7100 | From a Linux copy of `actor/`: `DURABLE_ACTORS_DATA_DIR=<dir> ~/terse-probe/node_modules/.bin/terse actor dev --port 7100` |
-| 3 | Actor port | 7150 | pending, `actor/adapter/` |
+| 3 | Actor port | 7150 | From `actor/`, in WSL: `TERSE_URL=http://127.0.0.1:7100 ADAPTER_PORT=7150 bun run adapter/rpc.ts`. The `adapter` script in `actor/package.json` is stale. Not needed if glue uses `ACTOR_CLIENT_MODULE` |
 | 4 | Simulator | 7300 | `bridge/HANDOFF.md` |
-| 5 | Glue | 7200 | From `glue/`, with the env below: `bun run server.ts` |
+| 5 | Glue | 7200 | From `glue/`, with the env below: `bun run server.ts`. Create the shared Relay key first: `cd ~/.actorrelay/agent-run/agent && bun run workspace.ts` (`run-wsl.sh` must have run once) |
 | 6 | Agents | 7201 health | `wsl.exe -d Ubuntu --exec bash "/mnt/c/Users/zubai/Haunted Hacks/Factoryio/agent/run-wsl.sh"`; ready line starts `ready: 10 agents` |
 | 7 | Web | 3000 | From `web/`: `bun run dev` |
 
-Start glue before the agents. Both use the Relay name `actorrelay-system` today, which is pending a fix (see Known mismatches).
+Start glue before the agents, because glue owns the `actorrelay-system` Relay identity. Full agent detail is in `agent/HANDOFF.md`.
 
 ## Env
 | Service | Names |
 |---|---|
-| Glue | `GLUE_MODE=live`, `ACTOR_CLIENT_MODULE` or `ACTOR_API_URL=http://127.0.0.1:7150`, `EXECUTION_CALLBACK_TOKEN`, `RELAY_WORKSPACE_KEY` or `RELAY_AGENT_TOKEN`, `RELAY_BASE_URL`, `SIM_URL` |
+| Glue | `GLUE_MODE=live`, `ACTOR_CLIENT_MODULE` or `ACTOR_API_URL=http://127.0.0.1:7150`, `EXECUTION_CALLBACK_TOKEN`, `RELAY_WORKSPACE_KEY` (from `~/.actorrelay/relay-workspace-key`), `RELAY_BASE_URL`, `SIM_URL` |
 | Actors | `GLUE_URL`, `EXECUTION_CALLBACK_TOKEN` (same value as glue), `DURABLE_ACTORS_DATA_DIR` |
-| Agents | `GLUE_URL`, `RELAY_URL`, `RELAY_WORKSPACE_KEY`, `OPENAI_API_KEY` or repo `.env` |
+| Actor port | `TERSE_URL`, `ADAPTER_PORT`, `ACTOR_API_TOKEN` (optional) |
+| Agents | `GLUE_URL`, `RELAY_URL`, `RELAY_KEY_FILE`, `OPENAI_API_KEY` or repo `.env` |
 
 From Windows, Relay answers on `http://localhost:8787` only; `127.0.0.1` is refused. Inside WSL both work.
 
@@ -69,29 +68,23 @@ Agents use only glue's HTTP routes: the four GETs, `/vote`, `/counter`, `/calibr
 Retries never redispatch: glue's journal and Plant's single claim both stop it. A command whose outcome is unknown stops for manual reconciliation (409), and is not retried.
 
 ## Error semantics
-Actors throw a stable code at the start of the message, such as `duplicate_vote: ...`. The port must turn it into a status. Glue returns `{error, details?}`, passes 4xx through, and turns 5xx into 503.
+Actors throw a stable code at the start of the message, such as `duplicate_vote: ...`. The port turns it into a status, and glue returns `{error, details?}`.
 
-| Code | Meaning | Status |
+| Case | Examples | Status |
 |---|---|---|
-| `invalid_proposal`, `invalid_vote`, `invalid_counter`, `invalid_rule`, `invalid_event`, `out_of_limits`, `not_a_required_voter`, `unsafe_yes` | Bad request | 400 |
-| `invalid_token` | Wrong token | 403 |
-| `proposal_not_found` | Unknown id | 404 |
-| `duplicate_vote`, `stale_proposal`, `veto_closed`, `parent_not_blocked`, `too_many_counters`, `not_approved`, `veto_window_open`, `token_already_used`, `not_executed`, `not_dispatched`, `not_accepted`, `already_applied`, `duplicate_event` | Conflict with current state | 409 |
-| `not_seeded` | Reset has not run | 503 |
+| Actor refused | `duplicate_vote`, `stale_proposal`, `not_a_required_voter`, `invalid_vote`, `unsafe_yes`, `out_of_limits`, `veto_closed`, `not_approved`, `veto_window_open`, `parent_not_blocked`, `too_many_counters`, `invalid_token`, `token_already_used`, `proposal_not_found`, `not_seeded` | 409 |
+| Bad kind, id or args at the port | | 400 |
+| Method not on the port's allowlist | | 403 |
+| Terse gave no answer in 7 s, or an unknown failure | | 503 |
 
-Other `invalid_*` codes are 400.
-
-The status column is proposed, pending the port. Glue's own codes: 401 without the callback token, 409 for reconciliation or `Execution in progress`, 502 with `details.accepted:true` when the actor accepted but Relay or `setMetric` failed. **Do not resubmit on 502.**
+Read the code from the `error` text: the port does not vary the status by code. Glue's own results: 400 on a bad body, 401 without the callback token, 409 for reconciliation or `Execution in progress`, 502 with `details.accepted:true` when the actor accepted but Relay or `setMetric` failed. **Do not resubmit on 502.**
 
 ## Known mismatches
-Open at `bcfd064`. Owners are working on these, so check `STATUS.md` before relying on one.
-1. `Plant.authorizeExecution` does not exist, and the sweep marks a proposal `executed` before the callback, so glue would answer 409.
+Open at 12:57. Owners are working on these, so check `STATUS.md` before relying on one.
+1. `Plant.authorizeExecution` does not exist, so `/execute-callback` fails. The sweep also marks a proposal `executed` before the callback, so glue would answer 409.
 2. Plant's callback sends no bearer token, so glue would answer 401.
 3. Glue seeds Company last, and `Company.loadSeed` clears rules, so the company rule can be lost. Plant B would then only ever report insufficient history.
-4. Relay text is `{type, payload}` from glue, but agents parse `{type, proposal}`. Agents ignore glue's messages until that is aligned.
-5. Glue and `agent/spawn.ts` both register `actorrelay-system`.
-6. Glue's Relay inbound expects sender `agent:<componentId>`, but agent names are `plant-a-LV-101`. Agents' HTTP `/vote` and `/counter` work regardless.
-7. Glue sends `/observed` events with id `observed:<proposalId>`, and Plant stores `event-<proposalId>`.
+4. Glue sends `/observed` events with id `observed:<proposalId>`, and Plant stores `event-<proposalId>`.
 
 ## Examples from real runs
 Actor examples are real Terse responses at 12:51 (actors `3746bdd`, stand-in history), called directly, without glue or the port. Votes are real model output through `agent/vote.ts` at 12:41, on a fake glue.
