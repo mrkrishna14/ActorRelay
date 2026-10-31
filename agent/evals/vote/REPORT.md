@@ -1,10 +1,27 @@
 # Vote pipeline accuracy
 
-**Verdict, 2026-10-31 13:05.** The four demo steps that must never be faked passed all 530 replay runs. No unsafe proposal reached unanimous yes on `gpt-6.1-terra` or `gpt-6.1-sol` on the current vote pipeline. Single-vote accuracy is 92%, not 100%, and most of the gap is code policy rather than model error: both models agree with a perfect model on over 99% of votes.
+**Verdict, corrected 2026-10-31 13:10.** The four demo steps that must never be faked passed all 530 replay runs. No throughput increase with `gpt-6.1-terra` or `gpt-6.1-sol` got an unsafe change to unanimous yes. Feed reductions are not clean: see the correction below, which replaces the 13:05 claim of zero physical unsafe votes. Single-vote accuracy is 91%, not 100%, and most of the gap is code policy rather than model error.
 
 Use `AGENT_OPENAI_MODEL=gpt-6.1-terra` and `AGENT_OPENAI_EFFORT=low` for every role. The default in code is still `gpt-6-luna`, which leaked 2 unsafe proposals of 159 at 720ea5c.
 
 **Scale:** 66,186 real OpenAI votes across sweeps, 98.7M tokens, plus 2,650 demo replay votes and fake-model controls. Raw results stay in `results/`, which git ignores.
+
+## Correction: tank temperature on feed reductions
+
+The oracle held TK-101 at 75 °C on a downward step. Simulated history shows it rising 0.116 °C per point, passing the 76.5 line at margin 10 from a step of about 14 points. The oracle now includes this, and stored votes were rescored with no new model calls.
+
+| Same 300 proposals, corrected oracle | terra d9a8265 | sol ea9fb48 | luna 720ea5c |
+|---|---|---|---|
+| Final accuracy | 90.9 | 91.2 | 85.0 |
+| Unsafe yes after code | 18 | 15 | 21 |
+| Physically past a limit (clear of the borderline band) | 15 (7) | 15 (7) | 18 (8) |
+| Of those, TK-101 on a feed reduction | 15 | 15 | 15 |
+| Unsafe proposals reaching unanimous yes, of 186 | 15 | 15 | 17 |
+| All of those on feed reductions | 15 | 15 | 15 |
+
+Every model voted yes on all 15, predicting about 75.5 °C. Two things limit how much this means. The stored runs retrieved history written by the old oracle, so the models never saw the rise, and the physics summary does not mention it. It also breaks the margin rule rather than the plant: simulated peaks are 76.8-78.1 °C on steps of 15-30 points, under the 80 max and the 85 critical. The demo has no feed reduction.
+
+The tables below used the oracle before this correction, so their unsafe and accuracy rows do not include these votes.
 
 ## After the fixes landed
 
@@ -107,7 +124,7 @@ With a fake model that always votes yes at current values, code alone stops all 
 
 - **False no is the main cost.** A perfect model scores only 92.8% through the current code, 93.3% with the fixes. `vote.ts` is deliberately stricter than TASK1: a near-critical target needs 3 close runs, and any increase with zero history is a no.
 - **TK-101 blocks when its margin widens.** Past margin 11, `85 × (1 − m/100)` falls below the normal 75 °C. That blocked 46 of 300 proposals that were otherwise safe, helped by a scenario mix with 24% of margins above 10. The actors floor this at `limit.max`; `vote.ts` does not.
-- **Truth is a fit, checked against simulation.** Expected values come from the CLAUDE.MD summary and the TASK2.MD fit. Read-only against 300 simulated history events, its mean error is 0.85 points on LV-101, 0.8 on level, 0.6 °C on temperature, 41 kW on duty and 70 kg/h on steam, and it reaches the same decision on 96.5% of 3,600 voter checks. The main gap: on large downward steps the simulated temperature rises to 78 °C, past the 76.5 line, while the oracle holds 75. A TK-101 yes on those steps is therefore unscored. Near the steam and duty limits the oracle is the more cautious of the two. The live plant itself has not been measured.
+- **Truth is a fit, checked against simulation.** Expected values come from the CLAUDE.MD summary and the TASK2.MD fit. Read-only against 300 simulated history events, its mean error is 0.85 points on LV-101, 0.8 on level, 0.6 °C on temperature, 41 kW on duty and 70 kg/h on steam, and it reached the same decision on 96.5% of 3,600 voter checks before the temperature correction above. Near the steam and duty limits the oracle is the more cautious of the two. The live plant itself has not been measured.
 - **No Claude role was measured.** The Claude CLI login is down, so all results are OpenAI, which is also what runs today.
 - **Latency is load-dependent.** Figures are at 40 concurrent per model on a shared key that other sessions were also using.
 - **Harness differences.** `vote.ts` runs under Node through `node-ts.mjs`, one token rewritten, not under Bun. The final run uses `fastNoMs` 600 s, so the fast-no race is not exercised.

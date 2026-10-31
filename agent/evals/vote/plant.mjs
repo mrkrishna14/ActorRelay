@@ -17,6 +17,8 @@ export const lvSteady = (s) => Math.min(100, s - 0.1);
 export const overshoot = (up) => clamp(0.12 * up, 0, 5);
 export const lvPeak = (from, to) => (to > from ? Math.min(100, lvSteady(to) + overshoot(to - from)) : lvSteady(to));
 export const tempDip = (up) => (up <= 0 ? 0 : up <= 15 ? (up * 2) / 15 : 2 + (up - 15) * 0.1);
+// Not in the physics summary: less cold feed overshoots the setpoint. Slope fitted to 100 simulated downward steps.
+export const tempRise = (down) => Math.max(0, down) * 0.116;
 export const levelAfter = (s) => (s > 95 ? 55 : 50);
 export const headerAt = (steamA, steamB) => clamp(6 - 0.0005 * (steamA + steamB - 3066), 4.5, 6.5);
 export const tvPosition = (s, header) => 0.36 * s + 32.5 + 2.2 * (6 - header);
@@ -39,7 +41,7 @@ export function stepEffects({ from, to, otherSpeed = 50, bias = {} }) {
   const up = Math.max(0, to - from);
   const header = headerAt(steamAt(to), steamAt(otherSpeed));
   const fx = {
-    "TK-101": { levelPct: levelAfter(to), tempC: 75 - tempDip(up) },
+    "TK-101": { levelPct: levelAfter(to), tempC: 75 - tempDip(up) + tempRise(from - to) },
     "LV-101": { positionPct: lvPeak(from, to) },
     "E-101": { dutyKw: dutyAt(to) },
     "TV-101": { positionPct: tvPosition(to, header), steamKgH: steamAt(to), headerBarg: header },
@@ -78,7 +80,7 @@ export function voterTruth({ tag, crossPlant, otherSpeed, fx }) {
   }
   const own = fx[tag];
   const out = Object.fromEntries(Object.entries(own).map(([m, v]) => [m, band(v)]));
-  if (tag === "TK-101") out.tempC = { point: own.tempC, lo: own.tempC, hi: 75, ceil: 75 };
+  if (tag === "TK-101") out.tempC = { point: own.tempC, lo: Math.min(own.tempC, 75), hi: Math.max(own.tempC, 75), ceil: Math.max(own.tempC, 75) };
   return out;
 }
 

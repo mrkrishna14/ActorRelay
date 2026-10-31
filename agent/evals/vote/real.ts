@@ -2,7 +2,7 @@
 // Drives the real castVote in agent/vote.ts over generated scenarios: fake glue, real OpenAI, unmodified prompts and enforcement.
 // Usage (WSL): bun agent/evals/vote/real.ts --tag real1 --proposals 300 --seed 31 --models gpt-6-luna:none,gpt-6.1-sol:low --concurrency 50
 // Fake models, for checking the harness and the code alone: "oracle" returns the true values, "liar" always votes yes at current values.
-import { createWriteStream, mkdirSync } from "node:fs";
+import { createWriteStream, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { castVote } from "../../vote";
@@ -56,7 +56,9 @@ function parseReply(text: string | undefined) {
 }
 
 const opts = parseArgs(process.argv.slice(2));
-const scenarios = generate({ proposals: Number(opts.proposals), seed: Number(opts.seed) });
+// --only <file> keeps the scenario ids listed there, so a prompt test can spend a few hundred calls on the votes that matter.
+const only = opts.only ? new Set(readFileSync(opts.only, "utf8").split(/\r?\n/).filter(Boolean)) : null;
+const scenarios = generate({ proposals: Number(opts.proposals), seed: Number(opts.seed) }).filter((s: any) => !only || only.has(s.id));
 const outDir = join(here, "results");
 mkdirSync(outDir, { recursive: true });
 const out = createWriteStream(join(outDir, `${opts.tag}.jsonl`), { flags: "a" });

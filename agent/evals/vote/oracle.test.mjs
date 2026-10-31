@@ -1,7 +1,7 @@
 // Checks the expected-outcome functions against the published plant numbers. Run: node --test agent/evals/vote/oracle.test.mjs
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { dutyAt, expectedVote, headerAt, lvPeak, lvSteady, plantSeed, stepEffects, steamAt, tempDip, voterTruth } from "./plant.mjs";
+import { dutyAt, expectedVote, headerAt, lvPeak, lvSteady, plantSeed, stepEffects, steamAt, tempDip, tempRise, voterTruth } from "./plant.mjs";
 import { generate } from "./scenarios.mjs";
 
 const near = (actual, want, tol) => assert.ok(Math.abs(actual - want) <= tol, `${actual} not within ${tol} of ${want}`);
@@ -27,6 +27,15 @@ test("CLAUDE.MD transients and TASK2.MD header drop", () => {
   const drop = 6 - headerAt(steamAt(85), steamAt(50));
   assert.ok(drop >= 0.3 && drop <= 0.6, `header drop ${drop}`);
   assert.equal(lvPeak(90, 60), lvSteady(60));
+});
+
+test("temperature rises on a downward step, as the simulated history shows", () => {
+  near(75 + tempRise(13.8), 76.5, 0.2);
+  near(75 + tempRise(26), 78.05, 0.1);
+  assert.equal(tempRise(-10), 0);
+  const fx = stepEffects({ from: 70, to: 45, otherSpeed: 50 });
+  const component = { ...seeded("TK-101"), marginPct: 10 };
+  assert.equal(expectedVote(component, voterTruth({ tag: "TK-101", otherSpeed: 50, fx }), 5).vote, "no");
 });
 
 test("demo verdicts", () => {
