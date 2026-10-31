@@ -1,5 +1,5 @@
-import type { CalibrationEntry, ComponentState, Limit } from "../../../shared/types"
-import { CALIBRATION_CAP } from "../config"
+import type { CalibrationEntry, ComponentState, Limit } from "../../../shared/types.js"
+import { CALIBRATION_CAP } from "../config.js"
 
 export const MARGIN_MIN = 5
 export const MARGIN_MAX = 25

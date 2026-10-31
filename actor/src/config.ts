@@ -16,6 +16,8 @@ export const ACTOR_CALL_TIMEOUT_MS = 3_000
 
 export const SETPOINT_TOLERANCE = 0.01
 
+declare const process: { env: Record<string, string | undefined> }
+
 // Read on use: actor processes receive their environment after this module loads.
 export function glueUrl(): string {
     return (process.env.GLUE_URL ?? "http://127.0.0.1:7200").replace(/\/+$/, "")

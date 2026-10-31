@@ -15,7 +15,7 @@ import type {
     Role,
     Vendor,
     Vote
-} from "../../shared/types"
+} from "../../shared/types.js"
 import {
     ACTOR_CALL_TIMEOUT_MS,
     AUDIT_CAP,
@@ -24,12 +24,13 @@ import {
     CLAIM_TIMEOUT_MS,
     FETCH_TIMEOUT_MS,
     PROPOSAL_CAP,
+    SETPOINT_TOLERANCE,
     SWEEP_EVERY_TICKS,
     TICK_MS,
     glueUrl
-} from "./config"
-import { COMPANY_ACTOR_ID, agentIdFor, componentActorId, proposalIdFor } from "./ids"
-import { applyCalibration, clampMargin, computeStatus } from "./logic/component"
+} from "./config.js"
+import { COMPANY_ACTOR_ID, agentIdFor, componentActorId, proposalIdFor } from "./ids.js"
+import { applyCalibration, clampMargin, computeStatus } from "./logic/component.js"
 import {
     assertCounterAllowed,
     assertExecutable,
@@ -41,7 +42,7 @@ import {
     reachableVoters,
     type ProposalInput,
     type Setpoints
-} from "./logic/proposals"
+} from "./logic/proposals.js"
 import {
     crossPlantVoters,
     deriveRules,
@@ -49,10 +50,11 @@ import {
     mergeDerivedRules,
     mergeSubmittedRule,
     toCompanyRule,
+    unsupportedEventId,
     type ComponentDef,
     type Topology
-} from "./logic/rules"
-import { rankSimilar } from "./logic/similar"
+} from "./logic/rules.js"
+import { rankSimilar } from "./logic/similar.js"
 import {
     assertAuditEntry,
     assertComponentState,
@@ -65,7 +67,7 @@ import {
     isNonEmptyString,
     normalizeCalibration,
     normalizeVote
-} from "./logic/validate"
+} from "./logic/validate.js"
 
 export type PlantSeed = { id: PlantId; name: string; components: ComponentState[] }
 export type CompanySeed = Partial<CompanyState> & Pick<CompanyState, "plants" | "sharedResources">
@@ -469,11 +471,19 @@ export class Plant extends Actor {
     }
 
     // Exactly one caller, across retries and restarts, is told to write to the simulator.
-    async claimDispatch(proposalId: string): Promise<DispatchClaim> {
+    // Plant never reads Component (that would close a mailbox cycle), so the executor passes the measured value.
+    async claimDispatch(proposalId: string, measured?: number): Promise<DispatchClaim> {
         this.#assertSeeded()
         if (!Object.hasOwn(this.executions, proposalId)) fail("not_accepted", `${proposalId} has not been accepted`)
         const execution = this.executions[proposalId]
         if (execution.state !== "accepted") return { dispatch: false, proposalId, state: execution.state }
+        if (measured !== undefined) {
+            const proposal = this.#findProposal(proposalId)
+            if (!isFiniteNumber(measured) || Math.abs(measured - proposal.from) > SETPOINT_TOLERANCE) {
+                const failed = await this.#failExecution(execution, `measured ${execution.metric} ${measured} no longer matches ${proposal.from}`)
+                return { dispatch: false, proposalId, state: failed.state }
+            }
+        }
         const token = randomBytes(32).toString("hex")
         await this.db.transaction(async () => {
             this.tokenHashes = { ...this.tokenHashes, [proposalId]: hashToken(token) }
@@ -546,9 +556,8 @@ export class Plant extends Actor {
     async promoteRule(r: LearnedRule): Promise<LearnedRule> {
         this.#assertSeeded()
         assertRuleShape(r)
-        const known = new Set(this.history.map(event => event.id))
-        const missing = r.supportEventIds.find(id => !known.has(id))
-        if (missing !== undefined) fail("invalid_rule", `supporting event ${missing} is not in history`)
+        const unsupported = unsupportedEventId(r, this.history)
+        if (unsupported !== null) fail("invalid_rule", `event ${unsupported} does not show this rule`)
         const at = nowIso()
         const { rules, rule } = mergeSubmittedRule(this.rules, r, at)
         await this.db.transaction(async () => {

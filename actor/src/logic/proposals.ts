@@ -1,8 +1,8 @@
-import type { AuditEntry, ComponentId, PlantId, Proposal, Vote } from "../../../shared/types"
-import { SETPOINT_TOLERANCE, VETO_WINDOW_MS, VOTE_TIMEOUT_MS } from "../config"
-import { agentIdFor } from "../ids"
-import type { ComponentDef, Topology } from "./rules"
-import { fail, isFiniteNumber, isNonEmptyString, isRecord } from "./validate"
+import type { AuditEntry, ComponentId, PlantId, Proposal, Vote } from "../../../shared/types.js"
+import { SETPOINT_TOLERANCE, VETO_WINDOW_MS, VOTE_TIMEOUT_MS } from "../config.js"
+import { agentIdFor } from "../ids.js"
+import type { ComponentDef, Topology } from "./rules.js"
+import { fail, isFiniteNumber, isNonEmptyString, isRecord } from "./validate.js"
 
 export type ProposalInput = {
     plantId?: PlantId

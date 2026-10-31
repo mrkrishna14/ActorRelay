@@ -1,4 +1,4 @@
-import type { AuditEntry, CalibrationEntry, ComponentState, HistoryEvent, LearnedRule, Vote } from "../../../shared/types"
+import type { AuditEntry, CalibrationEntry, ComponentState, HistoryEvent, LearnedRule, Vote } from "../../../shared/types.js"
 
 // Thrown errors start with a stable code; adapter.ts maps it to an HTTP status.
 export function fail(code: string, detail: string): never {

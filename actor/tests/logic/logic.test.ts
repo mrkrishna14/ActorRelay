@@ -6,7 +6,7 @@ import plants from "../../../shared/plants.json"
 import history from "../fixtures/history.json"
 import { applyCalibration, computeStatus } from "../../src/logic/component"
 import { assertExecutable, assertVoteAllowed, enforceVoteSafety, planSweep, reachableVoters, unanimousYes, type Setpoints } from "../../src/logic/proposals"
-import { crossPlantVoters, deriveRules, mergeCompanyRule, mergeDerivedRules, mergeSubmittedRule, toCompanyRule, type Topology } from "../../src/logic/rules"
+import { crossPlantVoters, deriveRules, mergeCompanyRule, mergeDerivedRules, mergeSubmittedRule, toCompanyRule, unsupportedEventId, type Topology } from "../../src/logic/rules"
 import { rankSimilar } from "../../src/logic/similar"
 import { normalizeCalibration, normalizeVote } from "../../src/logic/validate"
 import { componentActorId, plantOfProposal, proposalIdFor } from "../../src/ids"
@@ -322,6 +322,14 @@ describe("rules", () => {
         expect(twice.rules.length).toBe(1)
         expect(twice.rule.timesSeen).toBe(company.timesSeen + 1)
         expect(twice.rule.supportEventIds).toContain("e4")
+    })
+
+    test("a submitted rule is rejected when a cited event does not show it", () => {
+        const rows = [event("e1", 82, 86), event("e2", 84, 87), event("e3", 86, 89)]
+        const rule = deriveRules(rows, topologyA, now)[0]
+        expect(unsupportedEventId(rule, rows)).toBeNull()
+        expect(unsupportedEventId({ ...rule, supportEventIds: ["e1", "e2", "safe"] }, [...rows, event("safe", 65, 66)])).toBe("safe")
+        expect(unsupportedEventId({ ...rule, supportEventIds: ["e1", "e2", "invented"] }, rows)).toBe("invented")
     })
 
     test("a resubmitted rule merges by condition and consequence", () => {

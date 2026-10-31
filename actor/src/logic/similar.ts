@@ -1,4 +1,4 @@
-import type { HistoryEvent, Limit } from "../../../shared/types"
+import type { HistoryEvent, Limit } from "../../../shared/types.js"
 
 const RELEVANCE_BAND = 0.15
 const MAX_RESULTS = 100

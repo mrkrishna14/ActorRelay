@@ -1,4 +1,4 @@
-import type { ComponentId, ComponentState, HistoryEvent, LearnedRule } from "../../../shared/types"
+import type { ComponentId, ComponentState, HistoryEvent, LearnedRule } from "../../../shared/types.js"
 
 export type ComponentDef = Pick<ComponentState, "id" | "tag" | "model" | "limits" | "upstream" | "downstream" | "sharedResources">
 export type Topology = Record<ComponentId, ComponentDef>
@@ -152,6 +152,33 @@ export function mergeSubmittedRule(existing: LearnedRule[], submitted: LearnedRu
     const rule = { ...current, supportEventIds, timesSeen, lastSeenAt: now }
     const merged = { ...rule, text: describe(rule) }
     return { rules: existing.map((item, position) => (position === index ? merged : item)), rule: merged }
+}
+
+function satisfies(value: number, op: Op, target: number): boolean {
+    return op === ">=" ? value >= target : value <= target
+}
+
+// Rules submitted by agents are data: every cited event must exist and must itself show the claimed pattern.
+export function unsupportedEventId(rule: LearnedRule, history: HistoryEvent[]): string | null {
+    const { condition, consequence } = rule
+    for (const id of rule.supportEventIds) {
+        const event = history.find(item => item.id === id)
+        const conditionHolds =
+            event !== undefined &&
+            event.metric === condition.metric &&
+            (condition.componentId === null || event.componentId === condition.componentId) &&
+            satisfies(event.after, condition.op, condition.value)
+        const consequenceHolds =
+            conditionHolds &&
+            event.effects.some(
+                effect =>
+                    effect.metric === consequence.metric &&
+                    (consequence.componentId === null || effect.componentId === consequence.componentId) &&
+                    satisfies(effect.after, consequence.op, consequence.value)
+            )
+        if (!consequenceHolds) return id
+    }
+    return null
 }
 
 // Company rules drop component ids so the same equipment model matches in any plant.

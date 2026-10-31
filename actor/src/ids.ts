@@ -1,4 +1,4 @@
-import type { ComponentId, PlantId } from "../../shared/types"
+import type { ComponentId, PlantId } from "../../shared/types.js"
 
 // Terse actor ids allow only [A-Za-z0-9._-], so a ComponentId cannot be an actor id as it stands.
 export const COMPANY_ACTOR_ID = "company"

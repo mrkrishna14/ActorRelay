@@ -12,6 +12,7 @@
     "terse-sdk": "0.14.9"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "@types/node": "^22.0.0"
   }
 }
