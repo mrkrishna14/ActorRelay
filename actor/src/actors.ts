@@ -121,7 +121,7 @@ export class Component extends Actor<null, Ping, Ping> {
         const id = componentIdFor(this.id)
         if (!finite(value)) throw new Error("value must be a finite number")
         if (!this.limits[metric] && !(metric in this.metrics)) throw new Error(`unknown metric ${metric} on ${id}`)
-        if (this.usedProposals.includes(proposalId)) throw new Error(`proposal ${proposalId} already applied to ${id}`)
+        if (this.usedProposals.includes(proposalId)) throw new Error(`token_already_used: proposal ${proposalId} already applied to ${id}`)
         if (!verifyExecuteToken(token, proposalId, id, metric, value)) throw new Error(`rejected: no valid execute token for ${proposalId}`)
         this.metrics = { ...this.metrics, [metric]: value }
         this.status = statusFor(this.metrics, this.limits)
@@ -164,11 +164,15 @@ export type ProposalInput = {
 }
 export type DispatchView = {
     proposalId: string; componentId: ComponentId; metric: string; value: number
-    state: "pending" | "accepted" | "failed"; createdAt: string; settledAt: string | null; error: string | null
+    state: "pending" | "claimed" | "accepted" | "failed"; createdAt: string; settledAt: string | null; error: string | null
 }
 export type DispatchResult = { ok: boolean; applied?: number; error?: string }
 type Dispatch = DispatchView & { token: string }
-type PlantConfig = { vetoWindowMs: number; voteTimeoutMs: number; clock: boolean }
+type PlantConfig = { vetoWindowMs: number; voteTimeoutMs: number; clock: boolean; glueUrl?: string | null; callbackToken?: string | null }
+export type GlueConfig = { glueUrl?: string | null; callbackToken?: string | null }
+export type DispatchClaim =
+    | { dispatch: true; proposalId: string; componentId: ComponentId; metric: string; value: number; token: string }
+    | { dispatch: false; proposalId: string; state: string }
 export type PlantOutgoing = Ping | ({ type: "dispatch" } & DispatchView)
 
 /**
@@ -208,6 +212,8 @@ export class Plant extends Actor<null, Ping, PlantOutgoing> {
             vetoWindowMs: options?.vetoWindowMs ?? 10_000,
             voteTimeoutMs: options?.voteTimeoutMs ?? 30_000,
             clock: options?.clock ?? true,
+            glueUrl: this.config.glueUrl ?? null, // integration settings survive a reset
+            callbackToken: this.config.callbackToken ?? null,
         }
         const info: Record<ComponentId, ComponentInfo> = {}
         for (const c of plant.components) {
@@ -393,10 +399,80 @@ export class Plant extends Actor<null, Ping, PlantOutgoing> {
             createdAt: nowIso(), settledAt: null, error: null, token: "",
         }
         this.dispatches = { ...this.dispatches, [p.id]: dispatch }
+        // The decision is executed now; the simulation write is a separate, recorded step (claim/confirm).
+        this.proposals = replaceProposal(this.proposals, { ...p, status: "executed" })
+        this.lastExecutedAt = { ...this.lastExecutedAt, [p.proposerComponentId]: dispatch.createdAt }
         this.audit = addAudit(this.audit, this.id as PlantId, "execute", p.id, `approved for dispatch: ${tagOf(p.proposerComponentId)} ${p.metric} → ${p.to}`, "plant")
         const view = publicDispatch(dispatch)
         this.broadcast({ type: "dispatch", ...view })
+        await this.notifyGlue(p.id)
         return view
+    }
+
+    /**
+     * Best-effort POST <glue>/execute-callback {proposalId}. Glue answers only after it calls back into this
+     * Plant (claimDispatch), which waits for this call to finish, so we never wait for the answer: a short
+     * timeout just releases the actor. Failures never roll back the decision.
+     */
+    async notifyGlue(proposalId: string): Promise<boolean> {
+        const glue = env("GLUE_URL") ?? this.config.glueUrl
+        if (!glue) return false
+        const token = env("EXECUTION_CALLBACK_TOKEN") ?? this.config.callbackToken
+        try {
+            await fetch(`${glue.replace(/\/$/, "")}/execute-callback`, {
+                method: "POST",
+                headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}) },
+                body: JSON.stringify({ proposalId }),
+                signal: AbortSignal.timeout(400),
+            })
+        } catch (error) {
+            const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")
+            if (!timedOut) {
+                this.audit = addAudit(this.audit, this.id as PlantId, "execute", proposalId, `execute-callback to glue failed: ${String(error).slice(0, 160)}`, "plant")
+                return false
+            }
+        }
+        this.audit = addAudit(this.audit, this.id as PlantId, "execute", proposalId, "execute-callback sent to glue", "plant")
+        return true
+    }
+
+    /** Integration settings for the execute callback. GLUE_URL / EXECUTION_CALLBACK_TOKEN on the actor host win. */
+    async configure(input: GlueConfig): Promise<GlueConfig> {
+        const url = input?.glueUrl ?? null
+        if (url !== null && !/^https?:\/\/[^\s]+$/.test(String(url))) throw new Error("glueUrl must be an http(s) URL")
+        const token = input?.callbackToken ?? null
+        if (token !== null && (typeof token !== "string" || token.length > 512)) throw new Error("callbackToken must be a string")
+        this.config = { ...this.config, glueUrl: url, callbackToken: token }
+        return { glueUrl: url, callbackToken: token ? "<set>" : null }
+    }
+
+    /** Glue's handshake: exactly one caller gets the one-time token for the approved write; later callers get dispatch:false. */
+    async claimDispatch(proposalId: string): Promise<DispatchClaim> {
+        if (typeof proposalId !== "string" || !proposalId) throw new Error("proposalId must be a non-empty string")
+        const p = this.proposals.find(x => x.id === proposalId)
+        if (!p) throw new Error(`unknown proposal ${proposalId}`)
+        const d = this.dispatches[proposalId]
+        if (!d) throw new Error(`no approved dispatch for ${proposalId}`)
+        if (d.state !== "pending") return { dispatch: false, proposalId, state: d.state }
+        const token = executeToken(proposalId, d.componentId, d.metric, d.value)
+        this.dispatches = { ...this.dispatches, [proposalId]: { ...d, state: "claimed", token } }
+        this.audit = addAudit(this.audit, this.id as PlantId, "execute", proposalId, `dispatch claimed: ${tagOf(d.componentId)} ${d.metric} → ${d.value}`, "glue")
+        return { dispatch: true, proposalId, componentId: d.componentId, metric: d.metric, value: d.value, token }
+    }
+
+    /** Glue reports a refused or unknown simulation write. Idempotent; an accepted write cannot be failed. */
+    async reportDispatchFailure(proposalId: string, reason: string): Promise<DispatchView> {
+        if (typeof proposalId !== "string" || !proposalId) throw new Error("proposalId must be a non-empty string")
+        const why = String(reason ?? "dispatch failed").slice(0, 1000)
+        const d = this.dispatches[proposalId]
+        if (!d) throw new Error(`no approved dispatch for ${proposalId}`)
+        if (d.state === "failed" || d.state === "accepted") return publicDispatch(d)
+        const p = this.proposals.find(x => x.id === proposalId)!
+        const failed: Dispatch = { ...d, state: "failed", settledAt: nowIso(), error: why }
+        this.dispatches = { ...this.dispatches, [proposalId]: failed }
+        this.proposals = replaceProposal(this.proposals, { ...p, status: "blocked" })
+        this.audit = addAudit(this.audit, this.id as PlantId, "block", proposalId, `dispatch failed: ${why}`, "glue")
+        return publicDispatch(failed)
     }
 
     /** Durable list of approved writes the integration service has not reported on yet. */
@@ -409,7 +485,7 @@ export class Plant extends Actor<null, Ping, PlantOutgoing> {
         const result = parse(DispatchResultSchema, input, "dispatch result")
         const d = this.dispatches[proposalId]
         if (!d) throw new Error(`no approved dispatch for ${proposalId}`)
-        if (d.state !== "pending") return publicDispatch(d)
+        if (d.state !== "pending" && d.state !== "claimed") return publicDispatch(d)
         const p = this.proposals.find(x => x.id === proposalId)!
         const at = nowIso()
         if (!result.ok) {
@@ -421,7 +497,9 @@ export class Plant extends Actor<null, Ping, PlantOutgoing> {
         }
         const value = finite(result.applied) ? result.applied : d.value
         const token = executeToken(proposalId, d.componentId, d.metric, value)
-        await ref<Component>("Component", actorIdFor(d.componentId)).setMetric(d.metric, value, proposalId, token)
+        await ref<Component>("Component", actorIdFor(d.componentId)).setMetric(d.metric, value, proposalId, token).catch((error: unknown) => {
+            if (!String(error).includes("token_already_used")) throw error // already applied by the glue handshake
+        })
         const accepted: Dispatch = { ...d, value, state: "accepted", settledAt: at, token }
         this.dispatches = { ...this.dispatches, [proposalId]: accepted }
         this.lastExecutedAt = { ...this.lastExecutedAt, [d.componentId]: at }

@@ -226,3 +226,44 @@ describe("input validation", () => {
         expect((await plantA().read()).proposals.find(x => x.id === p.id)!.votes.length).toBe(0)
     })
 })
+
+describe("glue dispatch handshake", () => {
+    async function approved(to: number) {
+        const p = await plantA().propose({ proposerComponentId: "plant-a/P-100", metric: "speedPct", to, rationale: "glue" })
+        for (const id of ALL_VOTERS) await plantA().vote(vote(p.id, id, true))
+        await sleep(VETO_MS + 100)
+        await plantA().sweep()
+        return p
+    }
+
+    test("after the veto window the sweep marks the proposal executed with a pending dispatch", async () => {
+        const p = await approved(65)
+        const s = (await plantA().read()).proposals.find(x => x.id === p.id)!
+        expect(s.status).toBe("executed")
+        expect(await plantA().pendingDispatches()).toEqual([expect.objectContaining({ proposalId: p.id, value: 65, state: "pending" })])
+    })
+
+    test("claimDispatch hands the token to exactly one caller; setMetric accepts it once", async () => {
+        const p = await approved(65)
+        const first = await plantA().claimDispatch(p.id)
+        expect(first).toMatchObject({ dispatch: true, proposalId: p.id, componentId: "plant-a/P-100", metric: "speedPct", value: 65 })
+        const second = await plantA().claimDispatch(p.id)
+        expect(second).toEqual({ dispatch: false, proposalId: p.id, state: "claimed" })
+        if (!first.dispatch) throw new Error("unreachable")
+        await comp("plant-a/P-100").setMetric(first.metric, first.value, p.id, first.token)
+        expect((await comp("plant-a/P-100").read()).metrics.speedPct).toBe(65)
+        await expect(comp("plant-a/P-100").setMetric(first.metric, first.value, p.id, first.token)).rejects.toThrow(/token_already_used/)
+        expect(await plantA().pendingDispatches()).toEqual([])
+    })
+
+    test("reportDispatchFailure blocks the proposal (idempotent)", async () => {
+        const p = await approved(64)
+        const failed = await plantA().reportDispatchFailure(p.id, "simulation refused")
+        expect(failed.state).toBe("failed")
+        const again = await plantA().reportDispatchFailure(p.id, "again")
+        expect(again.error).toBe("simulation refused")
+        const s = (await plantA().read()).proposals.find(x => x.id === p.id)!
+        expect(s.status).toBe("blocked")
+        expect((await plantA().claimDispatch(p.id)).dispatch).toBe(false)
+    })
+})

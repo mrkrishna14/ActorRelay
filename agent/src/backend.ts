@@ -66,8 +66,10 @@ export class GlueBackend implements Backend {
     component(id: ComponentId) {
         return this.call<ComponentSnapshot>("GET", `/component/${encodeURIComponent(id)}`)
     }
-    plant(id: PlantId) {
-        return this.call<PlantState>("GET", `/state?plantId=${id}`)
+    /** Glue's /state wraps the plant: {plant, company, components, mode}. */
+    async plant(id: PlantId) {
+        const r = await this.call<PlantState | { plant: PlantState }>("GET", `/state?plantId=${id}`)
+        return "plant" in r && r.plant ? r.plant : (r as PlantState)
     }
     similar(plantId: PlantId, componentId: ComponentId, metric: string, to: number, upstreamSnapshot: Record<string, number>, k: number) {
         const q = new URLSearchParams({ plantId, componentId, metric, to: String(to), k: String(k), upstreamSnapshot: JSON.stringify(upstreamSnapshot) })
@@ -79,8 +81,12 @@ export class GlueBackend implements Backend {
     async submitVote(_plantId: PlantId, vote: Vote) {
         await this.call("POST", "/vote", { vote })
     }
-    propose(_plantId: PlantId, input: CounterInput) {
-        return this.call<Proposal>("POST", "/counter", { parentProposalId: input.parentProposalId, proposal: input })
+    /** Glue builds {...proposal, parentProposalId} and routes by proposal.plantId; replies {proposal, mode}. */
+    async propose(plantId: PlantId, input: CounterInput) {
+        // glue's /counter schema is strict: proposal = {plantId, proposerComponentId, metric, to, rationale}
+        const proposal = { plantId, proposerComponentId: input.proposerComponentId, metric: input.metric, to: input.to, rationale: input.rationale }
+        const r = await this.call<Proposal | { proposal: Proposal }>("POST", "/counter", { parentProposalId: input.parentProposalId, proposal })
+        return "proposal" in r && r.proposal ? r.proposal : (r as Proposal)
     }
     addCalibration(componentId: ComponentId, entry: CalibrationEntry) {
         return this.call<ComponentSnapshot>("POST", "/calibration", { componentId, entry })

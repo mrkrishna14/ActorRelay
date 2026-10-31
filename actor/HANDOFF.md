@@ -65,7 +65,9 @@ All inputs are validated with zod (`src/schemas.ts`); a bad input throws `invali
 | `vote(v: Vote): Proposal` | Rejects: unknown proposal, not `voting`, non-voter, duplicate voter, unknown evidence ids (same-plant voters). **Enforced in code:** a `yes` whose prediction ≥ `critical × (1 − marginPct/100)` of the voter, or with `similarCount < 3` and a prediction within 15 % of critical, is recorded as `no` with an `[enforced] …` reason. Any `no` → `blocked`; unanimous `yes` → `veto_window` (deadline now + 10 s) unless another window is open on the same proposer component (then it waits in `voting`). |
 | `veto(proposalId, by): Proposal` | Only inside an open veto window. |
 | `sweep(): Proposal[]` | Runs every 2 s on the clock: expires proposals missing votes after 30 s, opens queued windows, calls `execute` when a window passes. Callable by hand. |
-| `execute(proposalId): DispatchView \| null` | Only after the window passed with unanimous yes. Re-checks: not stale (no newer execution on that component), `to` ≤ critical − margin. Creates one **pending dispatch**. Does not write to the simulation. Idempotent. |
+| `execute(proposalId): DispatchView \| null` | Only after the window passed with unanimous yes. Re-checks: not stale, `to` ≤ critical − margin. Sets the proposal `executed`, creates one **pending dispatch**, POSTs glue's `/execute-callback`. Does not write to the simulation. Idempotent. |
+| `claimDispatch(proposalId)` / `reportDispatchFailure(proposalId, reason)` | Glue handshake (see Execute flow). |
+| `configure({glueUrl?, callbackToken?})` | Where `execute` sends the callback; survives `loadSeed`. `GLUE_URL` / `EXECUTION_CALLBACK_TOKEN` env on the actor host win. |
 | `pendingDispatches(): DispatchView[]` | Approved writes not yet reported. Durable: poll this. Also pushed as a socket message `{type: "dispatch", …}`. |
 | `confirmDispatch(proposalId, result: {ok, applied?, error?}): DispatchView` | Glue reports the simulation write. `ok` → Component.setMetric (with token), proposal `executed`. Not ok → proposal `blocked` with the error. Idempotent. |
 | `recordEvent(e: HistoryEvent): {event, rules}` | Observed effects (or any event). Idempotent by `e.id`. Promotes rules: ≥ 3 events of the same change at ≥ the 10-point bucket whose effect on one component crosses its `limit.max`. Shares rules with Company. |
@@ -94,11 +96,12 @@ Takes ~1–2 s per plant. Order does not matter for company rules.
 
 ## Execute flow (one-time token)
 1. Unanimous `yes` → `veto_window`, `vetoDeadline` = now + 10 s. `veto()` works until then.
-2. The 2 s sweep after the deadline calls `execute()` → re-checks → one pending dispatch `{proposalId, componentId, metric, value}`. Nothing is written yet; proposal stays `veto_window`.
-3. Glue sees it (socket message or `pendingDispatches()`), sends `POST bridge /setpoint {componentId, metric, value, proposalId}` **once per proposalId**, then calls `confirmDispatch(proposalId, {ok: true, applied})` (or `{ok: false, error}`).
-4. `confirmDispatch` mints an HMAC token for exactly `(proposalId, componentId, metric, value)`, calls `Component.setMetric(…, token)`, marks the dispatch `accepted` and the proposal `executed`. The Component refuses any other token and any reuse of a proposal id.
-5. After the bridge observes 5 ticks, glue calls `recordEvent(event)` with `proposalId` set → rules update → glue broadcasts `executed`.
-The token secret is `ACTORRELAY_EXECUTE_SECRET` on the actor host, with a demo default; glue never sees tokens.
+2. The 2 s sweep after the deadline calls `execute()` → re-checks (stale, limits) → proposal **`executed`** + one pending dispatch `{proposalId, componentId, metric, value}`. Nothing is written to the simulation yet.
+3. If a glue URL is known (`GLUE_URL` env on the actor host, else `Plant.configure({glueUrl, callbackToken?})`), `execute` POSTs `<glue>/execute-callback {proposalId}` (`Authorization: Bearer <callbackToken>` if set). Best-effort, 400 ms; never rolls back. Cloud actors cannot reach a laptop: run actors locally for the glue demo, or let glue poll `pendingDispatches()`.
+4. **Glue handshake:** `claimDispatch(proposalId)` → `{dispatch:true, proposalId, componentId, metric, value, token}` to exactly one caller, `{dispatch:false, proposalId, state}` afterwards. Glue writes the setpoint, then `Component.setMetric(metric, value, proposalId, token)`; a repeat gives `token_already_used` (success on retry). Refused/unknown write → `reportDispatchFailure(proposalId, reason)` → proposal `blocked`.
+5. **Direct path (agents' demo-check):** `pendingDispatches()` → write → `confirmDispatch(proposalId, {ok, applied?, error?})` → Plant applies the token itself. Works on `pending` or `claimed` dispatches.
+6. After the bridge observes 5 ticks, glue calls `recordEvent(event)` with `proposalId` → rules update → glue broadcasts `executed`.
+Token secret: `ACTORRELAY_EXECUTE_SECRET` on the actor host (demo default otherwise).
 
 ## Examples
 SDK:
@@ -155,3 +158,11 @@ Plant calls Component and Company. The SDK's built-in inner client needs `DURABL
 - `shared/history.json` is not in the repo yet; tests use `tests/fixtures.ts`, shaped like TASK2's requirements.
 - Cloud actors cannot reach a laptop: `GLUE_URL` tick pull only works for local actors. Glue should push (`mirror` + `heartbeat`) and poll `pendingDispatches()`.
 - `status` is high-side only (per spec); `offline` is the value before the first seed.
+
+## Glue actor port
+`client/port.ts` is the module glue's live mode loads: `ACTOR_CLIENT_MODULE=/Users/kanishk/Desktop/Factoryio/actor/client/port.ts` (use your own absolute path). It exports `createActorPort()` and a default port `{read(kind, id), call(kind, id, method, args)}`; `kind` is `Component` | `Plant` | `Company`.
+- Calls the actor HTTP invoke API directly (no generated client, so newly added methods work without regenerating).
+- ids: `Component` takes the ComponentId (`plant-a/LV-101` → actor `plant-a.LV-101`); `Plant` takes `plant-a`/`plant-b`; `Company` always maps to `company`.
+- Target: `TERSE_ACTOR_URL` unset → local `terse actor dev` (no auth). Cloud: `TERSE_ACTOR_URL=https://api.useterse.ai/cmvws418j00rbjy2a1uh73h7l/actors` + `TERSE_API_KEY` (session from `/access`, cached, refreshed on 401).
+- Actor errors are thrown with the actor's message unchanged (glue matches substrings such as `token_already_used`).
+- Verified: `cd actor/client && bun test port.test.ts` 5/5 against local; cloud `read("Company","company")` OK in ~0.6 s.

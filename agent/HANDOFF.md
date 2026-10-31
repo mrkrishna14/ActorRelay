@@ -17,11 +17,21 @@ cd agent && bun install && bun run generate && bun src/spawn.ts
 | `ANTHROPIC_API_KEY` | Claude agents (TK-101, E-101, TV-101) use `claude-opus-5-5` via the Anthropic SDK (structured output + server fallback) |
 | `OPENAI_API_KEY` | OpenAI Responses API (`CODEX_MODEL`, default `gpt-6.1-sol`). **With only this key set, all 10 agents run on OpenAI** (vote label `[openai:…]`); `AGENT_LLM=openai` forces that even if an Anthropic key exists |
 | `GLUE_URL` | If set, agents use glue routes (`/component/:id`, `/state`, `/similar`, `/rules`, `/vote`, `/counter`, `/calibration`) instead of the actors, and votes go Relay → glue |
-| `AGENT_SUBMIT` | `actors` (default without glue: post vote on Relay **and** submit to Plant) or `relay` (post only; glue forwards) |
+| `AGENT_SUBMIT` | default: submit votes/counters/calibrations to the backend (actors, or glue routes with `GLUE_URL`) and post copies on Relay; `relay` = Relay only |
 | `AGENT_COMPONENTS` | Comma list to run a subset; default all 10 |
 | `AGENT_LLM=off` | Force the baseline |
 
 Without an LLM key an agent runs the **baseline**, labelled `[baseline: no LLM configured]` in every vote reason: predictions fitted from the retrieved similar events (+ the newest run), raised to any applicable learned-rule floor, physics priors only where history is silent.
+
+## Integrated run with glue (glue/HANDOFF.md, publish mode)
+```sh
+# agents: votes/counters/calibrations go to glue routes; glue publishes proposals/executed back to us
+cd agent && GLUE_URL=http://127.0.0.1:7200 bun src/spawn.ts          # publish server on :7201
+# glue: RELAY_PUBLISH_URL=http://127.0.0.1:7201/publish  (glue opens no Relay connection of its own)
+```
+- `POST :7201/publish` takes glue's `{type, payload, channels}` (bearer `RELAY_TOKEN` if set): delivers to the agents at once and rebroadcasts on Relay as `ar-glue-system`. `GET :7201/health` → `{ok, agents, relay, backend}`.
+- `AGENT_PUBLISH_PORT` (default 7201; `0` disables). `AGENT_SUBMIT=relay` stops direct submission (votes then only travel as Relay copies — don't use with glue publish mode).
+- Relay messages are accepted as `{type, proposal}` or glue's `{type, payload: {...}}`.
 
 ## Relay protocol (CLAUDE.MD)
 One Relay participant per component (`ar-plant-a-lv-101`, …) on `#plant-a`, `#plant-b`, `#company`; JSON in the message text: `proposal`, `vote`, `counter`, `executed`, `rule`. Cross-plant votes go to `#company`. Glue should publish `proposal` and `executed`; agents publish `vote` and `counter`.
