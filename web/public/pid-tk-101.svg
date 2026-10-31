@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1000" width="1500" height="1000" font-family="Segoe UI, Arial, Helvetica, sans-serif">
+<title>TK-101 Heated Hold Tank — Simulated Plant</title>
+<defs>
+<marker id="arr-liq" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#1f6fb2"/></marker>
+<marker id="arr-stm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#d0601a"/></marker>
+<marker id="arr-sig" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#5a6b7d"/></marker>
+</defs>
+<rect id="background" x="0" y="0" width="1500" height="1000" fill="#ffffff"/>
+<rect id="frame" x="12" y="12" width="1476" height="976" fill="none" stroke="#9aa7b4" stroke-width="1.5"/>
+<path d="M40,330 L158,330" fill="none" stroke="#1f6fb2" stroke-width="3" marker-end="url(#arr-liq)"/>
+<path d="M190,300 L190,150 L610,150 L610,232" fill="none" stroke="#1f6fb2" stroke-width="3" marker-end="url(#arr-liq)"/>
+<text x="40" y="318" text-anchor="start" font-size="14" font-weight="bold" fill="#1f6fb2">Feed</text>
+<path d="M680,772 L680,840 L982,840" fill="none" stroke="#1f6fb2" stroke-width="3"/>
+<path d="M1018,840 L1330,840" fill="none" stroke="#1f6fb2" stroke-width="3" marker-end="url(#arr-liq)"/>
+<text x="1340" y="845" text-anchor="start" font-size="14" font-weight="bold" fill="#1f6fb2">To downstream</text>
+<path d="M960,110 L1470,110" fill="none" stroke="#d0601a" stroke-width="6"/>
+<text x="1215" y="78" text-anchor="middle" font-size="15" font-weight="bold" fill="#d0601a">Shared steam header, 6 barg</text>
+<text x="1215" y="96" text-anchor="middle" font-size="12" font-weight="normal" fill="#d0601a" font-style="italic">shared by Plant A and Plant B</text>
+<text x="966" y="132" text-anchor="start" font-size="12" font-weight="normal" fill="#d0601a">← Plant A</text>
+<text x="1464" y="132" text-anchor="end" font-size="12" font-weight="normal" fill="#d0601a">Plant B →</text>
+<path d="M1400,113 L1400,610 L1118,610" fill="none" stroke="#d0601a" stroke-width="3"/>
+<path d="M1082,610 L802,610" fill="none" stroke="#d0601a" stroke-width="3" marker-end="url(#arr-stm)"/>
+<path d="M800,700 L912,700" fill="none" stroke="#d0601a" stroke-width="2.5"/>
+<path d="M948,700 L1180,700" fill="none" stroke="#d0601a" stroke-width="2.5" marker-end="url(#arr-stm)"/>
+<text x="1190" y="705" text-anchor="start" font-size="14" font-weight="bold" fill="#d0601a">Condensate return</text>
+<g class="steam-trap"><circle cx="930" cy="700" r="18" fill="#fff" stroke="#243447" stroke-width="2"/><text x="930" y="705" text-anchor="middle" font-size="13" font-weight="bold" fill="#243447">T</text></g>
+<text x="930" y="738" text-anchor="middle" font-size="12" font-weight="normal" fill="#243447">Steam trap</text>
+<g id="TK-101">
+<path d="M560,500 L800,500 L800,740 A120,32 0 0 1 560,740 Z" fill="#dcebf7" stroke="none"/>
+<path d="M560,260 A120,32 0 0 1 800,260 L800,740 A120,32 0 0 1 560,740 Z" fill="none" stroke="#243447" stroke-width="3"/>
+<line x1="566" y1="500" x2="794" y2="500" stroke="#1f6fb2" stroke-width="1.5" stroke-dasharray="10 4"/>
+<path d="M762,488 L778,488 L770,498 Z" fill="#1f6fb2"/>
+<text x="756" y="494" text-anchor="end" font-size="11" fill="#1f6fb2">NLL 2.0 m</text>
+<circle cx="680" cy="196" r="18" fill="#fff" stroke="#243447" stroke-width="2"/><text x="680" y="201" text-anchor="middle" font-size="13" font-weight="bold" fill="#243447">M</text>
+<line x1="680" y1="214" x2="680" y2="560" stroke="#243447" stroke-width="3"/>
+<path d="M640,552 L680,560 L640,568 Z M720,552 L680,560 L720,568 Z" fill="#243447"/>
+<text x="470" y="292" text-anchor="middle" font-size="18" font-weight="bold" fill="#243447">TK-101</text>
+<text x="470" y="311" text-anchor="middle" font-size="12" fill="#243447">Agitated hold tank</text>
+<text x="470" y="327" text-anchor="middle" font-size="12" fill="#243447">2.0 m Ø × 4.0 m</text>
+<text id="TK-101-value" class="live-value" x="470" y="354" text-anchor="middle" font-size="14" font-weight="bold" fill="#243447"></text>
+</g>
+<g id="E-101">
+<path d="M800,610 L752,610 L752,620 L652,620 L652,640 L752,640 L752,660 L652,660 L652,680 L752,680 L752,700 L800,700" fill="none" stroke="#d0601a" stroke-width="3" stroke-linejoin="round"/>
+<text x="606" y="645" text-anchor="middle" font-size="13" font-weight="bold" fill="#243447">E-101</text>
+<text x="606" y="660" text-anchor="middle" font-size="10" fill="#243447">steam coil</text>
+<text id="E-101-value" class="live-value" x="606" y="684" text-anchor="middle" font-size="14" font-weight="bold" fill="#243447"></text>
+</g>
+<g id="P-100">
+<circle cx="190" cy="330" r="30" fill="#fff" stroke="#243447" stroke-width="2.5"/>
+<path d="M180,315 L208,330 L180,345 Z" fill="none" stroke="#243447" stroke-width="2"/>
+<path d="M168,354 L156,372 L224,372 L212,354" fill="none" stroke="#243447" stroke-width="2.5"/>
+<text x="190" y="394" text-anchor="middle" font-size="16" font-weight="bold" fill="#243447">P-100</text>
+<text x="190" y="410" text-anchor="middle" font-size="11" fill="#243447">Feed pump</text>
+<text id="P-100-value" class="live-value" x="190" y="432" text-anchor="middle" font-size="14" font-weight="bold" fill="#243447"></text>
+</g>
+<path d="M314,138 L314,162 M326,138 L326,162" stroke="#243447" stroke-width="2"/>
+<path d="M320,138 L320,96" fill="none" stroke="#243447" stroke-width="1.2"/>
+<g class="instrument"><circle cx="320" cy="70" r="26" fill="#fff" stroke="#243447" stroke-width="2"/><text x="320" y="64" text-anchor="middle" font-size="12" font-weight="bold" fill="#243447">FI</text><text x="320" y="86" text-anchor="middle" font-size="12" fill="#243447">101</text></g>
+<path d="M440,150 L440,96" fill="none" stroke="#243447" stroke-width="1.2"/>
+<g class="instrument"><circle cx="440" cy="70" r="26" fill="#fff" stroke="#243447" stroke-width="2"/><text x="440" y="64" text-anchor="middle" font-size="12" font-weight="bold" fill="#243447">TI</text><text x="440" y="86" text-anchor="middle" font-size="12" fill="#243447">100</text></g>
+<g id="TV-101">
+<path d="M1082,597 L1118,623 L1118,597 L1082,623 Z" fill="#fff" stroke="#243447" stroke-width="2" stroke-linejoin="round"/>
+<line x1="1100" y1="610" x2="1100" y2="576" stroke="#243447" stroke-width="2"/>
+<path d="M1083,576 A17,14 0 0 1 1117,576 Z" fill="#eef2f6" stroke="#243447" stroke-width="2"/>
+<text x="1128" y="592" text-anchor="start" font-size="15" font-weight="bold" fill="#243447">TV-101</text>
+<text id="TV-101-value" class="live-value" x="1100" y="650" text-anchor="middle" font-size="14" font-weight="bold" fill="#243447"></text>
+</g>
+<path d="M1264,598 L1264,622 M1276,598 L1276,622" stroke="#243447" stroke-width="2"/>
+<path d="M1270,598 L1270,546" fill="none" stroke="#243447" stroke-width="1.2"/>
+<g class="instrument"><circle cx="1270" cy="520" r="26" fill="#fff" stroke="#243447" stroke-width="2"/><text x="1270" y="514" text-anchor="middle" font-size="12" font-weight="bold" fill="#243447">FT</text><text x="1270" y="536" text-anchor="middle" font-size="12" fill="#243447">201</text></g>
+<path d="M980,610 L980,546" fill="none" stroke="#243447" stroke-width="1.2"/>
+<g class="instrument"><circle cx="980" cy="520" r="26" fill="#fff" stroke="#243447" stroke-width="2"/><text x="980" y="514" text-anchor="middle" font-size="12" font-weight="bold" fill="#243447">PI</text><text x="980" y="536" text-anchor="middle" font-size="12" fill="#243447">201</text></g>
+<g id="LV-101">
+<path d="M982,827 L1018,853 L1018,827 L982,853 Z" fill="#fff" stroke="#243447" stroke-width="2" stroke-linejoin="round"/>
+<line x1="1000" y1="840" x2="1000" y2="806" stroke="#243447" stroke-width="2"/>
+<path d="M983,806 A17,14 0 0 1 1017,806 Z" fill="#eef2f6" stroke="#243447" stroke-width="2"/>
+<text x="1028" y="822" text-anchor="start" font-size="15" font-weight="bold" fill="#243447">LV-101</text>
+<text id="LV-101-value" class="live-value" x="1000" y="878" text-anchor="middle" font-size="14" font-weight="bold" fill="#243447"></text>
+</g>
+<path d="M1170,840 L1170,806" fill="none" stroke="#243447" stroke-width="1.2"/>
+<g class="instrument"><circle cx="1170" cy="780" r="26" fill="#fff" stroke="#243447" stroke-width="2"/><text x="1170" y="774" text-anchor="middle" font-size="12" font-weight="bold" fill="#243447">FI</text><text x="1170" y="796" text-anchor="middle" font-size="12" fill="#243447">102</text></g>
+<path d="M800,540 L844,540" fill="none" stroke="#243447" stroke-width="1.5"/>
+<g class="instrument"><circle cx="870" cy="540" r="26" fill="#fff" stroke="#243447" stroke-width="2"/><text x="870" y="534" text-anchor="middle" font-size="12" font-weight="bold" fill="#243447">TT</text><text x="870" y="556" text-anchor="middle" font-size="12" fill="#243447">101</text></g>
+<g class="instrument"><circle cx="870" cy="420" r="26" fill="#fff" stroke="#243447" stroke-width="2"/><line x1="844" y1="420" x2="896" y2="420" stroke="#243447" stroke-width="1.5"/><text x="870" y="414" text-anchor="middle" font-size="12" font-weight="bold" fill="#243447">TIC</text><text x="870" y="436" text-anchor="middle" font-size="12" fill="#243447">101</text></g>
+<text x="870" y="384" text-anchor="middle" font-size="12" font-weight="bold" fill="#243447">SP 75 °C</text>
+<path d="M870,514 L870,450" fill="none" stroke="#5a6b7d" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#arr-sig)"/>
+<g class="instrument"><circle cx="1100" cy="420" r="26" fill="#fff" stroke="#243447" stroke-width="2"/><line x1="1074" y1="420" x2="1126" y2="420" stroke="#243447" stroke-width="1.5"/><text x="1100" y="414" text-anchor="middle" font-size="12" font-weight="bold" fill="#243447">FIC</text><text x="1100" y="436" text-anchor="middle" font-size="12" fill="#243447">201</text></g>
+<path d="M896,420 L1070,420" fill="none" stroke="#5a6b7d" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#arr-sig)"/>
+<text x="984" y="410" text-anchor="middle" font-size="11" font-weight="normal" fill="#5a6b7d">cascade SP</text>
+<path d="M1270,494 L1270,420 L1130,420" fill="none" stroke="#5a6b7d" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#arr-sig)"/>
+<path d="M1100,446 L1100,558" fill="none" stroke="#5a6b7d" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#arr-sig)"/>
+<path d="M560,560 L496,560" fill="none" stroke="#243447" stroke-width="1.5"/>
+<g class="instrument"><circle cx="470" cy="560" r="26" fill="#fff" stroke="#243447" stroke-width="2"/><text x="470" y="554" text-anchor="middle" font-size="12" font-weight="bold" fill="#243447">LT</text><text x="470" y="576" text-anchor="middle" font-size="12" fill="#243447">101</text></g>
+<g class="instrument"><circle cx="470" cy="690" r="26" fill="#fff" stroke="#243447" stroke-width="2"/><line x1="444" y1="690" x2="496" y2="690" stroke="#243447" stroke-width="1.5"/><text x="470" y="684" text-anchor="middle" font-size="12" font-weight="bold" fill="#243447">LIC</text><text x="470" y="706" text-anchor="middle" font-size="12" fill="#243447">101</text></g>
+<text x="434" y="694" text-anchor="end" font-size="12" font-weight="bold" fill="#243447">SP 2.0 m</text>
+<path d="M470,586 L470,660" fill="none" stroke="#5a6b7d" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#arr-sig)"/>
+<path d="M470,716 L470,776 L1000,776 L1000,790" fill="none" stroke="#5a6b7d" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#arr-sig)"/>
+<g id="legend"><rect x="30" y="900" width="580" height="78" fill="#fff" stroke="#9aa7b4" stroke-width="1.2"/>
+<text x="44" y="922" font-size="13" font-weight="bold" fill="#243447">Legend</text>
+<line x1="44" y1="945" x2="104" y2="945" stroke="#1f6fb2" stroke-width="3"/><text x="112" y="949" font-size="12" fill="#243447">Process liquid</text>
+<line x1="224" y1="945" x2="284" y2="945" stroke="#d0601a" stroke-width="3"/><text x="292" y="949" font-size="12" fill="#243447">Steam / condensate</text>
+<line x1="430" y1="945" x2="490" y2="945" stroke="#5a6b7d" stroke-width="1.6" stroke-dasharray="7 5"/><text x="498" y="949" font-size="12" fill="#243447">Signal</text>
+<circle cx="54" cy="965" r="8" fill="#fff" stroke="#243447" stroke-width="1.5"/><text x="68" y="969" font-size="11" fill="#243447">Field instrument</text>
+<circle cx="234" cy="965" r="8" fill="#fff" stroke="#243447" stroke-width="1.5"/><line x1="226" y1="965" x2="242" y2="965" stroke="#243447" stroke-width="1.2"/><text x="248" y="969" font-size="11" fill="#243447">Control room controller</text>
+<path d="M422,959 L438,971 L438,959 L422,971 Z" fill="#fff" stroke="#243447" stroke-width="1.2"/><text x="446" y="969" font-size="11" fill="#243447">Control valve</text></g>
+<g id="title-block"><rect x="1010" y="900" width="460" height="78" fill="#fff" stroke="#243447" stroke-width="1.5"/>
+<line x1="1010" y1="934" x2="1470" y2="934" stroke="#243447" stroke-width="1"/>
+<text x="1240" y="923" text-anchor="middle" font-size="16" font-weight="bold" fill="#243447">TK-101 Heated Hold Tank — Simulated Plant</text>
+<text x="1024" y="954" font-size="11" fill="#243447">Piping and instrumentation diagram (schematic)</text>
+<text x="1024" y="970" font-size="11" fill="#243447">Loops: TIC-101 → FIC-201 → TV-101 · LIC-101 → LV-101</text>
+<text x="1456" y="970" text-anchor="end" font-size="11" fill="#243447">Rev A</text></g>
+</svg>
