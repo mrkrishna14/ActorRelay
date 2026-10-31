@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1000" width="1500" height="1000" role="img" aria-labelledby="pid-title pid-desc" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif">
+  <title id="pid-title">TK-101 hold tank piping and instrumentation diagram</title>
+  <desc id="pid-desc">Simulated plant. Feed pump P-100 fills hold tank TK-101. Steam from header 1 passes control valve TV-101 into coil E-101. Outlet valve LV-101 drains the tank under level control LIC-101. TIC-101 cascades onto FIC-201, which reads FT-201.</desc>
+  <defs>
+    <style>
+      .pid-liquid { fill: none; stroke: #5aa9e6; stroke-width: 7; }
+      .pid-steam { fill: none; stroke: #b7a6e0; stroke-width: 7; }
+      .pid-condensate { fill: none; stroke: #b7a6e0; stroke-width: 4; stroke-dasharray: 14 10; }
+      .pid-signal { fill: none; stroke: #8fa3b5; stroke-width: 3; stroke-dasharray: 10 8; }
+      .pid-equip { fill: #16202b; stroke: #d6dee6; stroke-width: 4; }
+      .pid-line { fill: none; stroke: #d6dee6; stroke-width: 4; }
+      .pid-rule { stroke: #d6dee6; stroke-width: 2; }
+      .pid-tag { fill: #eef3f7; font-size: 30px; font-weight: 600; text-anchor: middle; }
+      .pid-instrument { fill: #eef3f7; font-size: 28px; font-weight: 600; text-anchor: middle; }
+      .pid-name { fill: #a9b8c6; font-size: 28px; text-anchor: middle; }
+      .pid-note { fill: #a9b8c6; font-size: 28px; }
+      .live-value { fill: #eef3f7; font-size: 30px; font-weight: 600; text-anchor: middle; }
+    </style>
+    <marker id="pid-arrow-liquid" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#5aa9e6"/></marker>
+    <marker id="pid-arrow-steam" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#b7a6e0"/></marker>
+    <marker id="pid-arrow-signal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#8fa3b5"/></marker>
+  </defs>
+
+  <g id="piping">
+    <path class="pid-liquid" d="M60 700 H224"/>
+    <path class="pid-liquid" d="M376 700 H470 V300 H556" marker-end="url(#pid-arrow-liquid)"/>
+    <path class="pid-liquid" d="M740 760 V850 H1010"/>
+    <path class="pid-liquid" d="M1130 850 H1440" marker-end="url(#pid-arrow-liquid)"/>
+    <path class="pid-steam" d="M60 90 H1440" marker-end="url(#pid-arrow-steam)"/>
+    <path class="pid-steam" d="M1290 90 V430"/>
+    <path class="pid-steam" d="M1290 550 V580 H925"/>
+    <path class="pid-condensate" d="M925 700 H1250 V750"/>
+  </g>
+
+  <g id="signals">
+    <path class="pid-signal" d="M920 380 H1016" marker-end="url(#pid-arrow-signal)"/>
+    <path class="pid-signal" d="M920 500 H990 V220 H1016" marker-end="url(#pid-arrow-signal)"/>
+    <path class="pid-signal" d="M1070 430 V796" marker-end="url(#pid-arrow-signal)"/>
+    <path class="pid-signal" d="M1120 220 H1410 V301" marker-end="url(#pid-arrow-signal)"/>
+    <path class="pid-signal" d="M1350 355 H1356" marker-end="url(#pid-arrow-signal)"/>
+    <path class="pid-signal" d="M1410 405 V490 H1342" marker-end="url(#pid-arrow-signal)"/>
+  </g>
+
+  <g id="instruments">
+    <g id="TIC-101">
+      <circle class="pid-equip" cx="1070" cy="220" r="50"/>
+      <line class="pid-rule" x1="1022" y1="220" x2="1118" y2="220"/>
+      <text class="pid-instrument" x="1070" y="209">TIC</text>
+      <text class="pid-instrument" x="1070" y="253">101</text>
+    </g>
+    <g id="LIC-101">
+      <circle class="pid-equip" cx="1070" cy="380" r="50"/>
+      <line class="pid-rule" x1="1022" y1="380" x2="1118" y2="380"/>
+      <text class="pid-instrument" x="1070" y="369">LIC</text>
+      <text class="pid-instrument" x="1070" y="413">101</text>
+    </g>
+    <g id="FIC-201">
+      <circle class="pid-equip" cx="1410" cy="355" r="50"/>
+      <line class="pid-rule" x1="1362" y1="355" x2="1458" y2="355"/>
+      <text class="pid-instrument" x="1410" y="344">FIC</text>
+      <text class="pid-instrument" x="1410" y="388">201</text>
+    </g>
+    <g id="FT-201">
+      <rect class="pid-equip" x="1230" y="330" width="120" height="50" rx="6"/>
+      <text class="pid-instrument" x="1290" y="366">FT-201</text>
+    </g>
+  </g>
+
+  <g id="P-100">
+    <circle class="pid-equip" cx="300" cy="700" r="76"/>
+    <path class="pid-line" d="M250 646 L360 700 L250 754"/>
+    <path class="pid-equip" d="M230 790 H370 V810 H230 Z"/>
+    <text class="pid-tag" x="300" y="605">P-100</text>
+    <text class="pid-name" x="300" y="855">Feed pump</text>
+    <text id="P-100-value" class="live-value" x="300" y="565"> </text>
+  </g>
+
+  <g id="TK-101">
+    <path class="pid-equip" d="M560 210 Q560 170 600 170 H880 Q920 170 920 210 V720 Q920 760 880 760 H600 Q560 760 560 720 Z"/>
+    <path d="M564 465 H916" stroke="#5aa9e6" stroke-width="3" stroke-dasharray="20 12"/>
+    <text class="pid-tag" x="740" y="240">TK-101</text>
+    <text class="pid-name" x="740" y="282">Hydrolysis hold tank</text>
+    <text id="TK-101-value" class="live-value" x="740" y="345"> </text>
+  </g>
+
+  <g id="E-101">
+    <path class="pid-steam" d="M925 580 H640 A20 20 0 0 0 640 620 H860 A20 20 0 0 1 860 660 H640 A20 20 0 0 0 640 700 H925"/>
+    <text class="pid-tag" x="650" y="530">E-101</text>
+    <text class="pid-name" x="800" y="530">Steam coil</text>
+    <text id="E-101-value" class="live-value" x="740" y="735"> </text>
+  </g>
+
+  <g id="LV-101">
+    <path class="pid-equip" d="M1010 815 V885 L1130 815 V885 Z"/>
+    <path class="pid-line" d="M1070 850 V800 M1040 800 H1100"/>
+    <text class="pid-tag" x="1070" y="935">LV-101</text>
+    <text class="pid-name" x="1070" y="975">Outlet level valve</text>
+    <text id="LV-101-value" class="live-value" x="1270" y="820"> </text>
+  </g>
+
+  <g id="TV-101">
+    <path class="pid-equip" d="M1250 430 H1330 L1250 550 H1330 Z"/>
+    <path class="pid-line" d="M1290 490 H1342 M1342 460 V520"/>
+    <text class="pid-tag" x="1160" y="480">TV-101</text>
+    <text class="pid-name" x="1160" y="520">Steam valve</text>
+    <text id="TV-101-value" class="live-value" x="1395" y="620"> </text>
+  </g>
+
+  <g id="streams">
+    <text class="pid-note" x="60" y="60">Steam header 1, 6 barg, shared with the other plant</text>
+    <text class="pid-note" x="60" y="745">Feed, 25 °C</text>
+    <text class="pid-note" x="1262" y="765">Condensate</text>
+    <text class="pid-note" x="1300" y="895">Product</text>
+    <text class="pid-note" x="60" y="960">Simulated plant</text>
+  </g>
+</svg>
