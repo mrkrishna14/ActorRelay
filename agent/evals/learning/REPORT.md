@@ -1,6 +1,6 @@
 # Learning eval: repeat block and plant-b rule citation
 
-Status 12:54 Pacific, 2026-10-31. Tested `agent/vote.ts` as of 12:49 (sha256 `ac49d4cfe3e8`) and `agent/learn.ts`.
+Status 12:56 Pacific, 2026-10-31. Tested `agent/vote.ts` as of 12:49 (sha256 `ac49d4cfe3e8`) and `agent/learn.ts`.
 
 **Verdict.** Both moments are real, not scripted. The repeat block is honest and held up in every run. Plant-b cites the rule on the correct grounds, but two open items can still lose it on stage: fix 5 below, and the dashboard caption bug.
 
@@ -8,7 +8,7 @@ Status 12:54 Pacific, 2026-10-31. Tested `agent/vote.ts` as of 12:49 (sha256 `ac
 | Part | Status |
 |---|---|
 | `vote.ts`, `learn.ts`, role prompts | Real |
-| LLM calls | Real: `gpt-6-luna` effort none, plus `gpt-6.1-sol` effort low on the 12:43 code |
+| LLM calls | Real: `gpt-6-luna` effort none, with an 8-run confirmation on `gpt-6.1-sol` effort low |
 | `rankSimilar`, `deriveRules`, `toCompanyRule`, `applyCalibration` | Real functions, called in process |
 | Glue, actor processes, Relay | **In-memory stand-ins** (`world.ts`) |
 | Plant | **Not run.** No live sim exists yet. Observed values are stand-in history rows with 0.5 % noise |
@@ -41,7 +41,9 @@ Each run follows the demo order in one world: plant-b votes before the rule exis
 
 The scorer printed 13/16 for the last clean row. One miss was its own false match on the word "rule-based", fixed afterwards.
 
-**The trap.** Across 228 judged reasons (48 here, 180 in the 12-run all-voter pass), no judge found a safe run presented as proof, or a conclusion resting only on a safe run. Seven hand-labelled canaries ran in each pass; the three trap canaries were caught, so the zero is not a blind judge. The trap was still live in the code at first: the 700-character cap cut the "not proof" note in 30/30 reasons, ending "it is the latest observation, no…".
+Second model, `gpt-6.1-sol`, same code, 8 runs: moment 1 clean 8/8, rule cited and named 8/8, insufficient grounds 0/8, plant-b clean 7/8. The scorer printed 5/8; two misses were its own, on the 76.5 near-critical line the voter is given, and are fixed. The third is fix 7.
+
+**The trap.** Across 252 judged reasons (48 and 24 in these runs, 180 in the 12-run all-voter pass), no judge found a safe run presented as proof, or a conclusion resting only on a safe run. Seven hand-labelled canaries ran in each pass; the three trap canaries were caught, so the zero is not a blind judge. The trap was still live in the code at first: the 700-character cap cut the "not proof" note in 30/30 reasons, ending "it is the latest observation, no…".
 
 ## Calibration on the executed 65 run
 | Metric | n | MAE | % of range | Bias | Worst |
@@ -54,7 +56,7 @@ The scorer printed 13/16 for the last clean row. One miss was its own false matc
 | TV-101 positionPct | 9 | 0.8 | 1.0 | +0.4 | 2.8 |
 
 Entries are exact: predicted matches the vote 109/109, observed matches the effect row 79/79, absError is consistent 109/109.
-These errors show the plumbing works and that predictions track history. They do not show accuracy against the plant, because observed values are near-copies of history. Agents predict the peak, so a positive bias is expected: `gpt-6.1-sol` showed +3.0 on LV-101 on the 12:43 code.
+These errors show the plumbing works and that predictions track history. They do not show accuracy against the plant, because observed values are near-copies of history. Agents predict the peak, so a positive bias is expected: `gpt-6.1-sol` showed +3.6 on LV-101 (MAE 3.6, 5.1 % of range).
 Margin bootstrap (`margin.ts`, real `applyCalibration`): on this data TK-101 reached margin 12 in 0.0 % of trials after 10 executions. On the earlier fast-path run it reached 12 in 3.2 % after 3 and 19.2 % after 10, and at 12 it force-votes no on everything. Reset between rehearsals.
 
 ## Fixes
@@ -71,7 +73,7 @@ Margin bootstrap (`margin.ts`, real `applyCalibration`): on this data TK-101 rea
 | 8 | Caption gates on a field company rules null | Never renders | **Open**, fix sent to ar-actors, ASK on board |
 
 Fix 5 depends on real data. `deriveRules` floors to 5s and the stand-in's lowest supporting LV-101 value is exactly 85.0. At 84.9 the rule becomes `>= 80`, below threshold 81, and plant-b reverts to "insufficient history".
-On 6b: all 21 no votes on the counter were `malformed`, from 429s on the shared key. With an unsaturated key the counter passed 50/50 on earlier code. Keep other sessions off the key during the demo.
+On 6b: all 21 no votes on the counter were `malformed`, from 429s on the shared key. With an unsaturated key the counter passed 50/50 on earlier code. `gpt-6.1-sol` hit the same limit (72 429s, counter 5/8), so a second model alone will not fix this. Keep other sessions off the key during the demo.
 
 ## Say this on stage
 - Do not say "blocked faster". First block and repeat both land at about 2.5 s. What changes is the citation.

@@ -102,7 +102,7 @@ export function unmatchedNumbers(p: Proposal, v: Vote, world: World) {
     .replace(/\bgpt-[0-9a-z.-]+/gi, " ");
   const found = [...text.matchAll(/(?<![\w.-])\d+(?:[.,]\d+)?/g)].map((m) => Number(m[0].replace(",", "")));
   const allowed = new Set<number>([p.from, p.to, v.marginPct, ...Object.values(v.predicted)]);
-  for (const l of Object.values(c.limits)) for (const x of [l.min, l.max, l.critical, l.critical * (1 - v.marginPct / 100)]) allowed.add(x);
+  for (const l of Object.values(c.limits)) for (const x of [l.min, l.max, l.critical, l.critical * (1 - v.marginPct / 100), l.critical * 0.85]) allowed.add(x);
   for (const id of v.evidenceEventIds) {
     const e = world.event(id);
     if (!e) continue;
