@@ -17,7 +17,7 @@ class PlantsDataTests(unittest.TestCase):
         self.assertTrue(all(len(plant.components) == 5 for plant in seed.plants))
         expected = {
             "P-100": ("Feed pump", "feed-pump-A", "mechanic", "codex", {"speedPct": (20, 90, 95)}),
-            "TK-101": ("Hydrolysis hold tank", "hold-tank-A", "process_engineer", "claude", {"levelPct": (20, 70, 80), "tempC": (70, 80, 85)}),
+            "TK-101": ("Hydrolysis hold tank", "hold-tank-A", "process_engineer", "claude", {"levelPct": (20, 70, 80), "tempC": (70, 80, 90)}),
             "LV-101": ("Outlet level valve", "outlet-valve-A", "mechanic", "codex", {"positionPct": (10, 80, 90)}),
             "E-101": ("Steam coil", "steam-coil-A", "chemical_engineer", "claude", {"dutyKw": (300, 1600, 1800)}),
             "TV-101": ("Steam valve (FIC-201)", "steam-valve-A", "safety", "claude", {"positionPct": (5, 85, 95), "steamKgH": (0, 2700, 3000)}),

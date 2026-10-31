@@ -32,7 +32,7 @@ export interface TrendChartProps {
   paused?: boolean; eventLabel?: string; eventAt?: number; onTogglePause?: () => void;
 }
 export type ProposalStatus = "voting" | "blocked" | "veto_window" | "vetoed" | "executed" | "expired";
-export interface ProposalVote { tag: ComponentTag; plantId: PlantId; vote: "yes" | "no"; predicted: number; reason: string; evidence: string[] }
+export interface ProposalVote { tag: ComponentTag; plantId: PlantId; vote: "yes" | "no"; predicted: number; reason: string; evidence: string[]; predictedMetric?: string }
 export interface Proposal {
   id: string; plantId: PlantId; from: number; to: number; status: ProposalStatus;
   proposerTag?: ComponentTag; metric?: string;

@@ -91,6 +91,7 @@ export default function Dashboard() {
   const audit = data.audit.filter((event) => scope === "company" || event.plantId === scope || event.plantId === "company").toReversed();
   const latestAudit = audit[0];
   const latestDecision = data.proposals.findLast((p) => p.plantId === plantId && p.status === "blocked");
+  const latestDecisionControl = latestDecision ? controlTarget(latestDecision.proposerTag ?? "P-100", latestDecision.metric ?? "speedPct") : undefined;
   const forecast = proposal?.status === "blocked" && (!proposal.metric || proposal.metric === "speedPct") ? { predicted: (usingLive ? proposal.votes.find((v) => v.tag === "LV-101")?.predicted : undefined) ?? proposal.to + 4, threshold: 81 } : null;
 
   useEffect(() => { dispatch({ type: "reset", now: Date.now() }); const timer = setInterval(() => { if (!liveRef.current) dispatch({ type: "tick", now: Date.now() }); }, 1000); return () => clearInterval(timer); }, []);
@@ -174,8 +175,10 @@ export default function Dashboard() {
   const send = async (text: string, destination: string) => {
     if (!usingLive) { dispatch({ type: "send", text, channel: destination, now: Date.now() }); return; }
     const command = parseControlRequest(text);
-    if (!command) { setToast("Try “Set temperature to 76°C”, “Set level to 55%”, or “Set steam to 1540 kg/h”."); return; }
+    if (!command) { setToast("Try “Propose 85%” (pump), “Set tank temperature to 76”, or “Set tank level to 60%”."); return; }
     if (destination !== "plant-a" && destination !== "plant-b") { setToast("Select Plant A to propose a loop setpoint change."); return; }
+    const control = controlTarget(command.tag, command.metric);
+    if (control && (command.to < control.min || command.to > control.max)) { setToast(`${control.label} must be between ${control.min} and ${control.max} ${control.unit}.`); return; }
     await proposeOn(destination, command.to, command.metric, command.tag);
   };
   const propose = (to: number, metric: ControlMetric = "speedPct", tag: ComponentTag = "P-100") => {
@@ -262,7 +265,7 @@ export default function Dashboard() {
           </section>
           {showTrend && view !== "agents" && <>
           <ResizeHandle kind="chart" label="Resize timing chart" value={layout.chartHeight} {...layout.bounds.chart} onPointerDown={layout.startResize} onResizeBy={layout.resizeBy} onReset={resetPanelSizes} />
-          <section id="equipment-trend" className="trend-section" aria-label="Equipment timing chart"><TrendChart points={data.trends[plantId]} threshold={81} label="Outlet valve" unit="%" paused={data.paused} onTogglePause={() => dispatch({ type: "pause" })} eventLabel={latestDecision ? `${latestDecision.to}% proposal blocked` : undefined} eventAt={latestDecision?.createdAt} /></section>
+          <section id="equipment-trend" className="trend-section" aria-label="Equipment timing chart"><TrendChart points={data.trends[plantId]} threshold={81} label="Outlet valve" unit="%" paused={data.paused} onTogglePause={() => dispatch({ type: "pause" })} eventLabel={latestDecision ? `${latestDecision.to}${latestDecisionControl?.unit ?? "%"} ${latestDecisionControl && latestDecisionControl.tag !== "P-100" ? `${latestDecisionControl.loop} ` : ""}proposal blocked` : undefined} eventAt={latestDecision?.createdAt} /></section>
           </>}
         </>}
 

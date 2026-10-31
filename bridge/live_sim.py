@@ -34,6 +34,7 @@ HEADER_DESIGN_BARG, HEADER_GAIN, HEADER_DESIGN_KGH = 6.0, 0.0005, 3066.0
 HEADER_MIN, HEADER_MAX = 4.5, 6.5
 OBSERVE_TICKS = 5
 MOVED_EPS = 1e-3
+INTERNAL_KEYS = {"levelSetpointPct", "tempSetpointC", "steamSetpointKgH", "steamFlowLocal"}
 
 
 def header_pressure(total_steam_kgh: float) -> float:
@@ -153,7 +154,14 @@ class Simulator:
         for cid, metrics in samples[-1].items():
             for metric, after in metrics.items():
                 before = ob["before"].get(cid, {}).get(metric)
-                if before is None or abs(after - before) <= MOVED_EPS * max(1., abs(before)): continue
+                if before is None: continue
+                if abs(after - before) <= MOVED_EPS * max(1., abs(before)):
+                    # Unchanged peers are observations too (as in loop-history): voters that predicted
+                    # "no change" need an observed value to calibrate against.
+                    if metric not in INTERNAL_KEYS:
+                        effects.append({"componentId": cid, "metric": metric, "before": before,
+                                        "after": after, "ticksToSettle": 0})
+                    continue
                 tol = max(0.05 * abs(after - before), MOVED_EPS)
                 settle = len(samples)
                 for k in range(len(samples), 0, -1):
