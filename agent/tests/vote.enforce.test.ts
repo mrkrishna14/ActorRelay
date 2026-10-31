@@ -179,6 +179,16 @@ describe("safety lives in code", () => {
     expect(vote.vote).toBe("yes");
   });
 
+  test("the header drop comes from the steam a change adds, even when history holds the header flat", async () => {
+    const glue = new FakeGlue();
+    const run = (id: string) => ({ ...safeExecution(id), id, before: 50, after: 85, proposalId: null, effects: [{ componentId: "plant-a/TV-101", metric: "steamKgH", before: 1533, after: 2533, ticksToSettle: 3 }, { componentId: "plant-a/TV-101", metric: "headerBarg", before: 6, after: 6, ticksToSettle: 3 }] });
+    glue.history.splice(0, glue.history.length, run("a"), run("b"), run("c"));
+    const llm = new ScriptedLlm(() => answer("yes", { positionPct: 52, steamKgH: 1533, headerBarg: 6 }));
+    const vote = await castVote(deps(glue, llm), makeProposal({ to: 85 }), "plant-b/TV-101");
+    expect(vote.predicted.headerBarg).toBe(5.5);
+    expect(llm.requests[0].user).toContain("Expected headerBarg after this change, from the steam it adds: 5.5");
+  });
+
   test("one bad run at a smaller change is not averaged away", async () => {
     const glue = new FakeGlue();
     const near = (id: string, after: number, valve: number) => ({ ...safeExecution(id), id, after, proposalId: null, effects: [{ componentId: "plant-a/LV-101", metric: "positionPct", before: 50, after: valve, ticksToSettle: 3 }] });

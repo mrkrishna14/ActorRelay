@@ -142,5 +142,6 @@ History raises the prediction: if a run that went no further than the target rea
 - Margin trap: TK-101 `tempC` critical 85 means a `marginPct` of 12 or more puts the threshold under the 75 °C setpoint, so TK-101 then votes `no` on every proposal until reset. This is the literal rule, kept on purpose.
 - Plant-b voters other than LV-101 vote `insufficient history` on 85 until they have 3 close events, so they block too. That is correct per `CLAUDE.MD`.
 - A cross-plant voter's `steamKgH` prediction is replaced by its live value, because its own controller holds that flow.
+- History holds `headerBarg` flat within a run, so the expected header is computed from the steam a change adds, using the simulator's 0.0005 barg per kg/h. If Person 2 retunes that gain, update `HEADER_BARG_PER_KGH` in `retrieval.ts`.
 - `Vote` has no vendor field, so the label lives in `reason`.
 - A `no` from a voter with no usable prediction (`malformed prediction`) gives the counter nothing to bound, so no counter follows it.

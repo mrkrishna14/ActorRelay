@@ -9,6 +9,7 @@ import {
   CLOSE_RUN_FRACTION,
   evidenceEstimates,
   evidencePeaks,
+  expectedHeader,
   MIN_SIMILAR,
   newestExecution,
   newestFirst,
@@ -75,6 +76,8 @@ export type VoteContext = {
   applicable: LearnedRule[];
   estimates: Record<string, number>;
   peaks: Record<string, number>;
+  /** Header pressure this change should leave, for voters on the shared header. */
+  header: number | undefined;
   thresholds: Record<string, number>;
 };
 
@@ -82,6 +85,7 @@ type SharedContext = {
   /** The actors' copy when they have one: a Relay message is a notice, not the source of what is being voted on. */
   proposal: Proposal;
   proposer: ComponentView | null;
+  steam: ComponentView | null;
   similar: HistoryEvent[];
   newest: HistoryEvent | null;
 };
@@ -121,14 +125,14 @@ async function loadSharedContext(deps: VoteDeps, notified: Proposal): Promise<Sh
   });
   // Actor history is the truth, so a reset is honoured the moment it happens. The cache only covers a failed read.
   if (plant) cache.addEvents(plant.history);
-  return { proposal, proposer, similar, newest: newestExecution([...similar, ...(plant?.history ?? cache.allEvents())], proposal) };
+  return { proposal, proposer, steam, similar, newest: newestExecution([...similar, ...(plant?.history ?? cache.allEvents())], proposal) };
 }
 
 /** Any read that could hide a limit is a retrieval failure, so the caller answers with a safe no instead of guessing. */
 async function gatherContext(deps: VoteDeps, notified: Proposal, componentId: ComponentId): Promise<VoteContext> {
   const { glue } = deps;
   const own = await glue.component(componentId);
-  const { proposal, proposer, similar, newest } = await sharedContext(deps, notified);
+  const { proposal, proposer, steam, similar, newest } = await sharedContext(deps, notified);
   const proposerLimit = proposer?.limits[proposal.metric];
   if (!proposer || !proposerLimit) throw new Error(`no limit known for ${proposal.proposerComponentId} ${proposal.metric}`);
   // What the actors say now wins, so a rule cleared by a reset cannot be cited.
@@ -150,6 +154,7 @@ async function gatherContext(deps: VoteDeps, notified: Proposal, componentId: Co
     applicable: rules.filter((r) => ruleApplies(r, proposal, own)),
     estimates: evidenceEstimates(moved, own, proposal.to),
     peaks: evidencePeaks(moved, own, proposal.to),
+    header: steam && own.sharedResources.length ? expectedHeader(moved, steam, proposal.to) : undefined,
     thresholds,
   };
 }
@@ -225,7 +230,7 @@ export function buildVotePrompt(context: VoteContext): string {
   const newestRow = newest ? eventRow(newest, context) : "none";
   const data = `Proposal: ${JSON.stringify({ id: proposal.id, plantId: proposal.plantId, proposer: proposal.proposerComponentId, metric: proposal.metric, from: proposal.from, to: proposal.to, rationale: proposal.rationale })}
 You are ${own.id} (${own.name}, model ${own.model}). marginPct ${own.marginPct}.${crossPlant ? ` This change is in the other plant. You vote because you share ${own.sharedResources.join(", ")} with it.` : ""}
-Current metrics: ${JSON.stringify(own.metrics)}
+Current metrics: ${JSON.stringify(own.metrics)}${context.header === undefined ? "" : `\nExpected headerBarg after this change, from the steam it adds: ${context.header}`}
 Limits:
 ${limitLines.join("\n")}
 Similar past events retrieved (${retrieved.length}): id | at | change | rows for your component | incident
@@ -378,10 +383,8 @@ function effectivePrediction(context: VoteContext, answered: Answered | null): R
     const { metric, value } = rule.consequence;
     predicted[metric] = Math.max(predicted[metric] ?? -Infinity, value);
   }
-  // Pressure fails downward, so for the shared header the lower of model and evidence stands.
-  if (predicted.headerBarg !== undefined && context.estimates.headerBarg !== undefined) {
-    predicted.headerBarg = Math.min(predicted.headerBarg, context.estimates.headerBarg);
-  }
+  // Pressure fails downward, so for the shared header the lower of model and physics stands.
+  if (context.header !== undefined) predicted.headerBarg = Math.min(predicted.headerBarg ?? Infinity, context.header);
   return predicted;
 }
 

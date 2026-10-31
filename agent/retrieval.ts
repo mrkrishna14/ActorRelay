@@ -55,6 +55,23 @@ export function evidenceEstimates(events: HistoryEvent[], own: ComponentState, t
   return Object.fromEntries(Object.entries(totals).map(([metric, t]) => [metric, Math.round((t.sum / t.weight) * 100) / 100]));
 }
 
+/** The simulator's header equation: pressure falls this much for each extra kg/h on the header. */
+const HEADER_BARG_PER_KGH = 0.0005;
+const HEADER_RANGE = { min: 4.5, max: 6.5 };
+
+/**
+ * Header pressure after a change, from the steam it adds. History holds the header fixed within a run, so its rows
+ * cannot show a drop. `steam` is the changed plant's steam valve, and `events` are the runs that moved the same way.
+ */
+export function expectedHeader(events: HistoryEvent[], steam: ComponentState, to: number): number | undefined {
+  const header = steam.metrics.headerBarg;
+  const flow = steam.metrics.steamKgH;
+  const target = evidenceEstimates(events, steam, to).steamKgH;
+  if (header === undefined || flow === undefined || target === undefined) return undefined;
+  const after = header - HEADER_BARG_PER_KGH * (target - flow);
+  return Math.round(Math.min(HEADER_RANGE.max, Math.max(HEADER_RANGE.min, after)) * 100) / 100;
+}
+
 /** Highest value each metric reached in runs that went no further than the target. A smaller change already got there. */
 export function evidencePeaks(events: HistoryEvent[], own: ComponentState, to: number): Record<string, number> {
   const peaks: Record<string, number> = {};
