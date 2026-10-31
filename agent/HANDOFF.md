@@ -54,11 +54,7 @@ Tests, from `agent/`:
 bun test --timeout 30000 tests/vote.enforce.test.ts tests/learn.test.ts tests/counter.test.ts tests/runtime.test.ts tests/vote.real.test.ts
 ```
 
-Proof over real Relay, inside WSL, from the repo root. It starts the agents itself and uses glue's real `RelayBridge`, in its own workspace:
-
-```bash
-bun run agent/tests/live-relay-proof.ts
-```
+The whole stack, real actors, simulator, glue and agents, on side ports, is `glue/stack-wsl.sh`. See `glue/DEMO.md`. It is heavy, so run it only when the machine is free.
 
 ## Environment
 
@@ -141,9 +137,9 @@ Code never turns a `no` into a `yes`. The model's `no` can be sent back once, if
 ## Verified, and what is stubbed
 
 - `tests/*.test.ts` run on a fake glue built from `shared/plants.json`. History is `AGENT_TEST_HISTORY` if set, then `shared/history.json` if it exists, otherwise the labelled stand-in `actor/tests/fixtures-gen/history.json`. Suites were run on both the stand-in and Person 2's history from `origin/person2-simulation`.
-- `tests/vote.real.test.ts` makes real OpenAI calls. `tests/live-relay-proof.ts` adds a real Relay server and glue's real `RelayBridge`. Neither touches real actors, glue's HTTP server or the simulator.
+- `tests/vote.real.test.ts` makes real OpenAI calls.
 - `tests/scripted-llm.ts` is a test double and exists only under `tests/`. Production code has no stub flag.
-- Last Relay proof at 69dfe6b, on Person 2's history, with the machine under load from other sessions: 85 blocked with LV-101's `no` at the bridge in 3.7 s; counter posted 2.7 s after the block and landed on 65; all 5 voters yes on 65 in 5.1 s; 5 voters calibrated; repeat 85 `no` at the bridge in 2.0 s with the newest run as `evidenceEventIds[0]`; plant-b blocked citing the company rule. With the 2 s sweep the repeat stays under 5 s, though that total was not measured end to end. The bridge in that proof is the earlier teammate `relay.ts` from git history, kept as a reference; our own glue has not been run with these agents.
+- Last full stack run at 2460890, `glue/stack-wsl.sh` on real Terse, simulator, our glue and real agents, on `shared/history.json`, under load: 25 of 26 e2e checks passed. 85 blocked by LV-101 in 5.9 s; counter arrived 1.0 s after the block and landed on 65; all 5 voters yes; LV-101 settled at 66.5; 5 voters calibrated; repeat 85 blocked in 4.1 s with the step 3 event as `evidenceEventIds[0]`; plant-b blocked citing the company rule. The failed row is the e2e's own check of glue's publish log, not delivery: it looks up the event id, and glue logs the proposal id.
 - Restart with stored tokens reconnects without `name_conflict`; that was run. Losing the tokens file while keeping the workspace does give `name_conflict`, because registration is create-only. Delete `~/.actorrelay/relay-workspace-key` to start a fresh workspace, then restart glue too.
 
 ## Known limits

@@ -100,14 +100,14 @@ describe("buildCounter", () => {
     expect(counter?.parentProposalId).toBe(first.id);
   });
 
-  test("when the doubled margin leaves nothing, the plain threshold is the ceiling", async () => {
+  test("when the doubled margin leaves nothing, the plain threshold is the ceiling, at the smallest supported step", async () => {
     const parent = blocked();
     parent.votes = [{ ...noVote(parent.id), marginPct: 25 }];
     const glue = new FakeGlue();
     const run = (id: string, after: number, valve: number) => ({ ...safeExecution(id), id, before: 50, after, proposalId: null, effects: [{ componentId: "plant-a/LV-101", metric: "positionPct", before: 50, after: valve, ticksToSettle: 3 }] });
     glue.history.splice(0, glue.history.length, run("a", 65, 70), run("b", 66, 70), run("c", 66, 71), run("d", 60, 66), run("e", 61, 66), run("f", 61, 67), run("g", 55, 62), run("h", 56, 62), run("i", 56, 63));
-    const counter = await buildCounter(deps(glue, pick(65)), parent, [parent]);
-    expect(counter?.proposal.to).toBe(65);
+    const counter = await buildCounter(deps(glue, pick(55)), parent, [parent]);
+    expect(counter?.proposal.to).toBe(55);
   });
 
   test("a fallback pick keeps its vendor label", async () => {

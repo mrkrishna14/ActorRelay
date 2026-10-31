@@ -183,9 +183,10 @@ export async function buildCounter(deps: CounterDeps, blocked: Proposal, proposa
     to: (blocked.from + blocked.to) / 2,
     k: HISTORY_K,
   });
-  // The doubled margin can leave nothing at wide margins, though the plain threshold still has room.
+  // The doubled margin can leave nothing at wide margins. The plain threshold still has room, but a voter with a wide
+  // margin has been wrong lately, so that tier takes the smallest step safe history supports, not the largest.
   const atThreshold = blockers.map((b) => ({ ...b, ceiling: b.threshold }));
-  const best = bestCandidate(safeCandidates(blocked, blockers, events)) ?? bestCandidate(safeCandidates(blocked, atThreshold, events));
+  const best = bestCandidate(safeCandidates(blocked, blockers, events)) ?? safeCandidates(blocked, atThreshold, events).find((c) => c.safeRuns >= MIN_SAFE_RUNS) ?? null;
   if (!best) {
     deps.log?.(`${blocked.id}: no safe target between ${blocked.from} and ${blocked.to}`);
     return null;
