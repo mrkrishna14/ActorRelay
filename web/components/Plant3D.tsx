@@ -5,23 +5,20 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
-import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
-import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
-import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
-import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { metricLevel, PLANT_IDS, TAGS, type Caption, type Outline } from "@/lib/derive";
 import { formatMetric, metricLabel } from "@/lib/format";
 import type { ComponentView, PlantId } from "@/lib/types";
 import { CaptionBand } from "./PidStage";
+import { addAccess, addGauge, addHall } from "./plant3d/hall";
 
 const ORIGIN: Record<PlantId, THREE.Vector3> = { "plant-a": new THREE.Vector3(0, 0, 0), "plant-b": new THREE.Vector3(24, 0, 0) };
-const CAMERA_OFFSET = new THREE.Vector3(13, 8.5, 17);
+const CAMERA_OFFSET = new THREE.Vector3(14, 6.5, 19);
 const TANK_RADIUS = 2.4;
 const TANK_HEIGHT = 4.6;
 const TANK_BASE = 1.1;
 const HEADER_Y = 8.6;
 
-const RING = { voting: 0xe0a93a, yes: 0x3fce8c, no: 0xff4d4f, "no vote": 0x7f8ea3, proposer: 0x5ec8f2, selected: 0xa9d8f5 };
+const RING = { voting: 0xa7b4bf, yes: 0x1f9e63, no: 0xd93a3c, "no vote": 0x7f8ea3, proposer: 0x2f7fb8, selected: 0x2f7fb8 };
 
 const PLATES: { tag: string; metrics: string[] }[] = [
   { tag: "P-100", metrics: ["speedPct", "feedM3h"] },
@@ -39,9 +36,12 @@ const CHIP: Record<string, string> = {
   proposer: "border-ice text-ice bg-[#0d2230]",
 };
 
-type Flow = { curve: THREE.Curve<THREE.Vector3>; dots: THREE.Mesh[]; offset: number };
+type Flow = { curve: THREE.Curve<THREE.Vector3>; dots: THREE.Mesh[]; offset: number; visible: boolean };
 
 type Unit = {
+  speedGauge: THREE.Mesh;
+  steamGauge: THREE.Mesh;
+  levelGlass: THREE.Mesh;
   liquid: THREE.Mesh;
   surface: THREE.Mesh;
   liquidMaterial: THREE.MeshPhysicalMaterial;
@@ -87,21 +87,21 @@ function flanges(curve: THREE.Curve<THREE.Vector3>, radius: number, material: TH
 }
 
 function flow(curve: THREE.Curve<THREE.Vector3>, count: number, color: number, size: number, root: THREE.Object3D): Flow {
-  const material = new THREE.MeshBasicMaterial({ color, toneMapped: false });
-  const geometry = new THREE.SphereGeometry(size, 10, 10);
+  const material = new THREE.MeshStandardMaterial({ color, roughness: 0.6 });
+  const geometry = new THREE.SphereGeometry(size, 8, 8);
   const dots = Array.from({ length: count }, () => {
     const dot = new THREE.Mesh(geometry, material);
     root.add(dot);
     return dot;
   });
-  return { curve, dots, offset: 0 };
+  return { curve, dots, offset: 0, visible: false };
 }
 
 function advance(item: Flow, rate: number, delta: number) {
   item.offset = (item.offset + rate * delta) % 1;
   item.dots.forEach((dot, index) => {
-    dot.visible = rate > 0;
-    if (rate > 0) dot.position.copy(item.curve.getPointAt((item.offset + index / item.dots.length) % 1));
+    dot.visible = rate > 0 && item.visible;
+    if (dot.visible) dot.position.copy(item.curve.getPointAt((item.offset + index / item.dots.length) % 1));
   });
 }
 
@@ -148,11 +148,12 @@ function buildUnit(scene: THREE.Scene, origin: THREE.Vector3): Unit {
   root.position.copy(origin);
   scene.add(root);
 
-  const steel = new THREE.MeshStandardMaterial({ color: 0x9fb2c2, metalness: 0.92, roughness: 0.28 });
+  const steel = new THREE.MeshStandardMaterial({ color: 0xaeb5ba, metalness: 0.88, roughness: 0.38 });
   const darkSteel = new THREE.MeshStandardMaterial({ color: 0x3a4856, metalness: 0.85, roughness: 0.42 });
   const pipeSteel = new THREE.MeshStandardMaterial({ color: 0x7f93a6, metalness: 0.9, roughness: 0.32 });
-  const steamPipe = new THREE.MeshStandardMaterial({ color: 0xb98a5b, metalness: 0.85, roughness: 0.34 });
-  const accent = new THREE.MeshStandardMaterial({ color: 0x2f7fb8, metalness: 0.65, roughness: 0.34 });
+  const steamPipe = new THREE.MeshStandardMaterial({ color: 0xc5cbd0, metalness: 0.55, roughness: 0.46 });
+  const accent = new THREE.MeshStandardMaterial({ color: 0x2d5f8b, metalness: 0.35, roughness: 0.46 });
+  const stainless = new THREE.MeshStandardMaterial({ color: 0xc7ccd0, metalness: 0.92, roughness: 0.36, side: THREE.DoubleSide });
 
   const plinth = new THREE.Mesh(new THREE.CylinderGeometry(TANK_RADIUS + 1.1, TANK_RADIUS + 1.3, 0.28, 72), darkSteel);
   plinth.position.y = 0.14;
@@ -168,21 +169,33 @@ function buildUnit(scene: THREE.Scene, origin: THREE.Vector3): Unit {
   }
 
   // Liquid sits inside the shell, so its height is the level with no scaling tricks hidden by the glass.
-  const liquidMaterial = new THREE.MeshPhysicalMaterial({ color: 0x2fb6d6, roughness: 0.16, metalness: 0, clearcoat: 1, transparent: true, opacity: 0.84, emissive: 0x0b6f8c, emissiveIntensity: 0.55 });
+  const liquidMaterial = new THREE.MeshPhysicalMaterial({ color: 0x4c8eae, roughness: 0.22, metalness: 0, transparent: true, opacity: 0.93 });
   const liquid = new THREE.Mesh(new THREE.CylinderGeometry(TANK_RADIUS * 0.965, TANK_RADIUS * 0.965, 1, 72), liquidMaterial);
   liquid.userData.tag = "TK-101";
   root.add(liquid);
-  const surface = new THREE.Mesh(new THREE.CircleGeometry(TANK_RADIUS * 0.965, 72), new THREE.MeshBasicMaterial({ color: 0xa9f0ff, transparent: true, opacity: 0.5, toneMapped: false }));
+  const surface = new THREE.Mesh(new THREE.CircleGeometry(TANK_RADIUS * 0.965, 72), new THREE.MeshStandardMaterial({ color: 0x7fb3cc, roughness: 0.18, metalness: 0.1 }));
   surface.rotation.x = -Math.PI / 2;
   root.add(surface);
 
-  const shell = new THREE.Mesh(
-    new THREE.CylinderGeometry(TANK_RADIUS, TANK_RADIUS, TANK_HEIGHT, 96, 1, true),
-    new THREE.MeshPhysicalMaterial({ color: 0xd8ecf7, metalness: 0, roughness: 0.06, transparent: true, opacity: 0.17, side: THREE.DoubleSide, depthWrite: false, envMapIntensity: 1.8, clearcoat: 1 }),
-  );
+  // A stainless vessel with a tall sight window facing the operator aisle, so level and coil stay readable.
+  const shell = new THREE.Mesh(new THREE.CylinderGeometry(TANK_RADIUS, TANK_RADIUS, TANK_HEIGHT, 96, 1, true, 1.3, Math.PI * 2 - 1.2), stainless);
   shell.position.y = TANK_BASE + TANK_HEIGHT / 2;
+  shell.castShadow = true;
   shell.userData.tag = "TK-101";
   root.add(shell);
+  const pane = new THREE.Mesh(
+    new THREE.CylinderGeometry(TANK_RADIUS, TANK_RADIUS, TANK_HEIGHT, 28, 1, true, 0.1, 1.2),
+    new THREE.MeshPhysicalMaterial({ color: 0xe6eef2, roughness: 0.08, transparent: true, opacity: 0.1, side: THREE.DoubleSide, depthWrite: false }),
+  );
+  pane.position.y = shell.position.y;
+  pane.userData.tag = "TK-101";
+  root.add(pane);
+  [0.1, 1.3].forEach((angle) => {
+    const mullion = new THREE.Mesh(new THREE.BoxGeometry(0.1, TANK_HEIGHT, 0.1), steel);
+    mullion.position.set(Math.sin(angle) * TANK_RADIUS, shell.position.y, Math.cos(angle) * TANK_RADIUS);
+    root.add(mullion);
+  });
+  addAccess(root, TANK_BASE + TANK_HEIGHT, TANK_RADIUS);
 
   [TANK_BASE, TANK_BASE + TANK_HEIGHT * 0.5, TANK_BASE + TANK_HEIGHT].forEach((y) => {
     const band = new THREE.Mesh(new THREE.TorusGeometry(TANK_RADIUS + 0.03, 0.075, 14, 96), steel);
@@ -224,7 +237,7 @@ function buildUnit(scene: THREE.Scene, origin: THREE.Vector3): Unit {
     const angle = t * Math.PI * 12;
     helix.push(new THREE.Vector3(Math.cos(angle) * (TANK_RADIUS - 0.42), TANK_BASE + 0.45 + t * 2.7, Math.sin(angle) * (TANK_RADIUS - 0.42)));
   }
-  const coil = new THREE.MeshStandardMaterial({ color: 0xc98a4e, metalness: 0.8, roughness: 0.3, emissive: 0xff8a3c, emissiveIntensity: 0 });
+  const coil = new THREE.MeshStandardMaterial({ color: 0xa8784f, metalness: 0.85, roughness: 0.42 });
   tube(helix, 0.06, coil, root, "E-101");
 
   // Feed: pump on the left into the shell.
@@ -254,7 +267,7 @@ function buildUnit(scene: THREE.Scene, origin: THREE.Vector3): Unit {
   const rotor = new THREE.Group();
   rotor.position.set(pumpAt.x, pumpAt.y, pumpAt.z + 0.27);
   for (let i = 0; i < 5; i += 1) {
-    const vane = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.09, 0.05), new THREE.MeshBasicMaterial({ color: 0x9fe6ff, toneMapped: false }));
+    const vane = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.09, 0.05), steel);
     vane.rotation.z = (i * Math.PI) / 5;
     rotor.add(vane);
   }
@@ -285,9 +298,19 @@ function buildUnit(scene: THREE.Scene, origin: THREE.Vector3): Unit {
   const steamCurve = tube([new THREE.Vector3(3.6, HEADER_Y, -4.2), new THREE.Vector3(3.6, 7.6, -3.4), tvAt.clone().add(new THREE.Vector3(-0.55, 0, 0)), new THREE.Vector3(1.4, 5.8, -1.3), new THREE.Vector3(TANK_RADIUS - 0.75, 4.05, -0.3)], 0.13, steamPipe, root, "TV-101");
   const tv = valve(root, tvAt, "TV-101", steel, accent);
 
-  const feed = flow(feedCurve, 16, 0x7fe8ff, 0.1, root);
-  const outlet = flow(outletPath, 20, 0x7fe8ff, 0.1, root);
-  const steam = flow(steamCurve, 14, 0xfff1dd, 0.08, root);
+  const feed = flow(feedCurve, 2, 0x7f93a6, 0.02, root);
+  const outlet = flow(outletPath, 2, 0x7f93a6, 0.02, root);
+  const steam = flow(steamCurve, 2, 0xc5cbd0, 0.02, root);
+
+  // Gauges and the external sight glass replace flow graphics: they read the same live values a person would.
+  const speedGauge = addGauge(root, pumpAt.clone().add(new THREE.Vector3(0.1, 1.3, 0.3)), 0.2);
+  const steamGauge = addGauge(root, tvAt.clone().add(new THREE.Vector3(-1.3, 0.2, 0.3)), 0.6);
+  const glassTube = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, TANK_HEIGHT, 12), new THREE.MeshPhysicalMaterial({ color: 0xe6eef2, roughness: 0.08, transparent: true, opacity: 0.28 }));
+  glassTube.position.set(-TANK_RADIUS - 0.32, TANK_BASE + TANK_HEIGHT / 2, 0.9);
+  root.add(glassTube);
+  const levelGlass = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1, 12), new THREE.MeshStandardMaterial({ color: 0x4c8eae, roughness: 0.3 }));
+  levelGlass.position.set(-TANK_RADIUS - 0.32, TANK_BASE, 0.9);
+  root.add(levelGlass);
 
   const anchors: Record<string, THREE.Vector3> = {
     "P-100": new THREE.Vector3(pumpAt.x - 0.4, 2.2, pumpAt.z).add(origin),
@@ -309,7 +332,7 @@ function buildUnit(scene: THREE.Scene, origin: THREE.Vector3): Unit {
     const spot = ringSpots[tag];
     if (spot === undefined) return;
     const [at, radius] = spot;
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.055, 14, 96), new THREE.MeshBasicMaterial({ color: RING.voting, toneMapped: false, transparent: true }));
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.05, 10, 96), new THREE.MeshBasicMaterial({ color: RING.voting, transparent: true }));
     ring.rotation.x = Math.PI / 2;
     ring.position.copy(at);
     ring.visible = false;
@@ -317,7 +340,7 @@ function buildUnit(scene: THREE.Scene, origin: THREE.Vector3): Unit {
     rings[tag] = ring;
   });
 
-  return { liquid, surface, liquidMaterial, impeller, rotor, coil, lvStem: lv.stem, lvWheel: lv.wheel, tvStem: tv.stem, tvWheel: tv.wheel, feed, outlet, steam, rings, anchors };
+  return { speedGauge, steamGauge, levelGlass, liquid, surface, liquidMaterial, impeller, rotor, coil, lvStem: lv.stem, lvWheel: lv.wheel, tvStem: tv.stem, tvWheel: tv.wheel, feed, outlet, steam, rings, anchors };
 }
 
 const clamp = (value: number, low: number, high: number) => Math.max(low, Math.min(high, value));
@@ -344,11 +367,19 @@ function applyState(unit: Unit, plantId: PlantId, live: Live, delta: number, tim
     unit.surface.position.y = TANK_BASE + unit.liquid.scale.y + Math.sin(time * 1.8) * 0.012;
   }
   const warmth = temp === undefined ? 0 : clamp((temp - 65) / 25, 0, 1);
-  unit.liquidMaterial.color.setRGB(0.14 + warmth * 0.42, 0.62 + warmth * 0.2, 0.84 - warmth * 0.3);
+  unit.liquidMaterial.color.setRGB(0.26 + warmth * 0.06, 0.52 + warmth * 0.06, 0.66 + warmth * 0.06);
+  unit.levelGlass.visible = hasLevel;
+  if (hasLevel) {
+    unit.levelGlass.scale.y = unit.liquid.scale.y;
+    unit.levelGlass.position.y = TANK_BASE + unit.liquid.scale.y / 2;
+  }
+  const dial = (value: number, full: number) => 2.3 - clamp(value / full, 0, 1) * 4.6;
+  unit.speedGauge.rotation.z = THREE.MathUtils.lerp(unit.speedGauge.rotation.z, dial(speed, 100), 1 - Math.exp(-delta * 3));
+  unit.steamGauge.rotation.z = THREE.MathUtils.lerp(unit.steamGauge.rotation.z, dial(steamKgH, 3000), 1 - Math.exp(-delta * 3));
 
   unit.rotor.rotation.z -= (speed / 100) * 22 * delta;
   unit.impeller.rotation.y += (speed > 0 ? 1.6 : 0) * delta;
-  unit.coil.emissiveIntensity = THREE.MathUtils.lerp(unit.coil.emissiveIntensity, clamp(duty / 1800, 0, 1) * 3.2, 1 - Math.exp(-delta * 2));
+  unit.coil.color.setRGB(0.66 + clamp(duty / 1800, 0, 1) * 0.12, 0.47, 0.31);
 
   advance(unit.feed, feedM3h * 0.022, delta);
   advance(unit.outlet, (lvPos ?? 0) * 0.0066, delta);
@@ -437,19 +468,19 @@ export function Plant3D({ plantId, components, outlines, proposer, selected, onS
     }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.02;
+    renderer.toneMappingExposure = 0.92;
     element.appendChild(renderer.domElement);
     renderer.domElement.className = "absolute inset-0 size-full";
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x05090f);
-    scene.fog = new THREE.FogExp2(0x05090f, 0.017);
+    scene.background = new THREE.Color(0xc2cbd1);
+    scene.fog = new THREE.FogExp2(0xc2cbd1, 0.0075);
     const pmrem = new THREE.PMREMGenerator(renderer);
     const environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environment = environment;
-    scene.environmentIntensity = 0.5;
+    scene.environmentIntensity = 0.62;
 
     const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 240);
     const focus = ORIGIN[live.current.plantId].clone().add(new THREE.Vector3(0, 3.1, 0));
@@ -466,35 +497,28 @@ export function Plant3D({ plantId, components, outlines, proposer, selected, onS
     controls.autoRotate = !calm;
     controls.autoRotateSpeed = 0.22;
 
-    const floor = new THREE.Mesh(new THREE.CircleGeometry(150, 96), new THREE.MeshStandardMaterial({ color: 0x0a1119, metalness: 0.72, roughness: 0.46 }));
-    floor.rotation.x = -Math.PI / 2;
-    floor.receiveShadow = true;
-    scene.add(floor);
-    const grid = new THREE.GridHelper(170, 85, 0x1c3347, 0x101d2a);
-    (grid.material as THREE.Material).transparent = true;
-    (grid.material as THREE.Material).opacity = 0.5;
-    grid.position.set(12, 0.012, 0);
-    scene.add(grid);
+    addHall(scene);
 
-    scene.add(new THREE.HemisphereLight(0x8fbfe6, 0x0a0f14, 0.5));
-    const key = new THREE.SpotLight(0xdff1ff, 900, 0, 0.62, 0.55, 1.75);
-    key.position.set(10, 24, 16);
+    // Plain daylight through the skylights, nothing colored.
+    scene.add(new THREE.HemisphereLight(0xf4f7fa, 0x8b8f92, 1.15));
+    const key = new THREE.DirectionalLight(0xfff8ee, 1.7);
+    key.position.set(18, 34, 16);
     key.target.position.set(12, 0, 0);
     key.castShadow = true;
     key.shadow.mapSize.set(2048, 2048);
-    key.shadow.bias = -0.0004;
+    key.shadow.camera.left = -46;
+    key.shadow.camera.right = 46;
+    key.shadow.camera.top = 34;
+    key.shadow.camera.bottom = -34;
+    key.shadow.camera.far = 90;
+    key.shadow.bias = -0.0005;
+    key.shadow.normalBias = 0.03;
     scene.add(key, key.target);
-    const rim = new THREE.PointLight(0x38bdf8, 260, 42, 1.8);
-    rim.position.set(-13, 7.5, -8);
-    scene.add(rim);
-    const warm = new THREE.PointLight(0xffb066, 150, 34, 1.9);
-    warm.position.set(14, 9, -9);
-    scene.add(warm);
 
     const units = Object.fromEntries(PLANT_IDS.map((id) => [id, buildUnit(scene, ORIGIN[id])])) as Record<PlantId, Unit>;
 
     // The one physical link between plants: the steam header both TV-101 valves draw from.
-    const headerMaterial = new THREE.MeshStandardMaterial({ color: 0xb98a5b, metalness: 0.88, roughness: 0.3 });
+    const headerMaterial = new THREE.MeshStandardMaterial({ color: 0xc5cbd0, metalness: 0.55, roughness: 0.46 });
     const headerCurve = new THREE.LineCurve3(new THREE.Vector3(-13, HEADER_Y, -4.2), new THREE.Vector3(36, HEADER_Y, -4.2));
     const header = new THREE.Mesh(new THREE.TubeGeometry(headerCurve, 12, 0.3, 18, false), headerMaterial);
     header.castShadow = true;
@@ -506,19 +530,18 @@ export function Plant3D({ plantId, components, outlines, proposer, selected, onS
       post.castShadow = true;
       scene.add(post);
     }
-    const headerFlow = flow(headerCurve, 34, 0xfff1dd, 0.1, scene);
-
-    const composer = new EffectComposer(renderer);
-    composer.addPass(new RenderPass(scene, camera));
-    const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.62, 0.62, 0.8);
-    composer.addPass(bloom);
-    composer.addPass(new OutputPass());
+    for (let x = -12; x <= 36; x += 2) {
+      const band = new THREE.Mesh(new THREE.TorusGeometry(0.305, 0.012, 6, 24), new THREE.MeshStandardMaterial({ color: 0x7f878d, metalness: 0.7, roughness: 0.4 }));
+      band.rotation.y = Math.PI / 2;
+      band.position.set(x, HEADER_Y, -4.2);
+      scene.add(band);
+    }
+    const headerFlow = flow(headerCurve, 2, 0xc5cbd0, 0.02, scene);
 
     const resize = () => {
       const { clientWidth, clientHeight } = element;
       if (clientWidth === 0 || clientHeight === 0) return;
       renderer.setSize(clientWidth, clientHeight, false);
-      composer.setSize(clientWidth, clientHeight);
       camera.aspect = clientWidth / clientHeight;
       camera.updateProjectionMatrix();
     };
@@ -578,7 +601,7 @@ export function Plant3D({ plantId, components, outlines, proposer, selected, onS
       advance(headerFlow, anySteam * 0.000045, delta);
 
       controls.update();
-      composer.render(delta);
+      renderer.render(scene, camera);
 
       const width = element.clientWidth;
       const height = element.clientHeight;
@@ -611,7 +634,6 @@ export function Plant3D({ plantId, components, outlines, proposer, selected, onS
       });
       environment.dispose();
       pmrem.dispose();
-      composer.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     };
@@ -620,7 +642,7 @@ export function Plant3D({ plantId, components, outlines, proposer, selected, onS
   const empty = Object.keys(components).length === 0;
 
   return (
-    <div className="relative h-full overflow-hidden bg-[#05090f]">
+    <div className="relative h-full overflow-hidden bg-[#c2cbd1]">
       <div ref={host} className="absolute inset-0" />
       {ready
         ? PLATES.map(({ tag, metrics }) => {

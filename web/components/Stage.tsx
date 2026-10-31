@@ -6,7 +6,7 @@ import { PidStage } from "./PidStage";
 
 const Plant3D = dynamic(() => import("./Plant3D").then((module) => module.Plant3D), {
   ssr: false,
-  loading: () => <div className="flex h-full items-center justify-center bg-[#05090f] text-xl text-ink-2">Loading the 3D plant</div>,
+  loading: () => <div className="flex h-full items-center justify-center bg-[#c2cbd1] text-xl text-[#1b2730]">Loading the 3D plant</div>,
 });
 
 /** The plant in 3D by default, the engineering P&ID one click away, and the P&ID alone if WebGL is unavailable. */
