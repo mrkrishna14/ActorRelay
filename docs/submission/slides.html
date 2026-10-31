@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ActorRelay slides</title>
+<style>
+  @page { size: 1600px 900px; margin: 0; }
+  * { box-sizing: border-box; }
+  :root { --ground: #f5f4f0; --panel: #ffffff; --ink: #17212b; --ink-2: #47535e; --ice: #1a6db0; --ok: #12794b; --bad: #c42b2b; --rule: #d8d5cc; }
+  html, body { margin: 0; background: var(--ground); color: var(--ink); font-family: "Segoe UI", Arial, Helvetica, sans-serif; }
+  .slide { position: relative; width: 1600px; height: 900px; padding: 72px 96px 64px; page-break-after: always; break-after: page; overflow: hidden; background: var(--ground); }
+  .slide:last-child { page-break-after: auto; break-after: auto; }
+  .tag { font-size: 24px; font-weight: 600; color: var(--ice); margin: 0 0 16px; }
+  h1 { font-size: 72px; line-height: 1.08; margin: 0 0 40px; font-weight: 700; letter-spacing: -0.5px; }
+  ul { margin: 0; padding: 0; list-style: none; }
+  li { font-size: 34px; line-height: 1.32; margin: 0 0 24px; padding-left: 32px; position: relative; }
+  li::before { content: ""; position: absolute; left: 0; top: 18px; width: 12px; height: 12px; border-radius: 50%; background: var(--ice); }
+  b { font-weight: 700; }
+  .foot { position: absolute; left: 96px; right: 96px; bottom: 48px; display: flex; justify-content: space-between; font-size: 22px; color: var(--ink-2); border-top: 1px solid var(--rule); padding-top: 16px; }
+  .flow { display: flex; align-items: stretch; gap: 16px; margin-top: 44px; }
+  .box { flex: 1; background: var(--panel); border: 2px solid var(--rule); border-radius: 10px; padding: 22px 24px; font-size: 26px; line-height: 1.28; }
+  .box strong { display: block; font-size: 30px; margin-bottom: 6px; }
+  .box.no { border-color: var(--bad); }
+  .box.no strong { color: var(--bad); }
+  .box.yes { border-color: var(--ok); }
+  .box.yes strong { color: var(--ok); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  .col { background: var(--panel); border: 2px solid var(--rule); border-radius: 10px; padding: 32px 36px; }
+  .col h2 { font-size: 36px; margin: 0 0 22px; }
+  .col li { font-size: 28px; margin-bottom: 16px; padding-left: 28px; }
+  .col li::before { top: 14px; width: 10px; height: 10px; }
+  .proof { margin-top: 30px; font-size: 28px; line-height: 1.34; color: var(--ink); }
+</style>
+</head>
+<body>
+
+<section class="slide">
+  <p class="tag">The problem</p>
+  <h1>One pump change moves everything.</h1>
+  <ul>
+    <li>Raise a pump's speed and the outlet valve, tank, steam coil and shared steam header all respond.</li>
+    <li>Each system watches only its own piece.</li>
+    <li>The lesson from the last incident sits in a log nobody reads at change time.</li>
+  </ul>
+  <div class="flow">
+    <div class="box"><strong>Feed pump</strong>more flow</div>
+    <div class="box"><strong>Hold tank</strong>level and heat load shift</div>
+    <div class="box"><strong>Outlet valve</strong>opens toward its limit</div>
+    <div class="box"><strong>Steam header</strong>shared with the other plant</div>
+  </div>
+  <div class="foot"><span>ActorRelay</span><span>Simulated plant</span></div>
+</section>
+
+<section class="slide">
+  <p class="tag">The product</p>
+  <h1>Negotiate. Remember. Refuse.</h1>
+  <ul>
+    <li><b>Negotiate:</b> every setpoint change is a proposal, and every connected machine's agent votes.</li>
+    <li><b>Remember:</b> each agent cites past runs, then is scored against what really happened.</li>
+    <li><b>Refuse:</b> one no blocks the change with evidence. A safer target follows, and a human gets a 10-second veto.</li>
+    <li><b>Across plants:</b> a rule from Plant A is cited in Plant B.</li>
+  </ul>
+  <div class="flow">
+    <div class="box no"><strong>Pump 50% to 85%</strong>Blocked: the outlet valve would reach 89%, past its 81% line</div>
+    <div class="box yes"><strong>Counter: 50% to 65%</strong>5 of 5 yes, veto window, one write to the simulator</div>
+    <div class="box no"><strong>Plant B at 85%</strong>Blocked, citing the rule from Plant A's runs</div>
+  </div>
+  <div class="foot"><span>Digital twins predict. ActorRelay makes the components negotiate, remember, and refuse, across every plant you own.</span><span>Simulated plant</span></div>
+</section>
+
+<section class="slide">
+  <p class="tag">Why both tools</p>
+  <h1>Actors hold the truth. Relay carries the argument.</h1>
+  <div class="grid">
+    <div class="col">
+      <h2>Durable Actors (Terse)</h2>
+      <ul>
+        <li>One actor per component, plant and company</li>
+        <li>State, history, calibration and rules live in the actor</li>
+        <li>One call at a time per actor, so decisions stay in order</li>
+        <li>Only the execute path can change a metric</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h2>Agent Relay</h2>
+      <ul>
+        <li>Ten component agents on plant and company channels</li>
+        <li>Proposals, votes and counters travel as messages</li>
+        <li>Cross-plant votes go over the company channel</li>
+        <li>Results reach the agents, which score their predictions</li>
+      </ul>
+    </div>
+  </div>
+  <p class="proof"><b>Shown on the full stack:</b> 26 of 26 end-to-end checks on real actors, Relay and model calls, on the final code.</p>
+  <div class="foot"><span>ActorRelay</span><span>Simulated plant, local dev server</span></div>
+</section>
+
+</body>
+</html>

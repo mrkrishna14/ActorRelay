@@ -2,7 +2,7 @@
 
 Prepared for the solo Builderbase entry. **Nothing has been submitted or posted.**
 
-**Status at 13:56 PT: not ready to submit, but close.** All four never-fake moments passed in one recorded full-stack run at 13:42, 26 of 26. It was the only clean run of four, the code has moved since, it was driven by a test script, and the dashboard has not been seen working. Every file here marks what has been seen and what has not.
+**Status at 15:49 PT: the pack is ready to use. Nothing has been submitted.** All four never-fake moments passed in three recorded full-stack runs, all 26 of 26, the latest two on the final backend code, and the dashboard was seen showing the 15:41 run. Two decisions remain.
 
 | File | What it holds |
 |---|---|
@@ -11,23 +11,18 @@ Prepared for the solo Builderbase entry. **Nothing has been submitted or posted.
 | [demo-script.md](demo-script.md) | 90-second script, written against what the code does |
 | [real-vs-stand-in.md](real-vs-stand-in.md) | What is real, what is a stand-in, and what must not be claimed |
 
-## What must be true before submitting
+## Before submitting
 | Check | Status |
 |---|---|
-| Unsafe change blocked with cited evidence, on the full stack | Passed in [the 13:42 run](evidence/e2e-run-134157.md) |
-| Counter executes after the veto window, on the full stack | Passed, one simulator write |
-| Second block cites the first run, on the full stack | Passed, 2.2 s. Earlier runs missed the target |
-| Plant B cites Plant A's rule, on the full stack | Passed |
-| The same on the final code, repeatably | **Not done** |
-| All of it seen on the dashboard, including captions | **Not done** |
-| A veto click on the full stack | **Not done** |
-| A person rehearses the script against a clock | **Not done** |
-| Root `README.md` fixed | **Not done** |
+| All four moments on the full stack | **Passed** at [13:42](evidence/e2e-run-134157.md), [14:09](evidence/e2e-run-140851.md) and [15:41](evidence/e2e-run-154135.md) |
+| Dashboard working on live data | **Seen** showing the 15:41 run, [screenshot](evidence/dashboard-live-154228.jpg). Plant B caption not seen, and no person has driven it on a clock |
+| Veto click on the full stack | **Passed** at 15:44:58, per main. It was a scripted click in a test browser, not a person. I did not see it myself |
+| Stack ticking | **Check before judging:** `/health` `ticks` must rise between two reads, and the laptop must not sleep. See [demo-script.md](demo-script.md) |
+| Backup video and three slides | Not checked by this session |
 
 ## Decisions only Zubair can make
 1. **Solo credit.** Git shows only teammates as authors of `CLAUDE.MD`, `PLAN.MD` and the task files. See "Who did what" in [real-vs-stand-in.md](real-vs-stand-in.md). The entry should not present those as solo work.
 2. **Repo link.** The only remote is `github.com/mrkrishna14/Factoryio`, and `zubair` carries teammates' commits. Decide what the entry links to.
-3. **Plant B's automatic counter.** After Plant B's block, its pump agent counters with 65 and the plant moves unless vetoed, and the card holding the rule citation collapses about 2 s after the block. Keep it and script around it, as [demo-script.md](demo-script.md) does now, or suppress it so the citation stays on screen.
 
 ## How this pack stays honest
 - A claim goes in only with evidence: a file, a run table or a measured result.

@@ -1,8 +1,8 @@
 # 90-second demo script
 
-**Not yet rehearsed by a person, and not yet seen on the dashboard.** The walk passed 26 of 26 on the full stack at 13:42 ([table](evidence/e2e-run-134157.md)), driven by a test script. Numbers in `[brackets]` come from that run, so check them in rehearsal.
+**Checked at 15:49 PT against the code and three clean full-stack runs:** [13:42](evidence/e2e-run-134157.md), [14:09](evidence/e2e-run-140851.md) and [15:41](evidence/e2e-run-154135.md), all 26 of 26. All were driven by a test script, and **no person has rehearsed this on a clock.** The dashboard was seen showing the 15:41 run. Numbers in `[brackets]` come from those runs, so check them on screen.
 
-Checked against the code at 13:38 PT by an independent trace, then against the 13:42 run. Agents and actors have changed since, so rerun before relying on it.
+The page also has a **Guided tour** button, which narrates the same walk with its own fixed text. This script is the presenter-led version.
 
 Nothing on screen waits for the speaker once a button is clicked, so **Say** lines are placed around the clicks. Times below assume the measured 13:42 speeds.
 
@@ -18,7 +18,7 @@ Nothing on screen waits for the speaker once a button is clicked, so **Say** lin
 
 **Click** "Increase throughput" at about 0:12. Voters light up, including Plant B's TV-101 on the Plant B card.
 
-**Say, while they vote:** "Every connected component reviews it, and so does Plant B's steam valve, because they share the header."
+**Say, while they vote:** "Every connected component reviews it, and so does Plant B's steam valve, because they share the header." The block can land in under a second, so finish this sentence even if the screen is already red.
 
 **Say, on red, about 0:18:** "The outlet valve says no. It predicts [89] percent open, past its 81 percent line, and it cites a learned rule and the runs that got there."
 
@@ -36,7 +36,7 @@ Nothing on screen waits for the speaker once a button is clicked, so **Say** lin
 
 **Say, when the countdown appears, about 0:36:** "Everyone agrees, and I get ten seconds to veto."
 
-**Screen:** Counter card under the blocked proposal, 85 becomes 65. All voters green. Veto countdown from 10.
+**Screen:** Counter card under the blocked proposal, 85 becomes 65. All voters green. Veto countdown from 10, with the Veto button on the story card.
 
 **What happens:**
 - The proposer polls every 800 ms, sees `blocked`, and waits for every vote, up to 6 s.
@@ -47,7 +47,7 @@ Nothing on screen waits for the speaker once a button is clicked, so **Say** lin
 
 **Seen at 13:42:** Counter 6.4 s after the click, veto window 23.5 s after the click, 5 of 5 yes. The rationale read "At 65% speed, 16 safe runs support an expected valve peak of 69.76%, below the 72.9% limit."
 
-**Not seen:** a veto click on the full stack.
+**Veto:** the button sits on the story card during the window (`web/components/StoryCard.tsx`). A click on the full stack passed at 15:44:58, per main: the proposal went to vetoed and P-100 stayed at 50. It was a scripted click in a test browser, not a person.
 
 ### 0:46: It executes and is scored
 **Screen:** Values move on the diagram. Event feed: executed, then calibration. LV-101 peaks, then falls toward 65.
@@ -63,20 +63,20 @@ Nothing on screen waits for the speaker once a button is clicked, so **Say** lin
 **Seen at 13:42:** Simulator write 1.2 s after the veto deadline, `applied: 65`, exactly one write. Event recorded 1.7 s later, because the simulator caught up on late ticks under load. Allow 5 s on a quiet machine. Calibration for 5 voters: LV-101 predicted 70, observed 66.53.
 
 ### 0:57: The repeat is blocked
-**Click** "Force P-100 → 85%".
+**Click** "Force P-100 → 85%". It stays disabled until the 65 run is observed, so wait for the event feed.
 
 **Say:** "I force 85 again. Blocked. It cites the run from a moment ago first. That run was safe, so it isn't proof about 85. The block rests on the rule and the earlier runs above 85."
 
 **Screen:** Blocked. First evidence chip is the newest run. Caption: "It learned."
 
-**What happens:** A proven no posts at 1.5 s at the latest when a live execution exists (`FAST_NO_MS`), and `Plant.vote` sets `blocked` as it lands. `evidenceEventIds[0]` is the newest execution. No counter follows a repeat.
+**What happens:** Once a live run exists, a no that evidence already proves skips the model (`agent/vote.ts`), and `Plant.vote` sets `blocked` as it lands. `evidenceEventIds[0]` is the newest execution. No counter follows a repeat.
 
-**Seen at 13:42:** Blocked in 1.8 s, first evidence id `event-plant-a-p00002-e96d3133`. The reason opens "[decided from retrieved evidence; the model did not answer in time]". Earlier full-stack runs took 13.2, 6.8 and 4.1 s.
+**Seen:** 342 ms at 14:09 and 2.2 s at 13:42, with the 65 run cited first both times. At 15:42 the card on screen read "LV-101 cited the run from 3 s ago as evidence 1, its latest observation, not proof."
 
 ### 1:11: Plant B cites Plant A
 **Switch** to Plant B. **Click** "Increase throughput", not Force, whose rationale says "again". All five voters turn red.
 
-**Open LV-101's company rule chip at once.** About 4 s after the block a counter to 65 collapses that row (`web/components/ProposalPanel.tsx`), unless ar-web changes this.
+**Check LV-101's company rule chip.** When the counter appears the blocked card collapses, but `no` voters stay listed in compact form (`web/components/ProposalPanel.tsx`). Confirm in rehearsal that the chip stays reachable.
 
 **Say:** "Plant B has never run this high. Its valve is the same model as Plant A's, so it cites the rule from Plant A's runs, seen [22] times."
 
@@ -96,22 +96,16 @@ Nothing on screen waits for the speaker once a button is clicked, so **Say** lin
 **Say:** "Every component has a voice, every change needs consensus, and every plant learns from every other."
 
 ## Timing
-Machine time from the first click, from the actors' timestamps in the 13:42 run. No presenter was involved.
+Machine time from the first click.
 
-| Step | Measured |
-|---|---|
-| Blocked | 5.8 s |
-| Counter proposed | 6.4 s |
-| Veto window opens | 23.5 s |
-| Simulator write | 34.6 s |
-| Event recorded | 36.3 s, expect about 40 s on a quiet machine |
-| Repeat, click to blocked | 1.8 s |
-| Plant B, click to blocked | 3.0 s |
+| Step | 13:42 run | 14:09 run | 15:41 run |
+|---|---|---|---|
+| Blocked | 5.8 s | 3.9 s | 0.4 s |
+| Counter after block | 0.6 s | 1.3 s | 7.4 s |
+| Repeat, click to blocked | 1.8 s | 0.34 s | 0.3 s |
 
-- **Machine time for the whole walk:** 42.8 s from the first click to Plant B's block, with no talking.
-- **With the talk track:** about 90 s, with no slack.
-- **Earlier full-stack runs were slower:** blocks took 12.5 to 16.5 s at higher load, which would overrun.
-- **If every timer fires, from the code:** about 2:04.
+- **Whole walk on a quiet machine:** in the 15:41 run the repeat started 30 s after the first click, with no talking.
+- **With the talk track:** there is more slack than the 13:42 timing allowed. Let the screen catch up rather than rushing.
 - **If it runs long:** cut "seen [22] times" and "That run was safe, so it isn't proof about 85." Do not cut the Plant B citation.
 
 ## If a judge asks
@@ -121,7 +115,7 @@ Machine time from the first click, from the actors' timestamps in the 13:42 run.
 ## Say it this way
 | Do not say | Why | Say instead |
 |---|---|---|
-| "Blocked faster" | The repeat uses a shorter code timer, 1.5 s against 6 s. That is a timer, not learning | "It cites the run from a moment ago first" |
+| "Much faster" or "it learned to be faster" | A repeat skips the model when evidence proves the no. That was 342 ms against 3.9 s at 14:09, but 0.3 s against 0.4 s at 15:41 | "It answers from memory, with no model call, and cites the run from a moment ago" |
 | "The AI refused it" or "the model predicted 89" | At 85 code forces the no and raises the number to what past runs reached. On the repeat the model had not answered | "The valve's agent refuses, and code enforces the limit" |
 | "Learned a minute ago" about Plant B | The rule comes from seeded history at reset, not the live 65 run | "The rule from Plant A's runs" |
 | Anything implying Plant B would have allowed 85 | It blocks without the rule too. The rule changes why, not whether | "It cites" |
@@ -134,6 +128,8 @@ Machine time from the first click, from the actors' timestamps in the 13:42 run.
 ## Before recording
 - Stop every eval, sweep and spare Terse. Repeated 429s still turn a vote into a safe no, and load slowed earlier runs by several times.
 - Start early, in the order in `glue/DEMO.md`. A Terse restart took 25 to 72 s on a loaded machine, median 55 s.
+- Preflight: read `http://127.0.0.1:7200/health` twice. `ticks` must rise between reads. If it does not, or a proposal sits in voting with 5 of 5 yes and no veto window, run `scripts/demo-restart.sh` inside WSL, about 50 s, then press "Reset demo", because it runs the e2e on the way up. Reset alone does not cure this.
+- Keep the laptop awake through judging. A stack stopped ticking at 15:40 after an apparent 25-minute pause of the machine.
 - Do one reset before anyone is watching. The first after a start is slower.
 - Keep Relay, actors, simulator, glue and agents together in WSL.
 - Press "Reset demo" between takes.

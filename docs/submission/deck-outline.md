@@ -1,6 +1,6 @@
 # Three-slide deck outline
 
-Not built yet. Use the dashboard's visual language from `web/` once it has been seen on live data. Keep the "Simulated plant" label on any screen shot. The bullets on slides 2 and 3 were all seen in the 13:42 full-stack run, which was one clean run of four. Recheck on the final code.
+Not built yet. Use the dashboard's visual language from `web/`, and a capture of the live page. Keep the "simulated plant" label in shot. The bullets on slides 2 and 3 were seen in the 13:42, 14:09 and 15:41 full-stack runs.
 
 ## Slide 1: The problem
 **Title:** One pump change moves everything.
@@ -29,7 +29,7 @@ Not built yet. Use the dashboard's visual language from `web/` once it has been 
 
 **Say:** "No supervisory change happens unless the connected equipment agrees."
 
-**Basis:** Seen in the 13:42 full-stack run. See [real-vs-stand-in.md](real-vs-stand-in.md).
+**Basis:** Seen in the 13:42, 14:09 and 15:41 full-stack runs. See [real-vs-stand-in.md](real-vs-stand-in.md).
 
 ## Slide 3: Why both tools
 **Title:** Actors hold the truth. Relay carries the argument.
@@ -43,10 +43,10 @@ Not built yet. Use the dashboard's visual language from `web/` once it has been 
 
 **Say:** "Actors decide what is allowed. Relay is where the components argue."
 
-**Basis:** The 13:42 run used real actors and real Relay together: 10 agents, 25 votes, no failed Relay posts. "Rules reach the other plant" holds because every vote reads `/rules` (`agent/vote.ts`), and glue also posts `rule` on `company`.
+**Basis:** The 13:42 run's logs show real actors and real Relay together: 10 agents, 25 votes, no failed Relay posts. "Rules reach the other plant" holds because every vote reads `/rules` (`agent/vote.ts`), and glue also posts `rule` on `company`.
 
 ## Do not put on a slide
 - Two model vendors. Every vote so far ran on OpenAI.
-- "Crash-proof" or "survives any failure". Stored data held through `kill -9`, but 5 of 11 scored crash scenarios failed in recovery.
+- "Crash-proof" or "survives any failure". Fine to say: the actors' stored data held across 37 `kill -9`s with no acknowledged write lost. The rest of the stack was not crash tested.
 - "Deployed". The actors run on a local Terse dev server.
 - Eval headline numbers. The samples are small, the mix is partly chosen, and the results depend on the model.

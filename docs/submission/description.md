@@ -11,7 +11,7 @@ Not submitted. Use the text only after the checks below pass.
 The first paragraph is the pitch line from `CLAUDE.MD`, word for word.
 
 ## Can each claim be made yet?
-Status at 13:56 PT. "Seen" means in the [13:42 full-stack run](evidence/e2e-run-134157.md), 26 of 26: real actors, glue, Relay, simulator and agents, driven by a test script. It was one clean run of four, and the code has moved since.
+Status at 15:49 PT: yes. "Seen" means in the [13:42](evidence/e2e-run-134157.md), [14:09](evidence/e2e-run-140851.md) and [15:41](evidence/e2e-run-154135.md) full-stack runs, all 26 of 26: real actors, glue, Relay, simulator and agents, driven by a test script.
 
 | Claim | Status | Evidence |
 |---|---|---|
@@ -24,12 +24,7 @@ Status at 13:56 PT. "Seen" means in the [13:42 full-stack run](evidence/e2e-run-
 | The agent offers a safer target | Seen | Step 3: 50 to 65. Code picks the target, and the model writes the reason |
 | A rule learned in one plant is cited in the other | Seen | Step 5. The rule comes from Plant A's seeded history |
 
-**Before submitting:** rerun the full stack on the final code, and see it work on the dashboard.
-
-## If the full loop cannot be repeated on the final code
-Replace the second paragraph with this. It says only what has been seen, and names the limit:
-
-> Every component of a simulated two-plant tank unit has a durable actor and its own agent. In a test-driven run on the full stack, an unsafe change was blocked with cited evidence, a safer one executed after unanimous review, and Plant B cited a rule from Plant A. That result has not yet proved repeatable.
+**Before submitting:** the two decisions in [README.md](README.md).
 
 ## Do not add
-No claim of two model vendors, a hosted deployment, crash-proof operation, or a guarantee that no unsafe change can pass. [real-vs-stand-in.md](real-vs-stand-in.md) has the reasons.
+No claim of two model vendors, a hosted deployment, a stack that survives any crash, or a guarantee that no unsafe change can pass. [real-vs-stand-in.md](real-vs-stand-in.md) has the reasons.
