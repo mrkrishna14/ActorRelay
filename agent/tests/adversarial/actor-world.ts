@@ -5,7 +5,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import plants from "../../../shared/plants.json";
 import type { ComponentState, HistoryEvent, LearnedRule, PlantState, Proposal, Vote } from "../../../shared/types";
-import { SAFE_EVENTS, UNSAFE_EVENTS } from "./fixtures";
+import { SEED_HISTORY } from "./fixtures";
 
 export type PlantApi = {
   propose(input: any): Promise<Proposal>;
@@ -42,8 +42,6 @@ export type World = {
   tokenFor(proposalId: string): Promise<string | undefined> | string | undefined;
   close?(): Promise<void>;
 };
-
-export const SEED_HISTORY = (): HistoryEvent[] => [...SAFE_EVENTS(), ...UNSAFE_EVENTS()];
 
 const here = dirname(fileURLToPath(import.meta.url));
 

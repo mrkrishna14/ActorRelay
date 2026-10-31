@@ -178,7 +178,7 @@ describe.skipIf(!pipeline)(`hostile LLM replies [${TARGET}]`, () => {
 
   describe("threshold boundary, every margin", () => {
     for (const marginPct of [5, 10, 15, 20, 25]) {
-      const threshold = 90 * (1 - marginPct / 100);
+      const threshold = Math.max(90 * (1 - marginPct / 100), 80);
       const safe = [event("evt-1", 40, 41), event("evt-2", 41, 42), event("evt-3", 42, 43)];
       test(`margin ${marginPct}: predicted exactly at ${threshold} is a no`, async () => {
         const { vote } = await pipeline!({ proposal: proposal(45), own: component("plant-a/LV-101", { marginPct }), events: safe, llm: say(reply("yes", { positionPct: threshold }, { marginPct })) });

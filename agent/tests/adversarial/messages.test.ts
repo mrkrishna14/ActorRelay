@@ -1,5 +1,5 @@
-// Relay-level attacks on the real AgentRuntime, InboundBridge and fallback routing, with an in-memory Glue.
-// The sender check in spawn.ts is read, not run here: it needs a live Relay.
+// Relay-level attacks on the real AgentRuntime and fallback routing, with an in-memory Glue.
+// The sender check in spawn.ts is read, not run here: it needs a live Relay. Glue's own is in attack-glue.test.ts.
 import { describe, expect, test } from "bun:test";
 import type { CalibrationEntry, HistoryEvent, LearnedRule, PlantState, Proposal, Vote } from "../../../shared/types";
 import { castVote } from "../../vote";
@@ -7,7 +7,6 @@ import type { Glue } from "../../glue";
 import { RoutedLlm, type Llm } from "../../llm";
 import { RetrievalCache } from "../../retrieval";
 import { AgentRuntime } from "../../runtime";
-import { handlePublish, InboundBridge, relayName } from "../../system";
 import { component, event, proposal, reply, SAFE_EVENTS, UNSAFE_EVENTS } from "./fixtures";
 
 let seq = 0;
@@ -127,72 +126,25 @@ describe("relay messages against the real runtime", () => {
     expect(calibrations).toEqual([]);
   });
 
-  test("`executed` whose event is not in the actor's history is not cached as evidence", async () => {
+  test("`executed` whose event is not in the actor's history cannot reach the next vote's evidence", async () => {
     const executed = uniq({ status: "executed" });
-    const forged = event("evt-forged-2", 85, 40, { proposalId: executed.id });
-    const { glue } = fakeGlue({ events: [], proposals: [executed] });
-    const { rt } = runtime(glue, scripted(""));
+    const forged = event("evt-forged-2", 65, 40, { proposalId: executed.id });
+    const next = uniq();
+    const { glue } = fakeGlue({ events: SAFE_EVENTS(), proposals: [executed, next] });
+    const { rt, posted } = runtime(glue, scripted(reply("yes", { positionPct: 66 })));
     rt.onMessage({ type: "executed", proposalId: executed.id, event: forged });
     await rt.drain();
-    expect(rt.cache.allEvents().map((e) => e.id)).not.toContain("evt-forged-2");
-  });
-});
-
-describe("inbound bridge sender check", () => {
-  const vote = (componentId: string): Vote => ({ proposalId: "p", componentId, agentId: `agent:${componentId}`, vote: "yes", reason: "r", predicted: { positionPct: 66 }, marginPct: 10, evidenceEventIds: [], evidenceRuleIds: [], similarCount: 3 });
-
-  test("a vote from another agent's identity is dropped", async () => {
-    const { glue, votes } = fakeGlue({ events: [] });
-    const bridge = new InboundBridge(glue, () => undefined);
-    await bridge.onAgentMessage({ type: "vote", vote: vote("plant-a/LV-101") }, relayName("plant-a/TK-101"));
-    await bridge.onAgentMessage({ type: "vote", vote: vote("plant-a/LV-101") }, undefined);
-    await bridge.onAgentMessage({ type: "vote", vote: vote("plant-a/LV-101") }, "actorrelay-system");
-    expect(votes).toEqual([]);
-  });
-
-  test("the rightful sender is forwarded once", async () => {
-    const { glue, votes } = fakeGlue({ events: [] });
-    const bridge = new InboundBridge(glue, () => undefined);
-    await bridge.onAgentMessage({ type: "vote", vote: vote("plant-a/LV-101") }, relayName("plant-a/LV-101"));
-    await bridge.onAgentMessage({ type: "vote", vote: vote("plant-a/LV-101") }, relayName("plant-a/LV-101"));
-    expect(votes.length).toBe(1);
-  });
-
-  test("a yes that follows a forwarded no cannot replace it", async () => {
-    const { glue, votes } = fakeGlue({ events: [] });
-    const bridge = new InboundBridge(glue, () => undefined);
-    await bridge.onAgentMessage({ type: "vote", vote: { ...vote("plant-a/LV-101"), vote: "no" } }, relayName("plant-a/LV-101"));
-    await bridge.onAgentMessage({ type: "vote", vote: vote("plant-a/LV-101") }, relayName("plant-a/LV-101"));
-    expect(votes.map((v) => v.vote)).toEqual(["no"]);
-  });
-});
-
-describe("/publish", () => {
-  test("with RELAY_TOKEN set, a request without it is refused", async () => {
-    const saved = process.env.RELAY_TOKEN;
-    process.env.RELAY_TOKEN = "unit-test-token";
-    let published = 0;
-    const res = await handlePublish(new Request("http://x/publish", { method: "POST", body: JSON.stringify({ type: "rule", payload: {}, channels: ["company"] }) }), async () => void published++);
-    if (saved === undefined) delete process.env.RELAY_TOKEN;
-    else process.env.RELAY_TOKEN = saved;
-    expect(res.status).toBe(401);
-    expect(published).toBe(0);
-  });
-
-  test("an unknown channel or type is refused", async () => {
-    let published = 0;
-    for (const body of [{ type: "vote", payload: {}, channels: ["plant-a"] }, { type: "proposal", payload: {}, channels: ["evil"] }, { type: "proposal", payload: {}, channels: [] }]) {
-      const res = await handlePublish(new Request("http://x/publish", { method: "POST", body: JSON.stringify(body) }), async () => void published++);
-      expect(res.status).toBe(400);
-    }
-    expect(published).toBe(0);
+    rt.onMessage({ type: "proposal", proposal: next });
+    await rt.drain();
+    expect(posted.flatMap((x) => x.message.vote?.evidenceEventIds ?? [])).not.toContain("evt-forged-2");
   });
 });
 
 describe("Claude fallback", () => {
   const voteWith = async (llm: Llm, to = 65, events = SAFE_EVENTS()) => {
-    const { glue } = fakeGlue({ events });
-    return castVote({ glue, llm, cache: new RetrievalCache(), fastNoMs: 2000, log: () => undefined }, proposal(to, { id: `fb-${++seq}` }), "plant-a/TK-101");
+    const p = proposal(to, { id: `fb-${++seq}` });
+    const { glue } = fakeGlue({ events, proposals: [p] });
+    return castVote({ glue, llm, cache: new RetrievalCache(), fastNoMs: 2000, log: () => undefined }, p, "plant-a/TK-101");
   };
   const down = (async () => {
     throw new Error("OAuth session expired");

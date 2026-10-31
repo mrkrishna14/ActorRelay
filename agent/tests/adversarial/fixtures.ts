@@ -56,6 +56,8 @@ export const SAFE_EVENTS = (): HistoryEvent[] => [
   event("evt-85-e", 85, 96),
 ];
 
+export const SEED_HISTORY = (): HistoryEvent[] => [...SAFE_EVENTS(), ...UNSAFE_EVENTS()];
+
 export function proposal(to: number, patch: Partial<Proposal> = {}): Proposal {
   return {
     id: "prop-1",

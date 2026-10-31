@@ -100,7 +100,7 @@ describe("calibration cannot talk a voter past evidence", () => {
 describe("counter candidates", () => {
   test("two plants' TV-101 blockers keep separate peaks", () => {
     const blocked = proposal(85, { from: 50 });
-    const blocker = (id: string, now: number, predicted: number) => ({ voter: component(id, { metrics: { positionPct: now } }), metric: "positionPct", predicted, ceiling: 76.95 });
+    const blocker = (id: string, now: number, predicted: number) => ({ voter: component(id, { metrics: { positionPct: now } }), metric: "positionPct", predicted, at: 85, threshold: 85.5, ceiling: 76.95 });
     // plant-a's own valve is the hot one; plant-b's vote lands last and is much cooler.
     const blockers = [blocker("plant-a/TV-101", 70, 90), blocker("plant-b/TV-101", 30, 86)];
     const values = safeCandidates(blocked, blockers, []).map((c) => c.value);

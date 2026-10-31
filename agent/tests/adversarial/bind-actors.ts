@@ -4,8 +4,9 @@
 import { mock, setSystemTime } from "bun:test";
 import plants from "../../../shared/plants.json";
 import type { ComponentState } from "../../../shared/types";
+// Type only: actor-world awaits this module at load, so a value import back would deadlock.
 import type { World } from "./actor-world";
-import { SEED_HISTORY } from "./actor-world";
+import { SEED_HISTORY } from "./fixtures";
 
 type AnyActor = Record<string, any>;
 
@@ -60,7 +61,7 @@ function structuredCloneSafe<T>(value: T): T {
 }
 
 const noopDecorator = () => undefined;
-mock.module("terse-sdk/actor", () => ({ Actor, Emittable: noopDecorator, Persisted: noopDecorator }));
+mock.module("terse-sdk/actor", () => ({ Actor, Compute: () => noopDecorator, Emittable: noopDecorator, Ephemeral: noopDecorator, Persisted: noopDecorator }));
 
 const { Plant, Component, Company } = (await import("../../../actor/src/actor")) as any;
 const { componentActorId, COMPANY_ACTOR_ID } = (await import("../../../actor/src/ids")) as any;
@@ -91,7 +92,11 @@ export async function makeWorld(): Promise<World> {
     advance: async (ms) => {
       now += ms;
       setSystemTime(new Date(now));
-      for (const p of plants.plants) await plant(p.id).sweep();
+      // A cross-plant veto window needs a Company lease, which is granted between two sweeps.
+      for (let pass = 0; pass < 2; pass++) {
+        for (const p of plants.plants) await plant(p.id).sweep();
+        await Bun.sleep(2);
+      }
     },
     // Plays the one legitimate executor: the first claim is the only way a token ever leaves the Plant.
     tokenFor: async (proposalId) => {

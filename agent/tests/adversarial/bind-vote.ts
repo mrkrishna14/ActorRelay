@@ -32,7 +32,7 @@ function serve(c: VoteCase) {
       if (url.pathname === "/rules") return answer("rules", c.rules ?? []);
       if (url.pathname === "/state") {
         const plantId = url.searchParams.get("plantId");
-        return answer("plant", { plant: { id: plantId, name: plantId, components: [], proposals: [], history: c.events, rules: c.rules ?? [], audit: [], tick: 0, connected: true } });
+        return answer("plant", { plant: { id: plantId, name: plantId, components: [], proposals: [c.proposal], history: c.events, rules: c.rules ?? [], audit: [], tick: 0, connected: true } });
       }
       return new Response("not found", { status: 404 });
     },

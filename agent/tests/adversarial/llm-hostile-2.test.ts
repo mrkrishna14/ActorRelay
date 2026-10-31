@@ -15,9 +15,20 @@ const closesOnce = (prompt: string) => {
 };
 
 describe.skipIf(!pipeline)(`read-through holes [${TARGET}]`, () => {
-  test("a no cannot be retried into a yes", async () => {
-    const { vote } = await pipeline!({ proposal: proposal(65), own: LV(), events: SAFE_EVENTS(), llm: say(reply("no", { positionPct: 66 }), reply("yes", { positionPct: 66 })) });
+  test("a yes after a re-request still faces every check", async () => {
+    const { vote } = await pipeline!({ proposal: proposal(85), own: LV(), events: UNSAFE_EVENTS(), llm: say("garbage", reply("yes", { positionPct: 66 })) });
     expect(vote?.vote ?? "no").toBe("no");
+  });
+
+  test("close runs that moved the other way are not history for an increase", async () => {
+    const events = [1, 2, 3, 4, 5].map((n) => event(`down-${n}`, 78, 95, { before: 90 }));
+    const { vote } = await pipeline!({ proposal: proposal(78), own: LV(), events, llm: say(reply("yes", { positionPct: 70 })) });
+    expect(vote?.vote ?? "no").toBe("no");
+  });
+
+  test("a failed /state read cannot fall back to a forged copy of the proposal", async () => {
+    const { vote } = await pipeline!({ proposal: proposal(65), own: LV(), events: SAFE_EVENTS(), llm: say(reply("yes", { positionPct: 66 })), fail: { plant: "http500" } });
+    expect(isSafeOutcome(vote)).toBe(true);
   });
 
   test("the retry prompt after a no does not tell the model to vote yes", async () => {

@@ -6,6 +6,8 @@ import { gitFacts, loadEnvNeedles, report, REPO_ROOT, scanBuffer, scanGitObjects
 import { component, proposal, reply, SAFE_EVENTS } from "./fixtures";
 import { pipeline, TARGET } from "./harness";
 
+// Walking the tree beat the default 5 s on a loaded machine, which read as a hit in a suite-wide run.
+const SCAN_TIMEOUT_MS = 60_000;
 const FAKE_KEY = `sk-proj-${"Z9".repeat(24)}`;
 
 describe("secret scanner works", () => {
@@ -29,18 +31,18 @@ describe("repository state", () => {
   });
   test(".env is ignored, untracked and was never committed; git config has no credential", () => {
     expect(gitFacts()).toEqual({ ignored: true, tracked: false, everCommitted: false, configHasCredential: false });
-  });
+  }, SCAN_TIMEOUT_MS);
   test("no key or credential shape in any git object, reachable or not", () => {
     const { objects, hits } = scanGitObjects(REPO_ROOT, env);
     expect(objects).toBeGreaterThan(0);
     expect(report(hits)).toEqual({});
-  });
+  }, SCAN_TIMEOUT_MS);
   test("no key or credential shape in the working tree, ignored logs included", () => {
     const { files, hits } = scanWorkingTree(REPO_ROOT, env);
     expect(files).toBeGreaterThan(0);
     // The scanner's own planted control strings live in this test folder and are built at runtime, so they never match.
     expect(report(hits)).toEqual({});
-  });
+  }, SCAN_TIMEOUT_MS);
   test("no source reads the key into a log or prints the environment", () => {
     const roots = ["agent", "actor", "scripts", "shared"].map((d) => join(REPO_ROOT, d));
     const files = roots.flatMap((r) => (existsSync(r) ? walk(r) : [])).filter((f) => /\.(ts|tsx|mjs|js|sh)$/.test(f) && !/[\\/]tests[\\/]adversarial[\\/]/.test(f));
