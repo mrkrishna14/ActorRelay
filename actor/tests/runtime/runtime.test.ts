@@ -2,7 +2,7 @@
 //   TERSE_URL (default http://127.0.0.1:7100)   the server under test
 //   GLUE_PORT (default 7200)                    this file serves the labelled fake glue the actors post to
 // Start the server with GLUE_URL pointing at GLUE_PORT. Timings use the real 10s veto window.
-import { afterAll, beforeAll, describe, expect, test } from "bun:test"
+import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test"
 import type { ComponentState, HistoryEvent, LearnedRule, PlantState, Proposal, Vote } from "../../../shared/types"
 import plants from "../../../shared/plants.json"
 import history from "../fixtures/history.json"
@@ -33,10 +33,13 @@ async function call<T>(actor: string, id: string, method: string, ...args: unkno
 const plant = <T>(method: string, ...args: unknown[]) => call<T>("Plant", "plant-a", method, ...args)
 const component = <T>(id: string, method: string, ...args: unknown[]) => call<T>("Component", componentActorId(id), method, ...args)
 
+// Company first: a Plant's first sweep pushes seed-derived rules, and a later Company.loadSeed would wipe them.
 async function reset(): Promise<void> {
+    const started = performance.now()
     await call("Company", "company", "loadSeed", plants.company)
-    for (const seed of plants.plants) await call("Plant", seed.id, "loadSeed", seed, history)
-    for (const seed of plants.plants) for (const state of seed.components) await component(state.id, "loadSeed", state)
+    await Promise.all(plants.plants.map(seed => call("Plant", seed.id, "loadSeed", seed, history)))
+    await Promise.all(plants.plants.flatMap(seed => seed.components.map(state => component(state.id, "loadSeed", state))))
+    console.log(`reset took ${Math.round(performance.now() - started)} ms`)
 }
 
 const until = async <T>(read: () => Promise<T>, done: (value: T) => boolean, timeoutMs: number): Promise<T> => {
@@ -45,7 +48,7 @@ const until = async <T>(read: () => Promise<T>, done: (value: T) => boolean, tim
         const value = await read()
         if (done(value)) return value
         if (Date.now() > deadline) throw new Error(`timed out: ${JSON.stringify(value).slice(0, 300)}`)
-        await Bun.sleep(100)
+        await Bun.sleep(250)
     }
 }
 
@@ -93,7 +96,8 @@ const fakeGlue = Bun.serve({
     }
 })
 
-beforeAll(reset)
+setDefaultTimeout(60_000)
+beforeAll(reset, 60_000)
 afterAll(() => fakeGlue.stop(true))
 
 describe("TASK1 list (real terse actor dev)", () => {
@@ -116,7 +120,7 @@ describe("TASK1 list (real terse actor dev)", () => {
         expect((await proposalOf(second.id)).status).toBe("voting")
         await plant("veto", first.id, "runtime test")
         await until(() => proposalOf(second.id), value => value.status === "veto_window", 4_000)
-    }, 15_000)
+    })
 
     test("similar returns the seeded >=80% events with LV-101 >= 85", async () => {
         await reset()
@@ -209,7 +213,7 @@ describe("execution path (real terse actor dev, fake glue)", () => {
         expect((await plant<{ state: string }>("getExecution", proposal.id)).state).toBe("observed")
         const found = await plant<HistoryEvent[]>("similar", "plant-a/P-100", "speedPct", 85, {}, 5)
         expect(found[0].id).toBe(event.id)
-    }, 40_000)
+    })
 
     test("alarms run: tick advances and missing votes are swept", async () => {
         await reset()

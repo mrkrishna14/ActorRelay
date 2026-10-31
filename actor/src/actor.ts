@@ -1,4 +1,4 @@
-import { Actor, Emittable, Persisted } from "terse-sdk/actor"
+import { Actor, Compute, Emittable, Ephemeral, Persisted } from "terse-sdk/actor"
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto"
 import type {
     AuditEntry,
@@ -113,6 +113,20 @@ function postToGlue(path: string, body: unknown, headers: Record<string, string>
         response => response.ok,
         () => false
     )
+}
+
+// Runs outside the Plant mailbox and reports back with ackCompanySync. Awaiting Company inside the alarm
+// would let one cold or slow Company hold up every tick and every proposal in the plant.
+async function pushToCompany(plantId: PlantId, models: string[] | null, rules: LearnedRule[]): Promise<void> {
+    const company = Company.get(COMPANY_ACTOR_ID)
+    if (models !== null) await company.registerPlant(plantId, models)
+    const delivered: { id: string; timesSeen: number }[] = []
+    for (const rule of rules) {
+        if (rule.model === null || !(await company.modelExistsElsewhere(plantId, rule.model))) continue
+        await company.promoteRule(toCompanyRule(rule, plantId))
+        delivered.push({ id: rule.id, timesSeen: rule.timesSeen })
+    }
+    await Plant.get(plantId).ackCompanySync(models !== null, delivered)
 }
 
 function hashToken(token: string): string {
@@ -287,6 +301,8 @@ export class Plant extends Actor {
     @Persisted private liveEventIds: string[] = []
     @Persisted private companyOutbox: LearnedRule[] = []
     @Persisted private registeredWithCompany = false
+    @Ephemeral private companySyncing = false
+    @Ephemeral private companyRuleIds: string[] = []
 
     @Persisted @Emittable name = ""
     @Persisted @Emittable components: ComponentId[] = []
@@ -344,6 +360,7 @@ export class Plant extends Actor {
             this.liveEventIds = []
             this.companyOutbox = rules
             this.registeredWithCompany = false
+            this.companyRuleIds = []
             this.seq = 0
             this.tickCount = 0
             this.seeded = true
@@ -387,7 +404,7 @@ export class Plant extends Actor {
                 { at: proposal.at, kind: "proposal", refId: proposal.id, summary: `${proposal.metric} ${proposal.from} → ${proposal.to}: ${proposal.rationale}`, by: proposal.proposerAgentId }
             ])
         })
-        if (proposal.crossPlant) await this.#notifyCompany(company.addCrossPlantProposal(proposal.id))
+        if (proposal.crossPlant) void company.addCrossPlantProposal(proposal.id).catch(error => console.error(`Plant ${this.id} could not reach Company: ${errorText(error)}`))
         return proposal
     }
 
@@ -549,7 +566,7 @@ export class Plant extends Actor {
                 this.executions = { ...this.executions, [proposalId]: { ...execution, state: "observed", observedAt: event.at } }
             }
         })
-        await this.#flushCompanyOutbox()
+        this.#syncCompany()
         return event
     }
 
@@ -565,7 +582,7 @@ export class Plant extends Actor {
             this.companyOutbox = this.#withOutbox([rule])
             this.audit = this.#withAudit([{ at, kind: "rule_learned", refId: rule.id, summary: rule.text, by: "plant" }])
         })
-        await this.#flushCompanyOutbox()
+        this.#syncCompany()
         return rule
     }
 
@@ -628,7 +645,17 @@ export class Plant extends Actor {
             }
         }
         await this.#followExecutions(now)
-        await this.#flushCompanyOutbox()
+        this.#syncCompany()
+    }
+
+    // Called by pushToCompany. A rule that gained sightings while the push ran stays queued.
+    async ackCompanySync(registered: boolean, delivered: { id: string; timesSeen: number }[]): Promise<void> {
+        const sent = new Map(delivered.map(rule => [rule.id, rule.timesSeen]))
+        const remaining = this.companyOutbox.filter(rule => sent.get(rule.id) !== rule.timesSeen)
+        await this.db.transaction(async () => {
+            if (registered) this.registeredWithCompany = true
+            if (remaining.length !== this.companyOutbox.length) this.companyOutbox = remaining
+        })
     }
 
     async onAlarm(): Promise<void> {
@@ -738,40 +765,31 @@ export class Plant extends Actor {
         })
     }
 
-    // Company failures never fail a plant write; unsent rules stay in the outbox for the next sweep.
-    async #flushCompanyOutbox(): Promise<void> {
-        const company = Company.get(COMPANY_ACTOR_ID)
-        try {
-            if (!this.registeredWithCompany) {
-                const models = [...new Set(Object.values(this.topology).map((def: ComponentDef) => def.model))]
-                await withTimeout(company.registerPlant(this.id as PlantId, models), "Company.registerPlant")
-                this.registeredWithCompany = true
-            }
-            for (const rule of this.companyOutbox) {
-                if (rule.model !== null && !(await withTimeout(company.modelExistsElsewhere(this.id as PlantId, rule.model), "Company.modelExistsElsewhere"))) continue
-                if (rule.model !== null) await withTimeout(company.promoteRule(toCompanyRule(rule, this.id)), "Company.promoteRule")
-                this.companyOutbox = this.companyOutbox.filter(item => item.id !== rule.id)
-            }
-        } catch (error) {
-            console.error(`Plant ${this.id} could not reach Company: ${errorText(error)}`)
-        }
-    }
-
-    async #notifyCompany(pending: Promise<unknown>): Promise<void> {
-        await withTimeout(pending, "Company notification").catch(error => console.error(`Plant ${this.id} could not reach Company: ${errorText(error)}`))
+    // At most one push runs at a time; anything it misses stays in the outbox for the next sweep.
+    #syncCompany(): void {
+        if (this.companySyncing || (this.registeredWithCompany && this.companyOutbox.length === 0)) return
+        this.companySyncing = true
+        const models = this.registeredWithCompany ? null : [...new Set(Object.values(this.topology).map((def: ComponentDef) => def.model))]
+        void pushToCompany(this.id as PlantId, models, this.companyOutbox)
+            .catch(error => console.error(`Plant ${this.id} could not reach Company: ${errorText(error)}`))
+            .finally(() => {
+                this.companySyncing = false
+            })
     }
 
     async #assertRulesExist(ids: string[]): Promise<void> {
         const mine = new Set(this.rules.map(rule => rule.id))
-        const unknown = ids.filter(id => !mine.has(id))
+        const unknown = ids.filter(id => !mine.has(id) && !this.companyRuleIds.includes(id))
         if (unknown.length === 0) return
         const company = await withTimeout(Company.get(COMPANY_ACTOR_ID).getState(), "Company.getState")
-        const known = new Set(company.rules.map(rule => rule.id))
-        const invented = unknown.find(id => !known.has(id))
+        this.companyRuleIds = company.rules.map(rule => rule.id)
+        const invented = unknown.find(id => !this.companyRuleIds.includes(id))
         if (invented !== undefined) fail("invalid_vote", `evidence rule ${invented} does not exist`)
     }
 }
 
+// Company has no alarm, so without this every quiet moment costs the next propose a cold start.
+@Compute({ idleTimeoutMs: 300_000 })
 export class Company extends Actor {
     @Persisted private plantModels: Record<string, string[]> = {}
 

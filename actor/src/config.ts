@@ -12,7 +12,7 @@ export const CALLBACK_RETRY_MS = 4_000
 export const CALLBACK_MAX_ATTEMPTS = 3
 export const CLAIM_TIMEOUT_MS = 20_000
 export const FETCH_TIMEOUT_MS = 1_500
-export const ACTOR_CALL_TIMEOUT_MS = 3_000
+export const ACTOR_CALL_TIMEOUT_MS = 8_000
 
 export const SETPOINT_TOLERANCE = 0.01
 
