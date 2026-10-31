@@ -290,12 +290,13 @@ export class Component extends Actor {
             marginPct: this.marginPct,
             sinceAdjustment: this.sinceAdjustment
         })
+        const marginMoved = outcome.marginPct !== this.marginPct
         await this.db.transaction(async () => {
             this.calibration = outcome.calibration
             this.marginPct = outcome.marginPct
             this.sinceAdjustment = outcome.sinceAdjustment
         })
-        this.#reportMargin()
+        if (marginMoved) this.#reportMargin()
         return this.#publishState()
     }
 
