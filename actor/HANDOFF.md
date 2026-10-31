@@ -178,7 +178,7 @@ Crash results from `tests/chaos`, a separate suite, are in `tests/chaos/REPORT.m
 
 ## Known limits
 
-- Local only. `terse deploy` was not run, and no generated client is committed: glue uses the invoke route in `glue/actors.ts`.
+- Local only. `terse deploy` needs `terse auth login`, and the CLI here is not logged in, so it was not run. No generated client is committed: glue uses the invoke route in `glue/actors.ts`.
 - Local Terse is sensitive to machine load. Around load 40, with dozens of actor hosts alive, the runtime's own control plane stalls, hosts lose their lease and self-fence. Run one Terse server for the demo.
 - A restart rebuilds the bundle, so a server crash can outlast the voting and claim windows. Veto windows reopen; expired proposals must be proposed again.
 - `Company.promoteRule` checks rule shape, not that cited events exist, because Company never calls Plant. `Plant.promoteRule` does the event check, and glue only uses that path.
