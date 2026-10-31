@@ -9,6 +9,8 @@ __pycache__/
 dist/
 build/
 .next/
+out/
+*.tsbuildinfo
 .vercel/
 .wrangler/
 coverage/
@@ -17,6 +19,14 @@ coverage/
 .env
 .env.*
 !.env.example
+!.env.cloud.example
+
+# Runtime state and Relay workspace credentials
+.durable-actors/
+.terse/
+.agentworkforce/
+.relay/
+generated/
 
 # Logs
 *.log
