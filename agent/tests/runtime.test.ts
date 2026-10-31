@@ -2,7 +2,7 @@
 import { describe, expect, test } from "bun:test";
 import { AgentRuntime } from "../runtime";
 import type { WireMessage } from "../schemas";
-import { InboundBridge, relayName, toWireMessage } from "../system";
+import { agentName, decodeEnvelope, encodeEnvelope } from "../wire";
 import { FakeGlue, makeProposal, safeExecution } from "./fake-glue";
 import { ScriptedLlm } from "./scripted-llm";
 
@@ -113,24 +113,26 @@ describe("executed handling", () => {
   });
 });
 
-describe("system bridge", () => {
-  const vote = { proposalId: "p", componentId: "plant-a/LV-101", agentId: "agent:plant-a/LV-101", vote: "no" as const, reason: "r", predicted: {}, marginPct: 10, evidenceEventIds: [], evidenceRuleIds: [], similarCount: 0 };
-
-  test("a vote is forwarded once and only from its own component's identity", async () => {
-    const glue = new FakeGlue();
-    const bridge = new InboundBridge(glue, () => undefined);
-    await bridge.onAgentMessage({ type: "vote", vote }, "plant-a-E-101");
-    await bridge.onAgentMessage({ type: "vote", vote }, relayName(vote.componentId));
-    await bridge.onAgentMessage({ type: "vote", vote }, relayName(vote.componentId));
-    expect(glue.votes).toHaveLength(1);
+describe("relay envelope", () => {
+  test("agents send glue's {type, payload} shape, which its strict /vote and /counter schemas accept", () => {
+    const vote = { proposalId: "p", componentId: "plant-a/LV-101", agentId: agentName("plant-a/LV-101"), vote: "no" as const, reason: "r", predicted: {}, marginPct: 10, evidenceEventIds: [], evidenceRuleIds: [], similarCount: 0 };
+    expect(JSON.parse(encodeEnvelope({ type: "vote", vote }))).toEqual({ type: "vote", payload: { vote } });
+    const proposal = { plantId: "plant-a" as const, proposerComponentId: "plant-a/P-100", metric: "speedPct", to: 65, rationale: "r" };
+    expect(JSON.parse(encodeEnvelope({ type: "counter", parentProposalId: "p", proposal }))).toEqual({ type: "counter", payload: { parentProposalId: "p", proposal } });
   });
 
-  test("glue's wrapped and bare payloads both become wire messages", () => {
+  test("glue's wrapped and bare payloads both decode", () => {
     const proposal = makeProposal();
     const event = safeExecution("p");
-    expect(toWireMessage("proposal", { proposal, mode: "live" })).toMatchObject({ type: "proposal", proposal: { id: proposal.id } });
-    expect(toWireMessage("proposal", proposal)).toMatchObject({ type: "proposal", proposal: { id: proposal.id } });
-    expect(toWireMessage("executed", { proposalId: "p", event })).toMatchObject({ type: "executed", proposalId: "p" });
-    expect(toWireMessage("executed", event)).toMatchObject({ type: "executed", proposalId: "p" });
+    expect(decodeEnvelope(JSON.stringify({ type: "proposal", payload: { proposal } }))).toMatchObject({ type: "proposal", proposal: { id: proposal.id } });
+    expect(decodeEnvelope(JSON.stringify({ type: "proposal", payload: proposal }))).toMatchObject({ type: "proposal", proposal: { id: proposal.id } });
+    expect(decodeEnvelope(JSON.stringify({ type: "executed", payload: { proposalId: "p", event } }))).toMatchObject({ type: "executed", proposalId: "p" });
+    expect(decodeEnvelope(JSON.stringify({ type: "executed", payload: event }))).toMatchObject({ type: "executed", proposalId: "p" });
+  });
+
+  test("anything else decodes to nothing", () => {
+    expect(decodeEnvelope("not json")).toBeNull();
+    expect(decodeEnvelope(JSON.stringify({ type: "vote", payload: {} }))).toBeNull();
+    expect(decodeEnvelope(JSON.stringify({ type: "proposal", payload: { id: "x" } }))).toBeNull();
   });
 });

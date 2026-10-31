@@ -1,17 +1,29 @@
-// Proof over a real Relay server: real agents, real model calls, fake glue over HTTP. Run inside WSL with
+// Proof over a real Relay server: real agents, real model calls, and glue's real RelayBridge code. Only glue's HTTP
+// surface and the actors behind it are fake. Run inside WSL after run-wsl.sh has installed once:
 //   bun run agent/tests/live-relay-proof.ts
-// It is a script, not a test, because it needs Relay on RELAY_URL. Actors and the simulator are fake here.
 import { spawn } from "node:child_process";
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, symlinkSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Vote } from "../../shared/types";
 import { FakeGlue, makeProposal, safeExecution } from "./fake-glue";
 
 const GLUE_PORT = Number(process.env.PROOF_GLUE_PORT ?? 7213);
-const SYSTEM_PORT = Number(process.env.PROOF_SYSTEM_PORT ?? 7214);
+const HEALTH_PORT = Number(process.env.PROOF_HEALTH_PORT ?? 7214);
+const RELAY_URL = process.env.RELAY_URL ?? "http://127.0.0.1:8787";
+const repo = join(import.meta.dir, "..", "..");
+const runDir = process.env.AGENT_RUN_DIR ?? join(homedir(), ".actorrelay", "agent-run");
 const glue = new FakeGlue();
 const timings: Record<string, number> = {};
+
+// glue/ has no node_modules on the Linux filesystem, so its real bridge runs beside the agents' copy of the SDK.
+const glueDir = join(runDir, "glue");
+mkdirSync(glueDir, { recursive: true });
+for (const file of ["relay.ts", "actors.ts", "journal.ts", "schemas.ts"]) copyFileSync(join(repo, "glue", file), join(glueDir, file));
+if (!existsSync(join(glueDir, "node_modules"))) symlinkSync(join(runDir, "agent", "node_modules"), join(glueDir, "node_modules"));
+const { RelayBridge } = await import(join(glueDir, "relay.ts"));
+const { Journal } = await import(join(glueDir, "journal.ts"));
+const { AgentRelay } = await import(join(runDir, "agent", "node_modules", "@agent-relay", "sdk", "dist", "index.js"));
 
 Bun.serve({
   port: GLUE_PORT,
@@ -28,19 +40,32 @@ Bun.serve({
     if (path === "/rules") return Response.json(await glue.rules());
     if (path === "/state") return Response.json({ plant: await glue.plant(url.searchParams.get("plantId") as "plant-a") });
     const body = (await request.json()) as Record<string, never>;
-    if (path === "/vote") await glue.vote(body.vote);
-    else if (path === "/counter") await glue.counter(body.parentProposalId, body.proposal);
-    else if (path === "/calibration") await glue.calibration(body.componentId, body.entry);
+    if (path === "/calibration") await glue.calibration(body.componentId, body.entry);
     else if (path === "/rule") await glue.rule(body.rule);
     else return Response.json({ error: "unknown" }, { status: 404 });
     return Response.json({ ok: true });
   },
 });
 
+// Own workspace, so a proof never touches a demo.
+const workspace = await AgentRelay.createWorkspace({ name: `proof-${Date.now().toString(36)}`, baseUrl: RELAY_URL });
+process.env.RELAY_WORKSPACE_KEY = workspace.workspaceKey;
+process.env.RELAY_BASE_URL = RELAY_URL;
+delete process.env.RELAY_AGENT_TOKEN;
+const dispatched: string[] = [];
+const bridge = new RelayBridge(async (path: string, body: never, sender: string) => {
+  dispatched.push(`${path} from ${sender}`);
+  const b = body as Record<string, never>;
+  if (path === "/vote") await glue.vote(b.vote);
+  else if (path === "/counter") await glue.counter(b.parentProposalId, b.proposal);
+  return { ok: true };
+}, new Journal(":memory:"));
+await bridge.start();
+
 const agentScript = join(import.meta.dir, "..", "run-wsl.sh");
 const tokens = join(mkdtempSync(join(tmpdir(), "proof-")), "tokens.json");
 const child = spawn("bash", [agentScript], {
-  env: { ...process.env, GLUE_URL: `http://127.0.0.1:${GLUE_PORT}`, SYSTEM_PORT: String(SYSTEM_PORT), RELAY_TOKENS_FILE: tokens },
+  env: { ...process.env, GLUE_URL: `http://127.0.0.1:${GLUE_PORT}`, AGENT_HEALTH_PORT: String(HEALTH_PORT), RELAY_TOKENS_FILE: tokens },
   stdio: ["ignore", "pipe", "inherit"],
 });
 let ready = false;
@@ -59,10 +84,7 @@ async function until(check: () => boolean, ms: number, label: string) {
   throw new Error(`timed out: ${label}`);
 }
 
-async function publish(type: string, payload: unknown, channels: string[]) {
-  const response = await fetch(`http://127.0.0.1:${SYSTEM_PORT}/publish`, { method: "POST", body: JSON.stringify({ type, payload, channels }) });
-  if (!response.ok) throw new Error(`publish ${response.status}: ${await response.text()}`);
-}
+const publish = (type: string, payload: unknown, channels: string[]): Promise<void> => bridge.publish(type, payload, channels);
 
 const votesOn = (id: string): Vote[] => glue.votes.filter((v) => v.proposalId === id);
 const show = (v: Vote) => `${v.componentId} ${v.vote} ${JSON.stringify(v.predicted)} similar=${v.similarCount} evidence=${v.evidenceEventIds.length} :: ${v.reason.slice(0, 160)}`;
@@ -82,8 +104,8 @@ async function run(proposal: ReturnType<typeof makeProposal>, label: string) {
 
 try {
   await until(() => ready, 240_000, "agents ready");
-  const health = await (await fetch(`http://127.0.0.1:${SYSTEM_PORT}/health`)).json();
-  console.log("system health", JSON.stringify(health));
+  const health = await (await fetch(`http://127.0.0.1:${HEALTH_PORT}/health`)).json();
+  console.log("agent health", JSON.stringify(health), "relay bridge", JSON.stringify(bridge.status));
 
   const bad = makeProposal({ to: 85 });
   await run(bad, "50->85");
@@ -118,7 +140,8 @@ try {
   const lvB = plantB.votes.find((v) => v.componentId === "plant-b/LV-101");
   console.log("\nrules", JSON.stringify(glue.rulesPosted.map((r) => r.text)));
   if (lvB?.vote !== "no") throw new Error("plant-b LV-101 did not block");
-  console.log("\nTIMINGS", JSON.stringify(timings, null, 1));
+  console.log("\nglue bridge dispatched", new Set(dispatched.map((d) => d.split(" ")[0])).size, "route kinds,", dispatched.length, "messages; senders", [...new Set(dispatched.map((d) => d.split(" from ")[1]))].length);
+  console.log("TIMINGS", JSON.stringify(timings, null, 1));
   console.log("PROOF PASS");
 } catch (error) {
   console.error("PROOF FAIL", error);
