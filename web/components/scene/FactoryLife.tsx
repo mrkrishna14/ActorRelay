@@ -197,13 +197,13 @@ export function OverheadCrane({ light }: { light: boolean }) {
   const hazard = useHazardTexture([1, 2]);
   useFrame((_, delta) => {
     clock.current += stepOf(animate, delta);
-    if (bridge.current) bridge.current.position.z = -3.6 + 1.9 * Math.sin(clock.current * .11);
-    if (trolley.current) trolley.current.position.x = 4.6 * Math.sin(clock.current * .17 + .8);
+    if (bridge.current) bridge.current.position.z = -2.2 + 4.2 * Math.sin(clock.current * .09);
+    if (trolley.current) trolley.current.position.x = 7.5 * Math.sin(clock.current * .17 + .8);
   });
   return <group ref={bridge}>
-    <Box position={[0, 5.32, 0]} size={[17.05, .34, .26]} color={light ? "#5d7590" : "#55708e"} roughness={.5} metalness={.35} />
-    <Box position={[0, 5.32, .38]} size={[17.05, .22, .1]} color={light ? "#5d7590" : "#55708e"} roughness={.5} metalness={.35} />
-    {[-8.5, 8.5].map((x) => <Box key={x} position={[x, 5.25, .18]} size={[.42, .3, 1.0]} color="#ffffff" map={hazard} roughness={.6} />)}
+    <Box position={[0, 5.32, 0]} size={[23.25, .34, .26]} color={light ? "#5d7590" : "#55708e"} roughness={.5} metalness={.35} />
+    <Box position={[0, 5.32, .38]} size={[23.25, .22, .1]} color={light ? "#5d7590" : "#55708e"} roughness={.5} metalness={.35} />
+    {[-11.6, 11.6].map((x) => <Box key={x} position={[x, 5.25, .18]} size={[.42, .3, 1.0]} color="#ffffff" map={hazard} roughness={.6} />)}
     <group ref={trolley}>
       <Box position={[0, 5.6, .18]} size={[.75, .26, .72]} color="#3b4046" roughness={.5} metalness={.4} />
       <Cylinder radius={.12} height={.62} position={[0, 5.6, .18]} rotation={[Math.PI / 2, 0, 0]} color="#5a6067" />

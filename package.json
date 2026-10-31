@@ -1,0 +1,30 @@
+{
+  "name": "factoryio",
+  "private": true,
+  "packageManager": "bun@1.4.4",
+  "engines": {
+    "bun": ">=1.4.2",
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "web:dev": "bun run --cwd web dev",
+    "web:build": "bun run --cwd web build",
+    "web:check": "bun run --cwd web check",
+    "web:test": "bun run --cwd web test",
+    "dev": "bun run --cwd actor dev",
+    "generate": "bun run --cwd client generate",
+    "generate:cloud": "bun run --cwd client generate:cloud",
+    "start": "bun run --cwd client start",
+    "start:cloud": "bun run --cwd client start:cloud",
+    "check": "bun run --cwd actor check && bun run --cwd client check",
+    "deploy": "bun run --cwd actor deploy",
+    "setup": "bun install && bun install --cwd actor && bun install --cwd client",
+    "relay": "relay",
+    "relay:init": "AGENT_RELAY_MCP_COMMAND='npx -y agent-relay@15.0.1-next.0 mcp' relay init --name factoryio --scope project --delivery mcp --tools claude,codex",
+    "relay:status": "relay status",
+    "relay:agents": "relay agent list"
+  },
+  "devDependencies": {
+    "agent-relay": "15.0.1-next.0"
+  }
+}

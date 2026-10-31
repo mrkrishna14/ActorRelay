@@ -24,7 +24,7 @@ for (const x of [-3.7, 3.1]) for (const y of [-.12, .3]) for (const z of [-1.12,
 for (const x of [-1.13, 1.13]) for (const y of [1, 4.35]) for (const z of [-1.13, 1.13]) FRAME_POINTS.push([x, y, z]);
 FRAME_POINTS.push([0, 5.53, 0], [-4.3, 4.6, -.55], [4.25, .8, .6]);
 const CAMPUS_POINTS: Vec[] = [];
-for (const x of [-8.3, 8.1]) for (const z of [-5.6, 4.1]) CAMPUS_POINTS.push([x, -.15, z], [x, 4.2, z]);
+for (const x of [-9, 9]) for (const z of [-6.4, 4.9]) CAMPUS_POINTS.push([x, -.15, z], [x, 4.2, z]);
 const EQUIPMENT_CENTERS: Record<ComponentTag, Vec> = { "P-100": [-2.5, .8, .3], "TK-101": [0, 2.6, 0], "LV-101": [2.67, 1, .52], "E-101": [.2, 2.95, 0], "TV-101": [1.46, 4.7, -.55] };
 
 function frameFor(scope: SceneScope, selected: ComponentTag) {
@@ -130,7 +130,7 @@ function LabelProjector({ labels, leaders, overview }: { labels: LabelRefs; lead
   return null;
 }
 
-function SceneLabels({ components, selected, onSelect, labels, leaders, activities = [] }: PlantViewProps & { labels: LabelRefs; leaders: LeaderRefs }) {
+function SceneLabels({ components, selected, onSelect, labels, leaders, activities = [], highlighted }: PlantViewProps & { labels: LabelRefs; leaders: LeaderRefs }) {
   const value = (tag: ComponentTag, key: string, precision = 0) => {
     const metric = components.find((item) => item.tag === tag)?.metrics[key];
     return typeof metric === "number" && Number.isFinite(metric) ? metric.toFixed(precision) : "—";
@@ -147,7 +147,7 @@ function SceneLabels({ components, selected, onSelect, labels, leaders, activiti
     {(Object.keys(contents) as ComponentTag[]).map((tag) => {
       const item = components.find((component) => component.tag === tag);
       const activity = activities.find((entry) => entry.tag === tag && entry.plantId === item?.plantId);
-      return <button key={tag} ref={(element) => { labels.current[tag] = element; }} className={`scene-equipment-label scene-agent-label ${selected === tag ? "is-selected" : ""}`} onClick={() => onSelect(tag)} aria-pressed={selected === tag} aria-label={`Select ${tag}, ${activity?.equipmentName ?? item?.name}, ${activity?.state ?? "activity unavailable"}`} title={activity ? `${activity.task} · ${activity.latestAction}` : item?.name}>
+      return <button key={tag} ref={(element) => { labels.current[tag] = element; }} style={agentColorStyle(item?.plantId ?? components[0]?.plantId, tag)} className={`scene-equipment-label scene-agent-label ${selected === tag ? "is-selected" : ""} ${highlighted === tag ? "is-highlighted" : ""} agent-${activity?.state ?? "unavailable"}`} onClick={() => onSelect(tag)} aria-pressed={selected === tag} aria-label={`Select ${tag}, ${activity?.equipmentName ?? item?.name}, ${activity?.state ?? "activity unavailable"}`} title={activity ? `${activity.task} · ${activity.latestAction}` : item?.name}>
         <strong>{tag}<i className={`scene-agent-state state-${activity?.state ?? "unavailable"}`}>{activity?.state ?? "unavailable"}</i></strong>
         <span className="scene-agent-provider">{activity?.vendor ?? item?.vendor} · {(activity?.role ?? item?.role ?? "").replaceAll("_", " ")}</span>
         {selected === tag && <span className="scene-equipment-name">{activity?.equipmentName ?? item?.name}</span>}
@@ -392,6 +392,41 @@ function ProcessFlows({ components, light }: { components: PlantViewProps["compo
   </>;
 }
 
+function PumpCoupling({ speed }: { speed: number }) {
+  const hub = useRef<THREE.Group>(null);
+  const animate = useSceneMotion();
+  useFrame((_, delta) => { if (hub.current) hub.current.rotation.x += stepOf(animate, delta) * 9 * speed / 50; });
+  return <group position={[-2.45, .58, .32]}>
+    <group ref={hub}>
+      <Cylinder radius={.1} height={.3} rotation={[0, 0, Math.PI / 2]} color="#676767" />
+      {[0, 1, 2, 3].map((i) => <mesh key={i} position={[0, Math.sin(i * Math.PI / 2) * .1, Math.cos(i * Math.PI / 2) * .1]}><boxGeometry args={[.32, .04, .04]} /><meshStandardMaterial color={FINISH.safety} /></mesh>)}
+    </group>
+    <mesh rotation={[0, 0, Math.PI / 2]}><cylinderGeometry args={[.17, .17, .36, 24, 1, true, Math.PI, Math.PI]} /><meshStandardMaterial color={FINISH.safety} side={THREE.DoubleSide} roughness={.5} /></mesh>
+  </group>;
+}
+
+function Agitator() {
+  const shaft = useRef<THREE.Group>(null);
+  const animate = useSceneMotion();
+  useFrame((_, delta) => { if (shaft.current) shaft.current.rotation.y += stepOf(animate, delta) * 2.2; });
+  return <group ref={shaft}>
+    <Cylinder radius={.032} height={2.95} position={[0, 2.68, 0]} color="#d3d3d3" />
+    {[0, 1, 2].map((i) => <mesh key={i} position={[Math.cos(i * 2.094) * .22, 1.4, Math.sin(i * 2.094) * .22]} rotation={[.5, -i * 2.094, 0]}><boxGeometry args={[.4, .03, .12]} /><meshStandardMaterial color="#c9ced3" metalness={.8} roughness={.25} /></mesh>)}
+  </group>;
+}
+
+function HeatingCoil({ points, duty }: { points: Vec[]; duty: number }) {
+  const material = useRef<THREE.MeshStandardMaterial>(null);
+  const animate = useSceneMotion();
+  const clock = useRef(0);
+  const curve = useMemo(() => new THREE.CatmullRomCurve3(points.map((p) => new THREE.Vector3(...p)), false, "catmullrom", .18), [points]);
+  useFrame((_, delta) => {
+    clock.current += stepOf(animate, delta);
+    if (material.current) material.current.emissiveIntensity = Math.max(0, duty / 1600) * (1.1 + (animate ? .35 * Math.sin(clock.current * 2.4) : 0));
+  });
+  return <mesh castShadow><tubeGeometry args={[curve, 300, .045, 10, false]} /><meshStandardMaterial ref={material} color={FINISH.copper} metalness={.75} roughness={.3} emissive="#ff5a14" emissiveIntensity={.8} /></mesh>;
+}
+
 function SceneModel({ components, selected, onSelect }: PlantViewProps) {
   const rawLevel = components.find((item) => item.tag === "TK-101")?.metrics.levelPct;
   const level = typeof rawLevel === "number" && Number.isFinite(rawLevel) ? Math.max(0, Math.min(100, rawLevel)) : 0;
@@ -408,8 +443,8 @@ function SceneModel({ components, selected, onSelect }: PlantViewProps) {
   return <>
     <group position={[0, .08, 0]}>
       {/* The skid is a modeled engineering assembly, with every asset independently selectable. */}
-      {[-.95, .95].map((z) => <mesh key={z} position={[-.35, .1, z]} castShadow receiveShadow><boxGeometry args={[6.8, .17, .13]} /><Metal color="#777777" roughness={.4} /></mesh>)}
-      {[-3.55, -.9, 2.95].map((x) => <mesh key={x} position={[x, .1, 0]} castShadow><boxGeometry args={[.14, .17, 2.03]} /><Metal color="#777777" roughness={.4} /></mesh>)}
+      {[-.95, .95].map((z) => <mesh key={z} position={[-.35, .1, z]} castShadow receiveShadow><boxGeometry args={[6.8, .17, .13]} /><meshStandardMaterial color={FINISH.structure} roughness={.5} metalness={.3} /></mesh>)}
+      {[-3.55, -.9, 2.95].map((x) => <mesh key={x} position={[x, .1, 0]} castShadow><boxGeometry args={[.14, .17, 2.03]} /><meshStandardMaterial color={FINISH.structure} roughness={.5} metalness={.3} /></mesh>)}
       {[-3.4, -.8, 2.8].flatMap((x) => [-.87, .87].map((z) => <mesh key={`${x}-${z}`} position={[x, -.04, z]} castShadow><boxGeometry args={[.22, .14, .22]} /><Metal color="#7b7b7b" /></mesh>))}
       {[-.7, .7].flatMap((x) => [-.57, .57].map((z) => <mesh key={`${x}-${z}`} position={[x, .63, z]} castShadow><boxGeometry args={[.1, 1.0, .13]} /><Metal color="#979797" /></mesh>))}
 
@@ -420,8 +455,8 @@ function SceneModel({ components, selected, onSelect }: PlantViewProps) {
         {[1.09, 4.01].map((y) => <mesh key={y} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow><torusGeometry args={[1.09, .045, 10, 64]} /><Metal color="#c3c3c3" /></mesh>)}
         <mesh position={[0, 4.12, 0]} scale={[1, .17, 1]} castShadow><sphereGeometry args={[1.08, 48, 22, 0, Math.PI * 2, 0, Math.PI / 2]} /><Metal /></mesh>
         {liquidHeight > 0 && <>
-          <mesh position={[0, 1.12 + liquidHeight / 2, 0]}><cylinderGeometry args={[1.045, 1.045, liquidHeight, 64]} /><meshPhysicalMaterial color="#a1a1a1" roughness={.2} metalness={.48} transparent opacity={.83} /></mesh>
-          <mesh position={[0, 1.125 + liquidHeight, 0]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[1.048, 64]} /><meshStandardMaterial color="#aaaaaa" metalness={.78} roughness={.13} /></mesh>
+          <mesh position={[0, 1.12 + liquidHeight / 2, 0]}><cylinderGeometry args={[1.045, 1.045, liquidHeight, 64]} /><meshPhysicalMaterial color="#2f7fc4" roughness={.15} metalness={.1} transparent opacity={.62} /></mesh>
+          <mesh position={[0, 1.125 + liquidHeight, 0]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[1.048, 64]} /><meshStandardMaterial color="#5aa6e0" metalness={.3} roughness={.1} transparent opacity={.85} /></mesh>
           {[.28, .53, .81].map((radius) => <mesh key={radius} position={[0, 1.13 + liquidHeight, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[radius, .004, 4, 50]} /><meshBasicMaterial color="#bdbdbd" transparent opacity={.25} /></mesh>)}
         </>}
         <Cylinder radius={.12} height={.22} position={[.58, 4.34, .17]} />
@@ -430,23 +465,23 @@ function SceneModel({ components, selected, onSelect }: PlantViewProps) {
         <Cylinder radius={.21} height={.07} position={[-.52, 4.61, -.19]} />
         <Cylinder radius={.3} height={.22} position={[0, 4.4, 0]} color="#888888" />
         <Flange position={[0, 4.55, 0]} axis="y" radius={.34} />
-        <Cylinder radius={.22} height={.75} position={[0, 4.99, 0]} color="#757575" roughness={.4} />
+        <mesh position={[0, 4.99, 0]} castShadow><cylinderGeometry args={[.22, .22, .75, 40]} /><meshStandardMaterial color={FINISH.machine} roughness={.45} metalness={.3} /></mesh>
         {Array.from({ length: 16 }, (_, i) => <mesh key={i} position={[Math.sin(i * Math.PI / 8) * .23, 4.99, Math.cos(i * Math.PI / 8) * .23]} rotation={[0, i * Math.PI / 8, 0]} castShadow><boxGeometry args={[.025, .65, .065]} /><Metal color="#646464" roughness={.45} /></mesh>)}
         <Cylinder radius={.245} height={.07} position={[0, 5.39, 0]} />
-        <Cylinder radius={.032} height={1.85} position={[0, 3.18, 0]} color="#d3d3d3" />
+        <Agitator />
       </Selectable>
 
       <Selectable tag="E-101" selected={selected} onSelect={onSelect}>
-        <Pipe points={coilPoints} radius={.045} color={selected === "E-101" ? "#e2e2e2" : "#c7c7c7"} />
+        <HeatingCoil points={coilPoints} duty={metricOf(components, "E-101", "dutyKw", 1160)} />
         <Pipe points={[[.78, 2.3, 0], [.93, 2.3, -.17], [1.1, 2.3, -.25]]} radius={.05} />
         <Pipe points={[[.24, 3.6, .742], [.24, 3.83, .742], [.24, 4.15, .742], [.52, 4.35, .742]]} radius={.043} />
       </Selectable>
 
       <Selectable tag="P-100" selected={selected} onSelect={onSelect}>
-        <Cylinder radius={.3} height={.75} position={[-2.97, .58, .32]} rotation={[0, 0, Math.PI / 2]} color="#7d7d7d" roughness={.4} />
+        <mesh position={[-2.97, .58, .32]} rotation={[0, 0, Math.PI / 2]} castShadow><cylinderGeometry args={[.3, .3, .75, 40]} /><meshStandardMaterial color={FINISH.machine} roughness={.45} metalness={.3} /></mesh>
         <Cylinder radius={.32} height={.1} position={[-3.4, .58, .32]} rotation={[0, 0, Math.PI / 2]} />
-        {Array.from({ length: 18 }, (_, i) => <mesh key={i} position={[-2.97, .58 + Math.sin(i * Math.PI / 9) * .3, .32 + Math.cos(i * Math.PI / 9) * .3]} rotation={[i * -Math.PI / 9, 0, 0]} castShadow><boxGeometry args={[.68, .025, .055]} /><Metal color="#747474" roughness={.4} /></mesh>)}
-        <Cylinder radius={.1} height={.3} position={[-2.45, .58, .32]} rotation={[0, 0, Math.PI / 2]} color="#676767" />
+        {Array.from({ length: 18 }, (_, i) => <mesh key={i} position={[-2.97, .58 + Math.sin(i * Math.PI / 9) * .3, .32 + Math.cos(i * Math.PI / 9) * .3]} rotation={[i * -Math.PI / 9, 0, 0]} castShadow><boxGeometry args={[.68, .025, .055]} /><meshStandardMaterial color={FINISH.machine} roughness={.5} metalness={.3} /></mesh>)}
+        <PumpCoupling speed={metricOf(components, "P-100", "speedPct", 50)} />
         <Cylinder radius={.29} height={.4} position={[-2.12, .58, .32]} rotation={[0, 0, Math.PI / 2]} />
         <Flange position={[-1.88, .58, .32]} radius={.26} />
         <Cylinder radius={.09} height={.27} position={[-2.12, .95, .32]} /><Flange position={[-2.12, 1.1, .32]} axis="y" radius={.14} />
@@ -502,6 +537,9 @@ export default function PlantScene(props: PlantViewProps) {
   const [scope, setScope] = useState<SceneScope>("plant");
   const [webgl, setWebgl] = useState<boolean | null>(null);
   const [autoRotate, setAutoRotate] = useState(false);
+  const reducedMotion = usePrefersReducedMotion();
+  const visible = usePageVisible();
+  const animate = !reducedMotion && visible;
   const controls = useRef<OrbitControlsType>(null);
   const manualCamera = useRef(false);
   const labels = useRef<Partial<Record<keyof typeof LABEL_ANCHORS, HTMLElement | null>>>({});
@@ -547,13 +585,14 @@ export default function PlantScene(props: PlantViewProps) {
   return <div className={`plant-scene engineering-viewport ${scope === "plant" ? "is-plant-overview" : ""}`} role="group" aria-label="Interactive 3D plant. Drag to orbit, scroll to zoom, or select equipment labels.">
     {webgl === true ? <SceneErrorBoundary fallback={fallback} onFailure={() => setWebgl(false)}>
       <Suspense fallback={fallback}>
-        <Canvas shadows dpr={[1, 1.7]} camera={{ position: START_POSITION, fov: 34, near: .1, far: 160 }} frameloop={autoRotate ? "always" : "demand"} gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }} onCreated={({ gl }) => {
+        <Canvas shadows dpr={[1, 1.7]} camera={{ position: START_POSITION, fov: 34, near: .1, far: 160 }} frameloop={(animate || autoRotate) && visible ? "always" : "demand"} gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }} onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.15;
           gl.domElement.addEventListener("webglcontextlost", (event) => { event.preventDefault(); setWebgl(false); }, { once: true });
         }}>
-          <color attach="background" args={[light ? "#f5f5f5" : "#0b0b0b"]} />
-          <ambientLight intensity={.7} />
+          <color attach="background" args={[light ? "#e4e8ec" : "#151a20"]} />
+          <ambientLight intensity={light ? .75 : .6} />
+          <hemisphereLight args={[light ? "#f4f7fb" : "#9db4d3", light ? "#9a948a" : "#2a2622", light ? .7 : .55]} />
           <directionalLight position={[-4, 12, 5]} intensity={3} castShadow shadow-mapSize={[1024, 1024]} shadow-bias={-.001} shadow-camera-left={-12} shadow-camera-right={12} shadow-camera-top={10} shadow-camera-bottom={-10} />
           <directionalLight position={[5, 4, -4]} intensity={1.8} />
           <Environment resolution={128}>
@@ -561,11 +600,14 @@ export default function PlantScene(props: PlantViewProps) {
             <Lightformer form="rect" intensity={2.5} color="#ffffff" scale={[2, 9, 1]} position={[5, 4, -3]} rotation={[0, -Math.PI / 2, 0]} />
             <Lightformer form="rect" intensity={1.5} color="#ffffff" scale={[7, 3, 1]} position={[0, 8, 0]} rotation={[Math.PI / 2, 0, 0]} />
           </Environment>
+          <SceneMotionContext.Provider value={animate}>
           <SceneModel {...props} />
           <IndustrialYard light={light} selected={props.selected} />
+          <ProcessFlows components={props.components} light={light} />
+          <AgentMarkers {...props} />
+          </SceneMotionContext.Provider>
           <LabelProjector labels={labels} leaders={leaders} overview={scope === "plant"} />
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.08, 0]} receiveShadow><planeGeometry args={[45, 45]} /><meshStandardMaterial color={light ? "#ededed" : "#040404"} roughness={.95} metalness={0} /></mesh>
-          <gridHelper key={light ? "light-grid" : "dark-grid"} args={[40, 40, light ? "#c9c9c9" : "#252525", light ? "#dedede" : "#1b1b1b"]} position={[0, -.075, 0]} />
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.08, 0]} receiveShadow><planeGeometry args={[45, 45]} /><meshStandardMaterial color={light ? "#b9bcbf" : "#101317"} roughness={.95} metalness={0} /></mesh>
           <OrbitControls ref={controls} makeDefault target={LOOK_AT} enableDamping dampingFactor={.08} minDistance={3} maxDistance={110} maxPolarAngle={Math.PI / 2 - .04} minPolarAngle={.2} autoRotate={autoRotate} autoRotateSpeed={.45} />
           <ResponsiveFraming controls={controls} manualCamera={manualCamera} scope={scope} selected={props.selected} />
         </Canvas>
@@ -575,7 +617,7 @@ export default function PlantScene(props: PlantViewProps) {
     {props.forecast && <div className="scene-forecast"><span>Proposal forecast</span>{props.forecast.predicted}% predicted /<br />{props.forecast.threshold}% safety threshold.</div>}
     {webgl && <>
       <SceneLabels {...props} labels={labels} leaders={leaders} />
-      <div className="scene-campus-caption"><span>{scope === "plant" ? "Plant overview" : scope === "unit" ? "Process unit" : `Focused · ${props.selected}`}</span><small>Surrounding facilities are schematic context</small></div>
+      <div className="scene-campus-caption"><span>{scope === "plant" ? "Plant overview" : scope === "unit" ? "Process unit" : `Focused · ${props.selected}`}</span><small>Factory hall and moving equipment are illustrative; values are sample data</small></div>
       <div className="scene-help">DRAG TO ORBIT <span aria-hidden="true">·</span> SCROLL TO ZOOM</div>
       <div className="scene-controls" aria-label="3D camera controls">
         <button title="Whole plant overview" aria-label="Show whole plant overview" aria-pressed={scope === "plant"} onClick={overview}><Factory size={17} /></button>

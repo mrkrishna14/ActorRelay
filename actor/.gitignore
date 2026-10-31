@@ -1,0 +1,8 @@
+node_modules/
+dist/
+generated/
+.durable-actors/
+.terse/
+.env
+.env.*
+!.env.example

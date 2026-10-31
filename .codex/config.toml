@@ -1,0 +1,7 @@
+[mcp_servers.agent-relay]
+command = "bun"
+args = ["x", "-y", "agent-relay@15.0.1-next.0", "mcp"]
+
+[mcp_servers.agent-relay.env]
+AGENT_RELAY_MANAGED_BY = "relay-init"
+AGENT_RELAY_CLIENT = "codex"
