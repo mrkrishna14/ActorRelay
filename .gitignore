@@ -34,6 +34,7 @@ Thumbs.db
 .durable-actors/
 .pytest_cache/
 *.tsbuildinfo
+.runtime/
 
 # Session coordination board
 .coord/
