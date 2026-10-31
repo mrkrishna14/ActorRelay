@@ -148,11 +148,21 @@ describe("toDemoState", () => {
   });
 
   test("observation while the newest proposal is executed but not yet observed", () => {
-    expect(s.observation).toEqual({ plantId: "plant-a", proposalId: "plant-a-p0002", from: 50, target: 70, startedAt: Date.parse("2026-10-31T20:39:26.534Z") });
+    expect(s.observation).toEqual({ plantId: "plant-a", proposalId: "plant-a-p0002", proposerTag: "P-100", metric: "speedPct", from: 50, target: 70, startedAt: Date.parse("2026-10-31T20:39:26.534Z") });
     const observed = { ...plantA, history: [...history, { ...history[1], id: "observed:plant-a-p0002", proposalId: "plant-a-p0002", at: "2026-10-31T20:39:50Z" }] };
     expect(toDemoState({ ...stateA, plant: observed }, stateB, s, NOW).observation).toBeNull();
     expect(s.now).toBe(NOW);
     expect(s.paused).toBe(false);
+  });
+
+  test("loop proposals and observations retain the actual controller target", () => {
+    for (const [tag, metric, from, to] of [["TK-101", "levelPct", 50, 55], ["TK-101", "tempC", 75, 76], ["TV-101", "steamKgH", 1533, 1540]] as const) {
+      const proposal = { ...plantA.proposals[0]!, proposerComponentId: `plant-a/${tag}`, metric, from, to };
+      const mapped = toDemoState({ ...stateA, plant: { ...plantA, proposals: [proposal] } }, stateB, null, NOW);
+      expect(mapped.proposals[0]).toMatchObject({ proposerTag: tag, metric, from, to });
+      expect(mapped.observation).toMatchObject({ proposerTag: tag, metric, from, target: to });
+      expect(mapped.messages.find((message) => message.id === `live-${proposal.id}-proposal`)?.sender).toBe(tag);
+    }
   });
 });
 
@@ -187,5 +197,16 @@ describe("glue calls", () => {
     expect(calls[0]!.url).toBe("http://glue.test/state?plantId=plant-a");
     globalThis.fetch = (async () => new Response(JSON.stringify({ error: "Validation failed" }), { status: 400 })) as unknown as typeof fetch;
     await expect(liveApi("http://glue.test").propose("plant-a", 200)).rejects.toThrow("Validation failed");
+  });
+
+  test("each Plant A loop sends its exact component, metric and target", async () => {
+    const calls = capture();
+    const api = liveApi("http://glue.test");
+    for (const [tag, metric, to] of [["TK-101", "levelPct", 55], ["TK-101", "tempC", 76], ["TV-101", "steamKgH", 1540]] as const) {
+      await api.proposeControl("plant-a", tag, metric, to, "Review loop change");
+      const request = calls.at(-1)!;
+      expect(request.url).toBe("http://glue.test/propose");
+      expect(JSON.parse(String(request.init!.body))).toEqual({ plantId: "plant-a", proposerComponentId: `plant-a/${tag}`, metric, to, rationale: "Review loop change" });
+    }
   });
 });

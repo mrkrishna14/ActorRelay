@@ -34,4 +34,18 @@ describe("real model loop evidence and grounded decisions",()=>{
   const self=await new FakeBackend().component("plant-a/LV-101");
   expect(decide(self,{},5).vote).toBe("no");
  });
+ test("zero steam cannot approve a cold tank or zero heating duty",async()=>{
+  const backend=new FakeBackend(history());
+  const p=proposal({proposerComponentId:"plant-a/TV-101",metric:"steamKgH",from:1533,to:0});
+  for(const id of ["plant-a/TK-101","plant-a/E-101"]){
+   const vote=await decideVote(p,id,{backend,llmFor:()=>null});
+   expect(vote.vote).toBe("no");expect(vote.reason).toContain("minimum");
+  }
+ });
+ test("invalid forecasts refuse while exactly-at-minimum valid forecasts remain eligible",async()=>{
+  const tank=await new FakeBackend().component("plant-a/TK-101");
+  expect(decide(tank,{tempC:70},5).vote).toBe("yes");
+  for(const value of [69.9,Number.NaN,Infinity,-Infinity])expect(decide(tank,{tempC:value},5).vote).toBe("no");
+  expect(decide(tank,{unmonitoredMetric:1},5).vote).toBe("no");
+ });
 });

@@ -317,9 +317,21 @@ export class Plant extends Actor<null, Ping, PlantOutgoing> {
         const voter = await ref<Component>("Component", actorIdFor(v.componentId)).read()
         let vote = v.vote
         const notes: string[] = []
+        if (vote === "yes" && !Object.entries(v.predicted).some(([metric, predicted]) => voter.limits[metric] && finite(predicted))) {
+            vote = "no"
+            notes.push("insufficient grounding: no prediction for a monitored metric")
+        }
         for (const [metric, predicted] of Object.entries(v.predicted)) {
             const limit = voter.limits[metric]
-            if (!limit || !finite(predicted)) continue
+            if (!finite(predicted)) {
+                if (vote === "yes") { vote = "no"; notes.push(`invalid prediction: ${metric} must be finite`) }
+                continue
+            }
+            if (!limit) continue
+            if (vote === "yes" && predicted < limit.min) {
+                vote = "no"
+                notes.push(`predicted ${metric} ${predicted} < minimum ${limit.min}`)
+            }
             const threshold = safeThreshold(limit, voter.marginPct)
             if (vote === "yes" && predicted >= threshold) {
                 vote = "no"

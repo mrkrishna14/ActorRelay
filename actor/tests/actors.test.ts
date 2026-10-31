@@ -153,6 +153,38 @@ describe("decision path", () => {
         expect(v.reason).toContain("81")
     })
 
+    test("an affirmative forecast below the tank minimum is enforced to no", async () => {
+        const p = await plantA().propose({ proposerComponentId: "plant-a/TV-101", metric: "steamKgH", to: 0, rationale: "test cold-tank guard" })
+        const after = await plantA().vote(vote(p.id, "plant-a/TK-101", true, { predicted: { tempC: 25 }, similarCount: 5 }))
+        expect(after.status).toBe("blocked")
+        expect(after.votes[0]!.vote).toBe("no")
+        expect(after.votes[0]!.reason).toContain("minimum 70")
+    })
+
+    test("an affirmative forecast below minimum coil duty is enforced to no", async () => {
+        const p = await plantA().propose({ proposerComponentId: "plant-a/TV-101", metric: "steamKgH", to: 0, rationale: "test minimum-duty guard" })
+        const after = await plantA().vote(vote(p.id, "plant-a/E-101", true, { predicted: { dutyKw: 0 } }))
+        expect(after.votes[0]!.vote).toBe("no")
+        expect(after.votes[0]!.reason).toContain("minimum 300")
+    })
+
+    test("missing or unmonitored forecasts cannot approve a proposal", async () => {
+        for (const predicted of [{}, { unmonitoredMetric: 1 }]) {
+            const p = await plantA().propose({ proposerComponentId: "plant-a/P-100", metric: "speedPct", to: 65, rationale: "test grounding guard" })
+            const after = await plantA().vote(vote(p.id, "plant-a/LV-101", true, { predicted }))
+            expect(after.votes[0]!.vote).toBe("no")
+            expect(after.votes[0]!.reason).toContain("no prediction for a monitored metric")
+        }
+    })
+
+    test("nonfinite predictions are rejected before recording a vote", async () => {
+        const p = await plantA().propose({ proposerComponentId: "plant-a/P-100", metric: "speedPct", to: 65, rationale: "test malformed forecast" })
+        for (const value of [Number.NaN, Infinity, -Infinity]) {
+            await expect(plantA().vote(vote(p.id, "plant-a/LV-101", true, { predicted: { positionPct: value } }))).rejects.toThrow(/invalid vote/)
+        }
+        expect((await plantA().read()).proposals.find(item => item.id === p.id)!.votes).toHaveLength(0)
+    })
+
     test("invented evidence ids are rejected", async () => {
         const p = await plantA().propose({ proposerComponentId: "plant-a/P-100", metric: "speedPct", to: 85, rationale: "x" })
         await expect(plantA().vote(vote(p.id, "plant-a/LV-101", false, { evidenceEventIds: ["made-up-id"] }))).rejects.toThrow(/unknown evidence/)

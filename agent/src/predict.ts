@@ -154,8 +154,13 @@ export function decide(self: ComponentState, predicted: Record<string, number>, 
     const reasons: string[] = []
     if (!Object.entries(predicted).some(([metric, value]) => self.limits[metric] && Number.isFinite(value))) reasons.push("insufficient grounding: no prediction for a monitored metric")
     for (const [metric, value] of Object.entries(predicted)) {
+        if (!Number.isFinite(value)) {
+            reasons.push(`invalid prediction: ${metric} must be finite`)
+            continue
+        }
         const limit = self.limits[metric]
         if (!limit) continue
+        if (value < limit.min) reasons.push(`predicted ${metric} ${value} < minimum ${limit.min}`)
         const t = threshold(limit, self.marginPct)
         if (value >= t) reasons.push(`predicted ${metric} ${value} ≥ ${round(t)} (critical ${limit.critical} − margin ${self.marginPct}%)`)
         if (similarCount < 3 && value >= limit.critical * 0.85) {
